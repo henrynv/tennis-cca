@@ -100,6 +100,7 @@
       <input type="file" id="file" accept="image/*" hidden>
       <div class="photo-view" id="pv" style="display:none">
         <div class="protools">
+          <button type="button" class="mini primary" id="readAI">✨ Lire la fiche</button>
           <button type="button" class="mini" id="rotL">↺ Pivoter</button>
           <button type="button" class="mini" id="rotR">Pivoter ↻</button>
           <button type="button" class="mini" id="chg">Changer</button>
@@ -322,6 +323,64 @@ async function uploadPhoto(){
   if(error){ console.error(error); return null; }
   return sb.storage.from("photos").getPublicUrl(path).data.publicUrl;
 }
+function blobToBase64(blob){
+  return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.readAsDataURL(blob); });
+}
+function parseTime(s){
+  if(!s) return null;
+  const m=String(s).match(/(\d{1,2})\s*h\s*(\d{2})?/i);
+  if(!m) return null;
+  return parseInt(m[1],10)*60 + (m[2]?parseInt(m[2],10):0);
+}
+function normDay(j){
+  const strip=s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+  const x=strip(j);
+  return DAYS.findIndex(d=>strip(d)===x);
+}
+function fillDispos(dispos){
+  sel=DAYS.map(()=>new Array(NSLOT).fill(false));
+  (dispos||[]).forEach(d=>{
+    const di=normDay(d.jour); if(di<0) return;
+    const from=parseTime(d.de), to=parseTime(d.a);
+    if(from==null||to==null) return;
+    SLOTS.forEach((t,i)=>{ if(t>=from && t<to && !isBlocked(di,t)) sel[di][i]=true; });
+  });
+  refreshGrid();
+}
+function applyFiche(f){
+  if(!f) return;
+  const set=(id,v)=>{ if(v && String(v).trim()) F(id).value=String(v).trim(); };
+  set("nom",f.nom); set("prenom",f.prenom); set("ddn",f.ddn); set("tel",f.tel);
+  set("email",f.email); set("niveau",f.niveau); set("obs",f.obs);
+  if(Array.isArray(f.dispos)) fillDispos(f.dispos);
+}
+async function extractFiche(){
+  if(!curPhoto){ alert("Charge d'abord une photo."); return; }
+  const btn=document.getElementById("readAI");
+  const old=btn.textContent; btn.disabled=true; btn.textContent="⏳ Lecture…";
+  try{
+    const blob=await compressPhoto(curPhoto);
+    const b64=await blobToBase64(blob);
+    const res=await fetch(SB_URL+"/functions/v1/extract-fiche",{
+      method:"POST",
+      headers:{"content-type":"application/json","authorization":"Bearer "+SB_KEY,"apikey":SB_KEY},
+      body:JSON.stringify({image_base64:b64,media_type:"image/jpeg"})
+    });
+    const data=await res.json();
+    if(!res.ok || !data.ok){
+      console.error(data);
+      const msg = data.error==="missing_api_key" ? "La clé API n'est pas encore configurée côté Supabase." : (data.message||data.error||("HTTP "+res.status));
+      alert("Lecture impossible : "+msg);
+      return;
+    }
+    applyFiche(data.fiche);
+    const el=F("editmode");
+    el.textContent="✨ Fiche lue — vérifie/corrige puis Enregistre"; el.style.color="var(--accent)";
+    setTimeout(()=>{el.textContent="";el.style.color="";},4000);
+  }catch(e){ console.error(e); alert("Erreur pendant la lecture : "+e); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+document.getElementById("readAI").onclick=extractFiche;
 const pimg=document.getElementById("pimg");
 pimg.onclick=()=>pimg.classList.toggle("zoom");
 pimg.addEventListener("mousemove",e=>{
