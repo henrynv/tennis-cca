@@ -6,6 +6,7 @@
 <title>Saisie fiches CCA – Groupes tennis</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --bg:#f4f6f8; --panel:#fff; --line:#dbe1e8; --ink:#1f2a37; --muted:#6b7683;
@@ -96,8 +97,8 @@
     <!-- COL 1 : photo -->
     <div class="card">
       <h2>Photo de la fiche</h2>
-      <div class="photo-drop" id="drop">📷 Cliquer ou déposer la photo de la fiche</div>
-      <input type="file" id="file" accept="image/*" hidden>
+      <div class="photo-drop" id="drop">📷 Cliquer ou déposer la fiche (photo ou PDF)</div>
+      <input type="file" id="file" accept="image/*,application/pdf,.pdf" hidden>
       <div class="photo-view" id="pv" style="display:none">
         <div class="protools">
           <button type="button" class="mini primary" id="readAI">✨ Lire la fiche</button>
@@ -294,12 +295,36 @@ file.onchange=e=>{ if(e.target.files[0]) loadPhoto(e.target.files[0]); };
 ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor="var(--accent)";}));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor="";}));
 drop.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) loadPhoto(e.dataTransfer.files[0]); });
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+function showPhoto(dataURL){
+  curPhoto=dataURL;
+  document.getElementById("pimg").src=dataURL;
+  document.getElementById("pv").style.display="block";
+  document.getElementById("drop").style.display="none";
+}
+async function pdfToDataURL(f){
+  const buf=await f.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const page=await pdf.getPage(1);
+  const vp=page.getViewport({scale:2});
+  const cv=document.createElement("canvas");
+  cv.width=vp.width; cv.height=vp.height;
+  await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+  return cv.toDataURL("image/jpeg",0.9);
+}
 function loadPhoto(f){
-  const r=new FileReader();
-  r.onload=()=>{ curPhoto=r.result; document.getElementById("pimg").src=curPhoto;
-    document.getElementById("pv").style.display="block";
-    document.getElementById("drop").style.display="none"; };
-  r.readAsDataURL(f);
+  if(!f) return;
+  const isPdf = f.type==="application/pdf" || /\.pdf$/i.test(f.name||"");
+  if(isPdf){
+    const drop=document.getElementById("drop");
+    drop.textContent="⏳ Conversion du PDF…";
+    pdfToDataURL(f).then(url=>{ showPhoto(url); drop.textContent="📷 Cliquer ou déposer la fiche (photo ou PDF)"; })
+      .catch(e=>{ console.error(e); alert("PDF illisible : "+e); drop.textContent="📷 Cliquer ou déposer la fiche (photo ou PDF)"; });
+  } else {
+    const r=new FileReader();
+    r.onload=()=>showPhoto(r.result);
+    r.readAsDataURL(f);
+  }
 }
 // compresse une dataURL en Blob JPEG (max 1400px, qualité 0.65) pour l'upload
 function compressPhoto(dataURL){
