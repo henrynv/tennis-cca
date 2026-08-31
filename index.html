@@ -777,8 +777,8 @@
   <!-- rien d'importe -->
   <div class="grempty" id="grEmpty">
     <div class="grcard">
-      <h2>Le résultat du calcul</h2>
-      <p class="sub">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
+      <h2 id="grEmptyT">Le résultat du calcul</h2>
+      <p class="sub" id="grEmptyS">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
         qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.</p>
       <div class="grlance" id="grLance" style="display:none">
         <span class="tx"><b id="grLanceT">Lancer le calcul sur cette machine</b>
@@ -793,7 +793,7 @@
       </div>
       <div class="grfile" id="grFiles"></div>
       <p class="grerr" id="grErr"></p>
-      <p class="hint">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
+      <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
         puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
     </div>
   </div>
@@ -2740,7 +2740,27 @@ function lireContraintes(wb){
 
 /* ---------------- ecran d'import ---------------- */
 function rendFichiers(){
-  const li = [
+  // Deux mondes. Avec l'agent, ces lignes decrivent les fichiers que le
+  // solveur va VRAIMENT lire sur la machine, dates du disque comprises.
+  // Sans agent, elles decrivent ce qui a ete depose dans ce navigateur.
+  // Melanger les deux donnait un ecran qui se contredisait : le bandeau vert
+  // annoncait un fichier de contraintes que la ligne d'en dessous disait absent.
+  const surDisque = d => d && d.present ? `sur la machine, ${d.date}` : "introuvable à côté du solveur";
+  const li = agent ? [
+    {k:"jou", lab:"Joueurs", fic:"joueurs.xlsx", disque:true,
+     val:agent.joueurs.present
+       ? `Les fiches et leurs disponibilités, exportées de la base. <b>${Math.round(agent.joueurs.taille/1024)} Ko</b>`
+       : "Introuvable — lancez <code>export_fiches.py</code> avant de calculer.",
+     etat:surDisque(agent.joueurs)},
+    {k:"ctr", lab:"Profs, courts, niveaux", fic:"contraintes-tennis.xlsx", disque:true,
+     val:ctr ? `${Object.keys(ctr.budget).length} profs · ${ctr.courts} courts · ${ctr.fermetures.length} fermetures · ouverture ${gtx(ctr.debut)} → ${gtx(ctr.fin)}`
+             : "Heures des profs, courts, fermetures, barème et paliers.",
+     etat:surDisque(agent.contraintes)},
+    {k:"res", lab:"Dernier résultat", fic:"resultat-cca.xlsx", lecture:true,
+     val:resFic ? `<b>${vivants().length} cours</b>, ${vivants().reduce((s,c)=>s+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
+                : "Produit par le calcul. Rien à déposer : il arrive tout seul.",
+     etat:surDisque(agent.resultat)}
+  ] : [
     {k:"res", lab:"Résultat du calcul", fic:"resultat-cca.xlsx",
      val:resFic ? `<b>${vivants().length} cours</b>, ${vivants().reduce((s,c)=>s+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
                 : "Les groupes et l'emploi du temps produits par le solveur.",
@@ -2754,28 +2774,41 @@ function rendFichiers(){
     `<div data-k="${f.k}">
        <span class="lab">${f.lab}</span>
        <span class="val">${f.val}<span class="fic">${f.fic} — ${f.etat}</span></span>
-       <span class="acts"><button class="mini">Remplacer…</button></span>
+       <span class="acts">${f.lecture ? "" : `<button class="mini">Remplacer…</button>`}</span>
      </div>`).join("");
   F("grFiles").querySelectorAll("[data-k] button").forEach(b=>{
-    b.onclick = ()=>choisir(b.closest("[data-k]").dataset.k);
+    const k = b.closest("[data-k]").dataset.k;
+    b.onclick = ()=>choisir(k, (li.find(f=>f.k===k)||{}).disque);
   });
 }
-function choisir(quoi){
+function choisir(quoi, surDisque){
   const i = document.createElement("input");
   i.type = "file"; i.accept = ".xlsx,.xls";
   i.onchange = async ()=>{
     const f = i.files[0]; if(!f) return;
     F("grErr").textContent = "";
     try{
-      const wb = XLSX.read(await f.arrayBuffer(), {type:"array"});
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, {type:"array"});
       const quand = new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+      // Avec l'agent, deposer un fichier d'entree doit l'ecrire sur la machine :
+      // sinon le prochain calcul lirait toujours l'ancienne version du disque.
+      if(surDisque){
+        const nom = quoi === "jou" ? "joueurs.xlsx" : "contraintes-tennis.xlsx";
+        let b = "", u = new Uint8Array(buf);
+        for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
+        await jsonAgent("/fichier", {nom, contenu: btoa(b)});
+        if(quoi === "ctr"){ lireContraintes(wb); ctr.fichier = nom; ctr.date = quand; }
+        await pingAgent();
+        sauver(); rend();
+        return;
+      }
       if(quoi === "res"){ lireResultat(wb); resFic = {fichier:f.name, date:quand};
-        scen = []; vu = 0; sel = null; selAtt = null; }
+        scen = []; vu = 0; sel = null; selAtt = null; instantane("Import"); }
       else { lireContraintes(wb); ctr.fichier = f.name; ctr.date = quand; }
-      instantane(quoi === "res" ? "Import" : null);
       sauver(); rend();
     }catch(e){
-      F("grErr").textContent = "Fichier illisible : " + e.message;
+      F("grErr").textContent = "Fichier refusé : " + e.message;
     }
   };
   i.click();
@@ -3369,7 +3402,17 @@ async function pingAgent(){
 }
 function majLance(){
   const b = F("grLance");
-  if(!agent){ b.style.display = "none"; return; }
+  F("grAide").innerHTML = agent
+    ? `Agent local détecté. Le calcul tourne sur cette machine ; ces fichiers sont ceux
+       qu'il lit à côté de <code>solve_cca.py</code>.`
+    : `Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
+       puis déposez <b>resultat-cca.xlsx</b> ci-dessus. Ou lancez
+       <code>python agent.py</code> pour calculer depuis cette page.`;
+  F("grEmptyT").textContent = agent ? "Constituer les groupes" : "Le résultat du calcul";
+  F("grEmptyS").textContent = agent
+    ? "Le calcul crée les créneaux et y place les joueurs. Vous corrigez ensuite, autant de fois qu'il faut."
+    : "Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.";
+  if(!agent){ b.style.display = "none"; rendFichiers(); return; }
   b.style.display = "flex";
   const j = agent.joueurs, c = agent.contraintes;
   F("grLanceS").textContent = j.present
@@ -3377,6 +3420,7 @@ function majLance(){
     : "joueurs.xlsx introuvable à côté du solveur";
   F("grGo").disabled = !j.present;
   F("grRelance").style.display = cours.length ? "block" : "none";
+  rendFichiers();
 }
 
 async function lancer(){
