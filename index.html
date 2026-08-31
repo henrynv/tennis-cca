@@ -77,6 +77,24 @@
   .savebar{background:var(--panel);border:1px solid var(--line);border-radius:10px;
     padding:12px 16px;display:flex;gap:10px;align-items:center;margin:16px 0 0}
   .savebar .grow{flex:1;color:var(--muted);font-size:12px}
+  /* --- import en masse --- */
+  input.doubt,select.doubt{border-color:#e0a000;background:#fffbeb}
+  label.doubt{color:#a06800;font-weight:600}
+  .bigdrop{border:2px dashed var(--line);border-radius:12px;padding:34px;text-align:center;
+    color:var(--muted);cursor:pointer}
+  .bigdrop:hover{border-color:var(--accent);color:var(--accent)}
+  .bar{height:8px;background:#eef1f4;border-radius:5px;overflow:hidden;margin:12px 0 6px}
+  .bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+  .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .stats b{color:var(--ink)}
+  table.q{border-collapse:collapse;width:100%;font-size:12px}
+  table.q td{border-bottom:1px solid var(--line);padding:4px 6px}
+  .st-wait{color:var(--muted)} .st-run{color:#0a6ebd} .st-done{color:var(--accent)}
+  .st-skip{color:#999} .st-err{color:var(--warn)}
+  .revbar{background:#fff8e6;border:1px solid #f0d79a;border-radius:10px;padding:10px 14px;
+    display:none;gap:10px;align-items:center;margin:0 0 12px}
+  .revbar.on{display:flex}
+  .revbar .grow{flex:1;font-size:13px}
 </style>
 </head>
 <body>
@@ -88,11 +106,19 @@
   <span id="conn" title="Connexion base" style="font-size:12px">⏳</span>
   <button id="clear" class="ghost mini">Vider</button>
   <button id="save" class="primary mini">Enregistrer &amp; suivant ⏎</button>
+  <button id="openImport" class="mini">📥 Import en masse</button>
+  <button id="openReview" class="mini">🔍 Relire <span id="nrev">0</span></button>
   <button id="openList" class="mini">📋 Fiches</button>
   <button id="expXlsx" class="mini">⬇︎ Export Excel</button>
 </header>
 
 <div class="wrap">
+  <div class="revbar" id="revbar">
+    <span class="grow" id="revinfo"></span>
+    <button id="revSkip" class="mini">Passer →</button>
+    <button id="revOk" class="primary mini">✓ Valider &amp; suivante</button>
+    <button id="revQuit" class="ghost mini">Quitter</button>
+  </div>
   <div class="grid3">
     <!-- COL 1 : photo -->
     <div class="card">
@@ -114,15 +140,23 @@
     <!-- COL 2 : identity -->
     <div class="card">
       <h2>Identité</h2>
-      <label>Nom</label>
-      <input id="nom">
       <div class="row">
-        <div><label>Prénom</label><input id="prenom"></div>
-        <div><label>Date de naissance</label><input id="ddn"></div>
+        <div style="flex:3"><label>Nom</label><input id="nom"></div>
+        <div style="flex:2"><label>Prénom</label><input id="prenom"></div>
       </div>
       <div class="row">
-        <div><label>Portable</label><input id="tel"></div>
+        <div><label>Date de naissance</label><input id="ddn"></div>
         <div><label>Niveau de jeu</label><input id="niveau"></div>
+      </div>
+      <label>Adresse</label>
+      <input id="adresse">
+      <div class="row">
+        <div style="flex:1"><label>Code postal</label><input id="code_postal"></div>
+        <div style="flex:2"><label>Ville</label><input id="ville"></div>
+      </div>
+      <div class="row">
+        <div><label>Tél. fixe</label><input id="tel"></div>
+        <div><label>Portable</label><input id="portable"></div>
       </div>
       <label>E-mail</label>
       <input id="email">
@@ -134,8 +168,17 @@
         <option value="CB">CB</option>
         <option value="Autre">Autre</option>
       </select>
+      <div class="row">
+        <div><label>Soirée d'évaluation</label><input id="soiree_eval" placeholder="ex : 18h à 18h30"></div>
+        <div>
+          <label>Nouveau au club</label>
+          <select id="nouveau"><option value="">Non</option><option value="1">Oui</option></select>
+        </div>
+      </div>
       <label>Observations</label>
       <input id="obs">
+      <label>Annotations du club (marges)</label>
+      <input id="annotations" placeholder="paiement, n° adhérent…">
     </div>
 
     <!-- RIGHT : availability -->
@@ -170,6 +213,42 @@
         <tbody id="tbody"></tbody>
       </table>
       <div class="empty" id="emptylist">Aucune fiche enregistrée pour l'instant.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODALE : import en masse -->
+<div class="modal-bg" id="impBg">
+  <div class="modal">
+    <div class="modal-head">
+      <b>Import en masse</b>
+      <span style="flex:1"></span>
+      <button id="impClose" class="mini">✕ Fermer</button>
+    </div>
+    <div class="modal-body">
+      <div class="bigdrop" id="impDrop">
+        📄 Cliquer ou déposer les PDF et photos<br>
+        <span style="font-size:12px">Les PDF multi-pages sont éclatés page par page. Les versos vierges sont écartés sans appel à l'IA.</span>
+      </div>
+      <input type="file" id="impFile" accept="image/*,application/pdf,.pdf" multiple hidden>
+      <div class="bar"><i id="impBar"></i></div>
+      <div class="stats">
+        <span>Pages lues <b id="sPages">0</b></span>
+        <span>Versos écartés <b id="sBlank">0</b></span>
+        <span>En attente <b id="sWait">0</b></span>
+        <span>Enregistrées <b id="sDone">0</b></span>
+        <span>Doublons <b id="sDup">0</b></span>
+        <span>Erreurs <b id="sErr">0</b></span>
+      </div>
+      <div class="actions" style="margin:4px 0 10px">
+        <button id="impStart" class="primary mini">▶ Lancer le traitement</button>
+        <button id="impStop" class="mini" disabled>⏸ Pause</button>
+        <button id="impRetry" class="mini">↻ Relancer les erreurs</button>
+        <button id="impPurge" class="ghost mini danger">Vider la file</button>
+        <span class="hint" style="margin-left:auto">Reprend automatiquement après fermeture de l'onglet.</span>
+      </div>
+      <table class="q"><tbody id="qbody"></tbody></table>
     </div>
   </div>
 </div>
@@ -439,13 +518,21 @@ const F=id=>document.getElementById(id);
 function readForm(){
   return {
     nom:F("nom").value.trim(), prenom:F("prenom").value.trim(), ddn:F("ddn").value.trim(),
-    tel:F("tel").value.trim(), email:F("email").value.trim(), niveau:F("niveau").value,
-    reglement:F("reglement").value, obs:F("obs").value.trim(), avail:sel.map(c=>c.slice())
+    adresse:F("adresse").value.trim(), code_postal:F("code_postal").value.trim(),
+    ville:F("ville").value.trim(),
+    tel:F("tel").value.trim(), portable:F("portable").value.trim(),
+    email:F("email").value.trim(), niveau:F("niveau").value.trim(),
+    reglement:F("reglement").value, obs:F("obs").value.trim(),
+    annotations:F("annotations").value.trim(),
+    soiree_eval:F("soiree_eval").value.trim(), nouveau:F("nouveau").value==="1",
+    avail:sel.map(c=>c.slice())
   };
 }
 function clearForm(){
-  ["nom","prenom","ddn","tel","email","obs"].forEach(id=>F(id).value="");
-  F("niveau").value=""; F("reglement").value="";
+  ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
+   "email","obs","annotations","soiree_eval","niveau"].forEach(id=>F(id).value="");
+  F("reglement").value=""; F("nouveau").value="";
+  clearFlags();
   sel=DAYS.map(()=>new Array(NSLOT).fill(false));
   curPhoto=null; editPhotoUrl=null;
   document.getElementById("pv").style.display="none"; document.getElementById("pimg").src="";
@@ -519,9 +606,15 @@ function renderList(){
 }
 function edit(id){
   const p=players.find(x=>x.id===id); if(!p)return;
-  F("nom").value=p.nom;F("prenom").value=p.prenom;F("ddn").value=p.ddn||"";
-  F("tel").value=p.tel||"";F("email").value=p.email||"";F("niveau").value=p.niveau||"";
+  F("nom").value=p.nom||"";F("prenom").value=p.prenom||"";F("ddn").value=p.ddn||"";
+  F("adresse").value=p.adresse||"";F("code_postal").value=p.code_postal||"";
+  F("ville").value=p.ville||"";
+  F("tel").value=p.tel||"";F("portable").value=p.portable||"";
+  F("email").value=p.email||"";F("niveau").value=p.niveau||"";
   F("reglement").value=p.reglement||"";F("obs").value=p.obs||"";
+  F("annotations").value=p.annotations||"";F("soiree_eval").value=p.soiree_eval||"";
+  F("nouveau").value=p.nouveau?"1":"";
+  flagDoubtful(p.confiance);
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
   curPhoto=null; editPhotoUrl=p.photo_url||null;
   if(editPhotoUrl){
@@ -536,11 +629,22 @@ function edit(id){
   F("editmode").style.color="var(--warn)";
   closeModal();
 }
+// retrouve le chemin dans le bucket a partir de l'URL publique
+function photoPath(url){
+  const m=String(url||"").split("/photos/");
+  return m.length>1 ? decodeURIComponent(m[1].split("?")[0]) : null;
+}
 async function del(id){
   const p=players.find(x=>x.id===id);
   if(!confirm("Supprimer la fiche de "+(p?p.prenom+" "+p.nom:"")+" ?"))return;
   const {error}=await sb.from("fiches").delete().eq("id",id);
   if(error){ setConn(false); alert("⚠️ Suppression impossible (connexion ?)."); return; }
+  // la ligne est partie : on nettoie la photo pour ne pas laisser d'orphelin dans le bucket
+  const path=p&&photoPath(p.photo_url);
+  if(path){
+    const {error:e2}=await sb.storage.from("photos").remove([path]);
+    if(e2) console.warn("photo non supprimee",path,e2);
+  }
   if(editId===id) clearForm();
   await loadPlayers();
 }
@@ -581,6 +685,414 @@ refreshGrid();
 loadPlayers();
 // resynchronise quand on rouvre l'onglet (autre assistante a saisi entre-temps)
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) loadPlayers(); });
+</script>
+
+<script>
+/* =====================================================================
+   Import en masse + relecture
+   S'appuie sur le script precedent : DAYS, SLOTS, NSLOT, isBlocked,
+   parseTime, normDay, blobToBase64, sb, SB_URL, SB_KEY, F, edit,
+   loadPlayers, players, intervalsText.
+   ===================================================================== */
+const IMP = {
+  maxEdge: 1568,      // cote long envoye au modele
+  // Seuil de page vide. Mesure en navigateur sur les 113 pages de Femmes 1 + Hommes :
+  // versos <= 0,40 %, recto le plus pale (photocopie delavee) 4,73 %. 1,5 % laisse
+  // un facteur ~3 de chaque cote. Une page sous ce seuil ne part jamais a l'IA.
+  darkMin: 0.015,
+  conc: 6,            // appels simultanes
+  fn: "extract-fiche-v4",
+};
+let running = false, stopAsked = false;
+const stats = { pages:0, blank:0, done:0, dup:0, err:0 };
+
+/* ---------- IndexedDB : la file survit a la fermeture de l'onglet ---------- */
+function db(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open("cca_import", 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if(!d.objectStoreNames.contains("q")) d.createObjectStore("q", {keyPath:"key"});
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror  = () => rej(r.error);
+  });
+}
+async function qPut(it){
+  const d = await db();
+  return new Promise((res,rej)=>{
+    const t = d.transaction("q","readwrite");
+    t.objectStore("q").put(it);
+    t.oncomplete = res; t.onerror = () => rej(t.error);
+  });
+}
+async function qAll(){
+  const d = await db();
+  return new Promise((res,rej)=>{
+    const rq = d.transaction("q","readonly").objectStore("q").getAll();
+    rq.onsuccess = () => res(rq.result||[]); rq.onerror = () => rej(rq.error);
+  });
+}
+async function qDel(key){
+  const d = await db();
+  return new Promise(res=>{
+    const t = d.transaction("q","readwrite");
+    t.objectStore("q").delete(key); t.oncomplete = res;
+  });
+}
+async function qClear(){
+  const d = await db();
+  return new Promise(res=>{
+    const t = d.transaction("q","readwrite");
+    t.objectStore("q").clear(); t.oncomplete = res;
+  });
+}
+
+/* ---------- decoupe des sources ---------- */
+// Proportion de pixels vraiment sombres. Le gabarit imprime en noir n'existe qu'au
+// recto ; la transparence du verso reste toujours pale, d'ou une separation nette.
+function darkRatio(cv){
+  const w = 160, h = Math.max(1, Math.round(cv.height * 160 / cv.width));
+  const t = document.createElement("canvas"); t.width = w; t.height = h;
+  const c = t.getContext("2d");
+  c.drawImage(cv, 0, 0, w, h);
+  const d = c.getImageData(0, 0, w, h).data;
+  let dark = 0;
+  for(let i=0;i<d.length;i+=4){
+    if(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2] < 110) dark++;
+  }
+  return dark / (w*h);
+}
+function toBlob(cv, q=0.85){
+  return new Promise(r => cv.toBlob(r, "image/jpeg", q));
+}
+async function pdfPages(file, onPage){
+  const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+  for(let n=1; n<=pdf.numPages; n++){
+    const page = await pdf.getPage(n);
+    const v1 = page.getViewport({scale:1});
+    const vp = page.getViewport({scale: IMP.maxEdge / Math.max(v1.width, v1.height)});
+    const cv = document.createElement("canvas");
+    cv.width = vp.width; cv.height = vp.height;
+    await page.render({canvasContext: cv.getContext("2d"), viewport: vp}).promise;
+    await onPage(cv, n, pdf.numPages);
+    cv.width = cv.height = 0;   // libere la memoire au fil de l'eau
+  }
+}
+async function imgCanvas(file){
+  // imageOrientation:"from-image" applique l'EXIF : redressement gratuit des photos de telephone
+  const bmp = await createImageBitmap(file, {imageOrientation:"from-image"});
+  const sc = Math.min(1, IMP.maxEdge / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(bmp.width*sc); cv.height = Math.round(bmp.height*sc);
+  cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+  bmp.close();
+  return cv;
+}
+function groupeFromName(n){
+  const x = (n||"").toLowerCase();
+  if(/femme|dame/.test(x)) return "F";
+  if(/homme|messieur/.test(x)) return "H";
+  return null;
+}
+
+// pdf.js ordonnance son rendu avec requestAnimationFrame, que le navigateur gele
+// des que l'onglet passe en arriere-plan : sans ce relais, un import de plusieurs
+// centaines de pages se fige silencieusement quand on va voir ailleurs.
+let rafSaved = null;
+function unfreezeRaf(){
+  if(rafSaved) return;
+  rafSaved = window.requestAnimationFrame;
+  window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 0);
+}
+function restoreRaf(){
+  if(!rafSaved) return;
+  window.requestAnimationFrame = rafSaved; rafSaved = null;
+}
+
+async function ingest(files){
+  unfreezeRaf();
+  try{ await ingestInner(files); } finally{ restoreRaf(); }
+}
+async function ingestInner(files){
+  for(const f of files){
+    const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name||"");
+    const handle = async (cv, n) => {
+      stats.pages++;
+      const dr = darkRatio(cv);
+      if(dr < IMP.darkMin){ stats.blank++; paint(); return; }   // verso vierge : aucun appel IA
+      const blob = await toBlob(cv);
+      await qPut({
+        key: f.name + "#" + n, file: f.name, page: n,
+        blob, status: "wait", groupe: groupeFromName(f.name),
+      });
+      paint();
+    };
+    try{
+      if(isPdf) await pdfPages(f, handle);
+      else      await handle(await imgCanvas(f), 1);
+    }catch(e){
+      console.error("lecture impossible", f.name, e);
+      alert("Fichier illisible : " + f.name + "\n" + e);
+    }
+  }
+  await refreshQueue();
+}
+
+/* ---------- appel du modele ---------- */
+async function extract(blob, tries = 4){
+  const b64 = await blobToBase64(blob);
+  let wait = 2000;
+  for(let k = 0; k < tries; k++){
+    let r, out;
+    try{
+      r = await fetch(SB_URL + "/functions/v1/" + IMP.fn, {
+        method: "POST",
+        headers: {"content-type":"application/json", authorization:"Bearer "+SB_KEY, apikey:SB_KEY},
+        body: JSON.stringify({image_base64: b64, media_type: "image/jpeg"}),
+      });
+      out = await r.json();
+    }catch(e){
+      out = {error:"reseau", message:String(e)};
+    }
+    if(out && out.ok) return out;
+    // 429 / 5xx / coupure reseau : on retente avec un recul croissant
+    const retriable = !r || r.status === 429 || r.status >= 500 || out.error === "reseau"
+                      || (out.status && (out.status === 429 || out.status >= 500));
+    if(!retriable || k === tries - 1) return out;
+    await new Promise(z => setTimeout(z, wait + Math.random()*500));
+    wait *= 2;
+  }
+}
+async function rotateBlob(blob, deg){
+  const bmp = await createImageBitmap(blob);
+  const swap = deg === 90 || deg === 270;
+  const cv = document.createElement("canvas");
+  cv.width  = swap ? bmp.height : bmp.width;
+  cv.height = swap ? bmp.width  : bmp.height;
+  const c = cv.getContext("2d");
+  c.translate(cv.width/2, cv.height/2);
+  c.rotate(deg * Math.PI / 180);
+  c.drawImage(bmp, -bmp.width/2, -bmp.height/2);
+  bmp.close();
+  return toBlob(cv);
+}
+
+/* ---------- conversion vers le modele de donnees de l'app ---------- */
+function availFromDispos(dispos){
+  const m = DAYS.map(()=>new Array(NSLOT).fill(false));
+  (dispos||[]).forEach(d=>{
+    const di = normDay(d.jour); if(di < 0) return;
+    const a = parseTime(d.de), b = parseTime(d.a);
+    if(a == null || b == null) return;
+    SLOTS.forEach((t,i)=>{ if(t >= a && t < b && !isBlocked(di,t)) m[di][i] = true; });
+  });
+  return m;
+}
+// Les preferences vont a deux endroits : en clair dans les observations pour
+// l'assistante, et telles quelles dans la colonne dispos pour le solveur.
+function prefLine(dispos){
+  const p = (dispos||[]).filter(d=>d.preference != null)
+                        .sort((a,b)=>a.preference - b.preference);
+  if(!p.length) return "";
+  return "Préférences : " + p.map(d=>`${d.preference}) ${d.jour} ${d.de}–${d.a}`).join(" · ");
+}
+
+async function saveFiche(it, fiche, meta){
+  const path = "auto/" + it.file.replace(/[^\w.-]+/g,"_") + "-p" + it.page + "-" + Date.now() + ".jpg";
+  let photo_url = null;
+  const up = await sb.storage.from("photos").upload(path, it.blob, {contentType:"image/jpeg"});
+  if(up.error) console.warn("upload photo", up.error);
+  else photo_url = sb.storage.from("photos").getPublicUrl(path).data.publicUrl;
+
+  const pl = prefLine(fiche.dispos);
+  const row = {
+    nom: fiche.nom||"", prenom: fiche.prenom||"", ddn: fiche.ddn||"",
+    adresse: fiche.adresse||"", code_postal: fiche.code_postal||"", ville: fiche.ville||"",
+    tel: fiche.tel||"", portable: fiche.portable||"", email: fiche.email||"",
+    niveau: fiche.niveau||"", nouveau: !!fiche.nouveau, soiree_eval: fiche.soiree_eval||"",
+    obs: [fiche.obs||"", pl].filter(Boolean).join(" — "),
+    annotations: fiche.annotations||"",
+    avail: availFromDispos(fiche.dispos),
+    dispos: fiche.dispos||[],
+    confiance: fiche.confiance||null,
+    statut: "a_verifier",
+    groupe: it.groupe, source_fichier: it.file, source_page: it.page,
+    modele: meta.model || null, photo_url,
+  };
+  const { error } = await sb.from("fiches").insert(row);
+  if(error){
+    if(error.code === "23505") return "dup";   // index unique (source_fichier, source_page)
+    throw error;
+  }
+  return "ok";
+}
+
+/* ---------- boucle de traitement ---------- */
+async function processOne(it){
+  it.status = "run"; await qPut(it); paint();
+  try{
+    let res = await extract(it.blob);
+    if(!res.ok) throw new Error(res.message || res.error || "reponse invalide");
+
+    // redressement guide par le modele, puis seconde lecture sur l'image droite
+    if(res.fiche && res.fiche.rotation && res.fiche.rotation !== 0){
+      it.blob = await rotateBlob(it.blob, res.fiche.rotation);
+      const res2 = await extract(it.blob);
+      if(res2.ok) res = res2;
+    }
+    if(res.fiche && res.fiche.page_vide){
+      stats.blank++; await qDel(it.key); paint(); return;
+    }
+    const out = await saveFiche(it, res.fiche, res);
+    if(out === "dup") stats.dup++; else stats.done++;
+    await qDel(it.key);            // succes : on libere le blob
+  }catch(e){
+    console.error(it.key, e);
+    it.status = "err"; it.msg = String(e.message||e);
+    stats.err++; await qPut(it);
+  }
+  paint();
+}
+
+async function runQueue(){
+  if(running) return;
+  running = true; stopAsked = false;
+  F("impStart").disabled = true; F("impStop").disabled = false;
+  const items = (await qAll()).filter(i => i.status === "wait" || i.status === "run");
+  let idx = 0;
+  const worker = async () => {
+    while(idx < items.length && !stopAsked){
+      const it = items[idx++];
+      await processOne(it);
+    }
+  };
+  await Promise.all(Array.from({length: IMP.conc}, worker));
+  running = false;
+  F("impStart").disabled = false; F("impStop").disabled = true;
+  await loadPlayers(); await refreshQueue();
+}
+
+/* ---------- rendu ---------- */
+function paint(){
+  const set = (id,v) => { const e = F(id); if(e) e.textContent = v; };
+  set("sPages", stats.pages); set("sBlank", stats.blank);
+  set("sDone", stats.done); set("sDup", stats.dup); set("sErr", stats.err);
+}
+async function refreshQueue(){
+  const items = await qAll();
+  const wait = items.filter(i=>i.status==="wait").length;
+  const err  = items.filter(i=>i.status==="err").length;
+  const e = F("sWait"); if(e) e.textContent = wait;
+  const total = wait + err + stats.done + stats.dup;
+  const bar = F("impBar");
+  if(bar) bar.style.width = total ? Math.round((stats.done+stats.dup)/total*100) + "%" : "0%";
+  const tb = F("qbody");
+  if(tb){
+    const cls = {wait:"st-wait", run:"st-run", err:"st-err"};
+    const lbl = {wait:"en attente", run:"lecture…", err:"erreur"};
+    tb.innerHTML = items.slice(0, 60).map(i=>
+      `<tr><td>${esc(i.file)}</td><td>p.${i.page}</td>`+
+      `<td class="${cls[i.status]||""}">${lbl[i.status]||i.status}</td>`+
+      `<td style="color:var(--warn)">${esc(i.msg||"")}</td></tr>`).join("");
+    if(items.length > 60) tb.innerHTML += `<tr><td colspan="4" style="color:var(--muted)">… et ${items.length-60} autres</td></tr>`;
+  }
+  updateReviewCount();
+}
+
+/* ---------- cablage import ---------- */
+F("openImport").onclick = async () => { F("impBg").classList.add("open"); await refreshQueue(); };
+F("impClose").onclick  = () => F("impBg").classList.remove("open");
+F("impBg").onclick = e => { if(e.target.id === "impBg") F("impBg").classList.remove("open"); };
+F("impDrop").onclick = () => F("impFile").click();
+F("impFile").onchange = e => { if(e.target.files.length) ingest([...e.target.files]); e.target.value = ""; };
+["dragover","dragenter"].forEach(ev => F("impDrop").addEventListener(ev, e => {
+  e.preventDefault(); F("impDrop").style.borderColor = "var(--accent)"; }));
+["dragleave","drop"].forEach(ev => F("impDrop").addEventListener(ev, e => {
+  e.preventDefault(); F("impDrop").style.borderColor = ""; }));
+F("impDrop").addEventListener("drop", e => {
+  if(e.dataTransfer.files.length) ingest([...e.dataTransfer.files]);
+});
+F("impStart").onclick = runQueue;
+F("impStop").onclick  = () => { stopAsked = true; };
+F("impRetry").onclick = async () => {
+  for(const it of (await qAll()).filter(i=>i.status==="err")){
+    it.status = "wait"; it.msg = ""; await qPut(it);
+  }
+  stats.err = 0; await refreshQueue(); paint();
+};
+F("impPurge").onclick = async () => {
+  if(!confirm("Vider la file d'import ? Les fiches déjà enregistrées ne sont pas touchées.")) return;
+  await qClear();
+  stats.pages = stats.blank = stats.done = stats.dup = stats.err = 0;
+  await refreshQueue(); paint();
+};
+
+/* ---------- relecture ---------- */
+let reviewing = false;
+const DOUBT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
+                   "email","niveau","obs","annotations","soiree_eval"];
+function clearFlags(){
+  DOUBT_IDS.forEach(id => { const e = F(id); if(e) e.classList.remove("doubt"); });
+}
+function flagDoubtful(conf){
+  clearFlags();
+  const list = (conf && conf.champs_douteux) || [];
+  list.forEach(n => {
+    const id = String(n).toLowerCase().trim();
+    const e = F(id); if(e) e.classList.add("doubt");
+  });
+}
+function updateReviewCount(){
+  const n = players.filter(p => p.statut === "a_verifier").length;
+  const e = F("nrev"); if(e) e.textContent = n;
+}
+function reviewNext(){
+  const list = players.filter(p => p.statut === "a_verifier");
+  if(!list.length){
+    F("revbar").classList.remove("on"); reviewing = false;
+    clearForm();
+    alert("Plus rien à relire. 🎉");
+    return;
+  }
+  reviewing = true;
+  F("revbar").classList.add("on");
+  const p = list[0];
+  edit(p.id);
+  const c = p.confiance || {};
+  const pct = v => v == null ? "—" : Math.round(v*100) + " %";
+  F("revinfo").innerHTML =
+    `<b>${esc(p.prenom||"")} ${esc(p.nom||"")}</b> — reste <b>${list.length}</b> à relire`
+    + ` · confiance identité ${pct(c.identite)}, grille ${pct(c.grille)}`
+    + (p.source_fichier ? ` · <span style="color:var(--muted)">${esc(p.source_fichier)} p.${p.source_page}</span>` : "");
+}
+F("openReview").onclick = reviewNext;
+F("revQuit").onclick = () => {
+  reviewing = false; F("revbar").classList.remove("on"); clearForm();
+};
+F("revSkip").onclick = () => {
+  const list = players.filter(p => p.statut === "a_verifier");
+  if(list.length > 1){ players.push(players.splice(players.indexOf(list[0]),1)[0]); }
+  reviewNext();
+};
+F("revOk").onclick = async () => {
+  if(!editId) return;
+  const p = readForm();
+  p.statut = "valide";
+  p.updated_at = new Date().toISOString();
+  p.saisi_par = (F("saisiPar").value||"").trim() || null;
+  const { error } = await sb.from("fiches").update(p).eq("id", editId);
+  if(error){ alert("Enregistrement impossible : " + error.message); return; }
+  await loadPlayers();
+  reviewNext();
+};
+
+/* garde le compteur a jour apres chaque rechargement de la liste */
+const _loadPlayers = loadPlayers;
+loadPlayers = async function(){ await _loadPlayers(); updateReviewCount(); };
+
+refreshQueue();
+loadPlayers();   // recharge via le wrapper pour initialiser le compteur de relecture
 </script>
 </body>
 </html>
