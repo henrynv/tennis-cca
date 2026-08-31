@@ -94,6 +94,11 @@
   .revbar{background:#fff8e6;border:1px solid #f0d79a;border-radius:10px;padding:10px 14px;
     display:none;gap:10px;align-items:center;margin:0 0 12px}
   .revbar.on{display:flex}
+  .card.doubt{border-color:#e0a000;box-shadow:0 0 0 3px #fdeec4}
+  .card.doubt h2{color:#a06800}
+  .gridwarn{display:none;background:#fff8e6;border:1px solid #f0d79a;border-radius:7px;
+    padding:6px 9px;font-size:12px;color:#7a5200;margin:0 0 8px}
+  .card.doubt .gridwarn{display:block}
   .revbar .grow{flex:1;font-size:13px}
 </style>
 </head>
@@ -182,8 +187,9 @@
     </div>
 
     <!-- RIGHT : availability -->
-    <div class="card">
+    <div class="card" id="availCard">
       <h2>Disponibilités — cliquer ou glisser pour cocher</h2>
+      <div class="gridwarn" id="gridwarn"></div>
       <table class="avail" id="avail"></table>
       <div class="legend">
         <span><i class="sw" style="background:var(--accent)"></i> Disponible</span>
@@ -1034,21 +1040,48 @@ const DOUBT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","tel","p
                    "email","niveau","obs","annotations","soiree_eval"];
 function clearFlags(){
   DOUBT_IDS.forEach(id => { const e = F(id); if(e) e.classList.remove("doubt"); });
+  const card = F("availCard"); if(card) card.classList.remove("doubt");
+  const warn = F("gridwarn"); if(warn) warn.textContent = "";
 }
 function flagDoubtful(conf){
   clearFlags();
   const list = (conf && conf.champs_douteux) || [];
+  const gridNotes = [];
   list.forEach(n => {
-    const id = String(n).toLowerCase().trim();
-    const e = F(id); if(e) e.classList.add("doubt");
+    const raw = String(n).trim();
+    const id = raw.toLowerCase();
+    const e = F(id);
+    if(e){ e.classList.add("doubt"); return; }
+    // La grille n'est pas un <input> : le modele la designe par "dispos",
+    // "dispos Mercredi"... Sans ce cas, l'alerte la plus utile etait perdue.
+    if(id.startsWith("dispo") || id.startsWith("creneau") || id.startsWith("créneau")){
+      gridNotes.push(raw);
+    }
   });
+  const g = conf && typeof conf.grille === "number" ? conf.grille : null;
+  if(g !== null && g < 0.75) gridNotes.push("confiance grille " + Math.round(g*100) + " %");
+  const card = F("availCard"), warn = F("gridwarn");
+  if(gridNotes.length){
+    card.classList.add("doubt");
+    warn.textContent = "⚠️ Grille à vérifier de près — " + gridNotes.join(", ");
+  }
 }
 function updateReviewCount(){
   const n = players.filter(p => p.statut === "a_verifier").length;
   const e = F("nrev"); if(e) e.textContent = n;
 }
+const skipped = new Set();
+// Les fiches les moins sures d'abord : c'est la que la relecture rapporte le plus.
+function reviewList(){
+  return players.filter(p => p.statut === "a_verifier").sort((a,b) => {
+    const sa = skipped.has(a.id) ? 1 : 0, sb = skipped.has(b.id) ? 1 : 0;
+    if(sa !== sb) return sa - sb;
+    const ga = (a.confiance && a.confiance.grille), gb = (b.confiance && b.confiance.grille);
+    return (typeof ga === "number" ? ga : 1) - (typeof gb === "number" ? gb : 1);
+  });
+}
 function reviewNext(){
-  const list = players.filter(p => p.statut === "a_verifier");
+  const list = reviewList();
   if(!list.length){
     F("revbar").classList.remove("on"); reviewing = false;
     clearForm();
@@ -1071,8 +1104,8 @@ F("revQuit").onclick = () => {
   reviewing = false; F("revbar").classList.remove("on"); clearForm();
 };
 F("revSkip").onclick = () => {
-  const list = players.filter(p => p.statut === "a_verifier");
-  if(list.length > 1){ players.push(players.splice(players.indexOf(list[0]),1)[0]); }
+  const list = reviewList();
+  if(list.length) skipped.add(list[0].id);
   reviewNext();
 };
 F("revOk").onclick = async () => {
