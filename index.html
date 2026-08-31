@@ -229,6 +229,43 @@
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .textcard{flex:none;padding:9px 12px}
   .textcard .f{margin-bottom:5px}
+
+  /* --- Demandes (avec / sans / profs) ---------------------------------
+     Quatre sous-champs dans un seul bloc .f : le marquage « a verifier »
+     se pose sur le bloc entier, comme pour les autres champs, et les
+     quatre lignes restent a la meme place d'une fiche a l'autre. */
+  .dmd .sub{font-size:11.5px;font-weight:700;color:#6b7683;margin:4px 0 2px;
+    display:flex;align-items:center;gap:5px}
+  .dmd .sub.no{color:#8a3417}
+  .tok{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:34px;
+    border:1.5px solid #c8d0c8;border-radius:7px;padding:4px 5px;background:#fff}
+  .tok input{border:0!important;outline:0;height:24px!important;font-size:15px!important;
+    padding:0 3px!important;flex:1;min-width:82px;background:transparent}
+  .tok.no{border-color:#e0bfb4;background:#fffaf8}
+  .tk{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:600;
+    background:#e7ebe6;color:#28352b;border-radius:5px;padding:2px 4px 2px 7px;max-width:100%}
+  .tok.no .tk{background:#f6ded6;color:#6d2a11}
+  /* un nom qui ne correspond a aucune fiche : garde tel quel, mais dit qu'il
+     ne pointe sur personne — le solveur, lui, l'ignorera */
+  .tk.libre{background:#fff;border:1.5px dashed #b6c0b6;color:#4a544c;font-weight:500}
+  .tk b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tk button{border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;
+    padding:0 3px;color:inherit;opacity:.65;height:auto}
+  .tk button:hover{opacity:1}
+  .profrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:34px;padding:3px 0}
+  .pf{font-size:14px;font-weight:600;padding:4px 9px;border-radius:14px;cursor:pointer;
+    border:1.5px solid #c8d0c8;background:#fff;color:#4a544c;height:auto}
+  .pf:hover{border-color:#8a978c}
+  .pf.on{background:var(--accent,#2f7a4f);border-color:var(--accent,#2f7a4f);color:#fff}
+  .profrow.no .pf.on{background:#a33d18;border-color:#a33d18}
+  /* un prenom qui designe a la fois un prof et un adherent : la machine ne
+     peut pas trancher, la relectrice si — avec la fiche sous les yeux */
+  .amb{font-size:13px;background:#fffdf4;border:1.5px solid #e0c98a;border-radius:7px;
+    padding:5px 8px;margin-top:5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .amb b{font-weight:700}
+  .amb button{font-size:13px;padding:3px 9px;border-radius:5px;height:auto;
+    border:1.5px solid #c8d0c8;background:#fff;cursor:pointer}
+  .f.doubt .tok{border-color:#c79014;border-left:5px solid #c79014;background:#fffdf4}
   .actionrow{display:flex;gap:11px;align-items:center;margin-top:auto;
     position:sticky;bottom:0;background:var(--bg);padding:6px 0 0;z-index:2}
   .actionrow .big{flex:1;height:54px;border-radius:10px;font-size:19px;font-weight:700}
@@ -274,6 +311,208 @@
   .toast button{background:none;border:none;color:#8fe0b3;font-weight:700;font-size:16px;
     border-bottom:2px solid #8fe0b3;border-radius:0;padding:0 0 2px;cursor:pointer}
   .toast button:hover{color:#fff;border-color:#fff}
+  /* =====================================================================
+     GROUPES ET EMPLOI DU TEMPS
+     Ecran de constitution des groupes. Tout est prefixe .gr pour ne pas
+     entrer en collision avec la saisie des fiches, qui partage la page.
+     ===================================================================== */
+  .tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:20px;
+    border-color:#b7d6c5;background:linear-gradient(180deg,#fbfdfc,#f4faf6)}
+  .tile.wide:hover{border-color:var(--accent)}
+  .tile.wide .ic{font-size:30px}
+  .tile.wide .tx{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
+  .tile.wide .go{background:var(--accent);color:#fff;border-radius:9px;height:48px;padding:0 22px;
+    font-size:17px;font-weight:700;display:flex;align-items:center;gap:9px;flex:none;margin:0}
+
+  .grbody{flex:1;min-height:0;display:grid;grid-template-columns:1fr 330px}
+  .grmain{min-width:0;display:flex;flex-direction:column;min-height:0}
+  .grside{border-left:1px solid var(--line);background:var(--panel);display:flex;
+    flex-direction:column;min-height:0}
+  #scGroupes .topbar{gap:10px}
+  .grsearch{position:relative}
+  .grsearch input{font:inherit;font-size:13px;width:190px;height:32px;padding:0 10px;
+    border:1px solid var(--line);border-radius:8px;background:#fff}
+  .grsearch input:focus{outline:none;border-color:var(--accent);width:230px}
+  .grsres{position:absolute;top:36px;right:0;width:300px;background:#fff;border:1px solid var(--line);
+    border-radius:9px;box-shadow:0 10px 30px rgba(31,42,55,.16);z-index:40;max-height:300px;
+    overflow:auto;display:none;padding:4px}
+  .grsres.on{display:block}
+  .grsres button{display:flex;width:100%;text-align:left;border:none;border-radius:6px;
+    padding:7px 9px;background:none;gap:8px;align-items:center}
+  .grsres button:hover{background:#f2f5f8}
+  .grsres .n{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grsres .w{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .grsres .none{padding:10px;font-size:12.5px;color:var(--muted)}
+  .grpills{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow:auto;max-width:320px}
+  .grpill{font-size:12.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);
+    background:#fff;color:var(--muted);cursor:pointer;white-space:nowrap;height:auto}
+  .grpill.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .grpill.val{border-color:var(--accent);background:var(--accent-soft);color:#14512f;font-weight:600}
+  .grpill.on.val{background:#14512f;border-color:#14512f;color:#fff}
+  .grpills input{font:inherit;font-size:12.5px;height:26px;width:140px;padding:0 8px;
+    border:1px solid var(--accent);border-radius:20px}
+
+  .grsum{flex:none;background:var(--panel);border-bottom:1px solid var(--line);
+    padding:9px 16px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .grk{display:flex;flex-direction:column;line-height:1.15}
+  .grk b{font-size:19px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+  .grk span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .grk .up{color:var(--accent);font-size:12px;font-weight:600}
+  .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .grkeys span{display:flex;align-items:center;gap:5px}
+  .grkeys i{width:9px;height:9px;border-radius:2px;flex:none}
+
+  .grfil{flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 14px;
+    background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px}
+  .grfil .g{display:flex;gap:4px;align-items:center}
+  .grfil .lb{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .grchip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 10px;
+    font-size:12px;cursor:pointer;color:var(--muted);height:auto}
+  .grchip:hover{border-color:var(--accent)}
+  .grchip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .grfil select{font-size:12px;padding:3px 6px;height:26px;width:auto}
+  .grfil .cnt{margin-left:auto;color:var(--muted);font-size:12px}
+
+  .grwrap{flex:1;min-height:0;overflow:auto;padding:0 12px 12px}
+  .grweek{display:grid;min-width:1080px}
+  .grhead{position:sticky;top:0;z-index:5;background:var(--bg);padding:7px 4px 5px;text-align:center;
+    border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+  .grhead b{font-size:13px;display:block}
+  .grhead em{font-style:normal;font-size:11px;color:var(--muted);display:block;margin-top:1px}
+  .grhead.locked em{color:#2f5597;font-weight:600}
+  .grgut{position:relative}
+  .grgut i{position:absolute;right:6px;font-size:10.5px;color:var(--muted);font-style:normal;
+    transform:translateY(-50%);font-variant-numeric:tabular-nums}
+  .grcol{position:relative;border-left:1px solid #e7ebf0}
+  .grline{position:absolute;left:0;right:0;border-top:1px solid #eef1f4;pointer-events:none}
+  .grclosed{position:absolute;left:0;right:0;opacity:.55;
+    background:repeating-linear-gradient(45deg,var(--blocked),var(--blocked) 3px,#e2e6ec 3px,#e2e6ec 6px)}
+  .grclosed em{position:absolute;top:3px;left:5px;font-size:10px;font-style:normal;color:#5a6470;
+    background:rgba(255,255,255,.8);padding:0 4px;border-radius:3px}
+
+  .grc{position:absolute;border:1px solid var(--line);background:#fff;border-radius:6px;
+    padding:3px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;line-height:1.25;
+    border-left:3px solid #cfd6dd}
+  .grc:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(31,42,55,.13);z-index:4}
+  .grc.grab{cursor:grab}
+  .grc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);z-index:6}
+  .grc b{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grc .l2{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grc .lk{position:absolute;top:2px;right:3px;font-size:11px;opacity:0;line-height:1}
+  .grc:hover .lk{opacity:.4}
+  .grc.f1,.grc.f2{background:#e8eef8;border-color:#b9c9e3;border-left-color:#2f5597}
+  .grc.f1 .lk,.grc.f2 .lk{opacity:1}
+  .grc.f2{box-shadow:inset 0 0 0 1px #b9c9e3}
+  .grc.manuel{border-left-color:#7a4fb5}
+  .grc.dim{opacity:.22}
+  .grc.cible{border-color:var(--accent);box-shadow:0 0 0 2px #9ed3b7;background:var(--accent-soft)}
+  .grc.plein{border-color:#e0a000;box-shadow:0 0 0 2px #f2ddaa}
+  .grc.trouve{border-color:var(--ink);box-shadow:0 0 0 3px #ffd66e}
+  .grc.ghosted{opacity:.25}
+  .grc .tg{position:absolute;bottom:2px;right:3px;font-size:9px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--muted)}
+
+  .grghost{position:fixed;z-index:200;pointer-events:none;border-radius:6px;padding:3px 5px;
+    font-size:10.5px;line-height:1.25;background:#fff;border:2px solid var(--accent);
+    box-shadow:0 8px 24px rgba(31,42,55,.3);overflow:hidden}
+  .grghost.ko{border-color:var(--warn)}
+  .grhint{position:fixed;z-index:201;pointer-events:none;background:#17211c;color:#fff;font-size:12px;
+    padding:6px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+  .grhint.ko{background:#7a2020}
+  .grhint em{font-style:normal;color:#9aa79e;margin-left:6px}
+  .grzone{position:absolute;left:0;right:3px;border:2px dashed var(--accent);border-radius:6px;
+    background:rgba(31,122,77,.09);pointer-events:none;z-index:3}
+  .grzone.ko{border-color:var(--warn);background:rgba(178,59,59,.09)}
+
+  .grmove{flex:none;display:flex;align-items:center;gap:12px;padding:8px 14px;background:#fff8e6;
+    border-bottom:1px solid #f0d79a;font-size:13px;color:#6b4d00}
+  .grmove.ko{background:#fdeaea;border-color:#e6c2c2;color:#7a2020}
+  .grmove .sp{flex:1}
+
+  .grprofs{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:6px 12px;
+    display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .grprofs .lb{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .grpb{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;
+    padding:4px 9px;background:#fff;font-size:12px;line-height:1.3;cursor:pointer;height:auto}
+  .grpb:hover{border-color:var(--accent)}
+  .grpb.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+  .grpb b{font-size:12.5px}
+  .grpb .g{width:46px;height:6px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
+  .grpb .g s{display:block;height:100%;background:var(--accent);text-decoration:none}
+  .grpb .v{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+  .grpb.plein .g s{background:#c79014}
+  .grpb.over{border-color:var(--warn);background:#fdeaea}
+  .grpb.over .g s{background:var(--warn)}
+  .grpb.over .v{color:var(--warn);font-weight:700}
+  .grpd{flex:none;background:#fbfcfd;border-top:1px solid var(--line);padding:7px 14px;
+    display:flex;gap:16px;flex-wrap:wrap;font-size:12px;align-items:center}
+  .grpd .d{display:flex;align-items:center;gap:6px}
+  .grpd .d em{font-style:normal;color:var(--muted);min-width:62px}
+  .grpd .d .g{width:54px;height:6px;border-radius:3px;background:#e7ebf0;overflow:hidden}
+  .grpd .d .g s{display:block;height:100%;background:var(--accent);text-decoration:none}
+  .grpd .d.plein .g s{background:#c79014}
+  .grpd .d.over .g s{background:var(--warn)}
+  .grpd .d.over span{color:var(--warn);font-weight:700}
+  .grpd .d.off{opacity:.45}
+
+  .grbar{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .grbar .tx{flex:1;min-width:200px;font-size:13.5px;line-height:1.35}
+  .grbar .tx em{font-style:normal;color:var(--muted);display:block;font-size:12px;margin-top:1px}
+  .grbar .big{height:44px;padding:0 20px;font-size:15px;border-radius:9px}
+  .grbar .nb{font-weight:700;color:#2f5597}
+
+  .grsh{flex:none;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:8px}
+  .grsh b{font-size:14px}
+  .grsh .sub{font-size:11.5px;color:var(--muted)}
+  .grsb{flex:1;min-height:0;overflow:auto;padding:8px 12px 14px}
+  .grp{padding:7px 8px;border-radius:7px;border:1px solid transparent;cursor:pointer;
+    display:flex;gap:8px;align-items:flex-start}
+  .grp:hover{background:#f7f9fa;border-color:var(--line)}
+  .grp.on{background:var(--accent-soft);border-color:#b7d6c5}
+  .grp .niv{flex:none;min-width:19px;text-align:center;background:#eef1f4;border-radius:4px;
+    font-size:10.5px;font-weight:700;padding:2px 4px;color:#495260;margin-top:1px}
+  .grp .tx{min-width:0;flex:1}
+  .grp b{font-size:13px;font-weight:600;display:block}
+  .grp .why{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;line-height:1.35}
+  .grseg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 4px}
+  .grseg button{flex:1;border:none;border-radius:0;padding:8px 4px;font-size:12px;background:#fff;
+    border-right:1px solid var(--line);color:var(--muted);height:auto}
+  .grseg button:last-child{border-right:none}
+  .grseg button.on{background:#2f5597;color:#fff;font-weight:600}
+  .grm{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f0f2f5}
+  .grm:last-child{border-bottom:none}
+  .grm.ep{background:#e8eef8;border-radius:6px}
+  .grm .nm{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grm .act{opacity:0;display:flex;gap:4px}
+  .grm:hover .act,.grm.ep .act{opacity:1}
+  .grm .act button,.grm .pin{border:1px solid var(--line);background:#fff;border-radius:6px;
+    padding:2px 7px;font-size:11.5px;color:var(--muted);height:auto;line-height:1.5}
+  .grm .pin.on{background:#e8eef8;border-color:#2f5597;color:#2f5597}
+  .grnote{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 0}
+
+  .grempty{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+  .grcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 32px;
+    width:min(720px,100%);box-shadow:0 10px 34px rgba(31,42,55,.07)}
+  .grcard h2{font-size:22px;margin:0 0 6px;font-weight:700;letter-spacing:-.01em;
+    text-transform:none;color:var(--ink);letter-spacing:normal}
+  .grcard .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .grfile{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .grfile > div{display:flex;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);
+    font-size:13.5px;align-items:center;flex-wrap:wrap}
+  .grfile > div:last-child{border-bottom:none}
+  .grfile .lab{width:118px;flex:none;color:var(--muted);font-size:12.5px}
+  .grfile .val{flex:1 1 230px;min-width:0}
+  .grfile .fic{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .grfile .acts{flex:none;margin-left:auto}
+  .grfile .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
+  .grok{color:var(--accent);font-size:12px;font-weight:600;margin-right:8px}
+  .grerr{color:var(--warn);font-size:12.5px;margin:8px 0 0}
+  @media(max-width:900px){
+    .grbody{grid-template-columns:1fr}
+    .grside{border-left:none;border-top:1px solid var(--line);max-height:260px}
+  }
 </style>
 </head>
 <body class="locked">
@@ -328,6 +567,14 @@
         <span class="ic">⬇︎</span>
         <b id="tExportN">Télécharger l'Excel</b>
         <span>Toutes les fiches enregistrées, prêtes pour le classeur des groupes.</span>
+      </button>
+      <button class="tile wide" id="tGroupes">
+        <span class="ic">🗓</span>
+        <span class="tx">
+          <b>Constituer les groupes et l'emploi du temps</b>
+          <span id="tGroupesSub">Aucun résultat de calcul importé pour l'instant.</span>
+        </span>
+        <span class="go" id="tGroupesGo">Ouvrir →</span>
       </button>
     </div>
     <div class="homefoot">
@@ -419,6 +666,34 @@
           <label for="obs">Observations <span class="src">adhérent</span> <span class="pill">À vérifier</span></label>
           <textarea id="obs" rows="3" placeholder="rien sur la fiche"></textarea>
         </div>
+        <!-- Ce que l'adherent demande, deduit du texte des observations puis
+             corrige ici. C'est la seule etape ou quelqu'un peut dire si
+             « Lucas » est le prof ou l'adherent : la fiche est sous les yeux. -->
+        <div class="f dmd" id="dmdBlock">
+          <label>Demandes <span class="src">déduit des observations</span> <span class="pill">À vérifier</span></label>
+          <div class="two">
+            <div>
+              <div class="sub">Avec ces adhérents</div>
+              <div class="tok" id="tokAvec"></div>
+            </div>
+            <div>
+              <div class="sub no">Pas avec</div>
+              <div class="tok no" id="tokSans"></div>
+            </div>
+          </div>
+          <div class="two">
+            <div>
+              <div class="sub">Prof souhaité</div>
+              <div class="profrow" id="profOk"></div>
+            </div>
+            <div>
+              <div class="sub no">Prof à éviter</div>
+              <div class="profrow no" id="profNon"></div>
+            </div>
+          </div>
+          <div id="dmdAmbigus"></div>
+          <datalist id="dlJoueurs"></datalist>
+        </div>
         <div class="two">
           <div class="f">
             <label for="hors_champ">Hors champ <span class="src">adhérent</span> <span class="pill">À vérifier</span></label>
@@ -468,6 +743,57 @@
     <button id="bigClose">✕ Fermer</button>
   </div>
   <div class="bigwrap" id="bigWrap"><img id="bigImg" alt="fiche en grand"></div>
+</div>
+
+
+<!-- ============== GROUPES ET EMPLOI DU TEMPS ============== -->
+<div class="screen" id="scGroupes">
+  <div class="topbar">
+    <button class="mini" id="grHome">← Accueil</button>
+    <span class="brand">Groupes et EDT</span>
+    <span class="badge" id="grBadge"></span>
+    <span class="spacer"></span>
+    <span class="grsearch" id="grSearch" style="display:none">
+      <input id="grQ" type="search" placeholder="Chercher un joueur…" autocomplete="off">
+      <div class="grsres" id="grSres"></div>
+    </span>
+    <span class="grpills" id="grPills"></span>
+    <button class="mini" id="grExport" disabled>⬇︎ Excel</button>
+  </div>
+
+  <!-- rien d'importe -->
+  <div class="grempty" id="grEmpty">
+    <div class="grcard">
+      <h2>Le résultat du calcul</h2>
+      <p class="sub">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
+        qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.</p>
+      <div class="grfile" id="grFiles"></div>
+      <p class="grerr" id="grErr"></p>
+      <p class="hint">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
+        puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
+    </div>
+  </div>
+
+  <!-- resultat -->
+  <div class="grbody" id="grView" style="display:none">
+    <div class="grmain">
+      <div class="grsum" id="grSum"></div>
+      <div class="grfil" id="grFil"></div>
+      <div class="grmove" id="grMove" style="display:none"></div>
+      <div class="grwrap"><div class="grweek" id="grWeek"></div></div>
+      <div class="grpd" id="grPd" style="display:none"></div>
+      <div class="grprofs" id="grProfs"></div>
+      <div class="grbar">
+        <div class="tx" id="grBarTx"></div>
+        <button class="mini" id="grAll">Tout figer</button>
+        <button class="primary big" id="grFig">⬇︎ Figeages</button>
+      </div>
+    </div>
+    <div class="grside">
+      <div class="grsh" id="grSh"></div>
+      <div class="grsb" id="grSb"></div>
+    </div>
+  </div>
 </div>
 
 <!-- filet de securite : six secondes pour revenir en arriere -->
@@ -790,6 +1116,8 @@ function applyFiche(f){
   set("email",f.email); set("niveau",f.niveau); set("obs",f.obs);
   set("annotations",f.annotations); set("hors_champ",f.hors_champ);
   autoGrowAll();
+  // les observations viennent d'etre lues : on en tire les demandes tout de suite
+  chargerDemandes(null);
   if(Array.isArray(f.dispos)) fillDispos(f.dispos);
 }
 async function extractFiche(){
@@ -843,6 +1171,384 @@ document.getElementById("chg").onclick=()=>file.click();
 const F=id=>document.getElementById(id);
 const TEXT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","portable",
                   "email","niveau","obs","annotations","hors_champ"];
+
+/* =====================================================================
+   Demandes : « avec Pascale Magois », « pas avec Valentin », « prof Loïc »
+
+   Les adherents ecrivent leurs demandes en clair dans les observations. On
+   les propose ici sous forme structuree, et la relectrice tranche. Deux
+   choses que le texte seul ne permet pas de decider, et que quelqu'un qui a
+   la fiche sous les yeux decide en une seconde :
+
+     - prof ou adherent ? « Loic » est sans ambiguite, « Lucas » non : c'est
+       aussi le prenom d'un adherent (VAYSSIE Lucas). Idem « Maxence ».
+     - quel adherent ? « Pascale » seul peut viser MAGOIS ou MICHAUDEL.
+
+   Sur un doute, on ne devine pas : on affiche les deux choix. `sans` et
+   `prof_refuse` sont des contraintes DURES cote solveur — un faux positif
+   n'y coute pas une preference ratee, mais une place introuvable.
+   ===================================================================== */
+
+// Les profs, tels qu'ils figurent dans l'onglet Profs de contraintes-tennis.xlsx.
+// Si Loïc en ajoute un, c'est la seule ligne a changer ici.
+const PROFS = ["Loïc","Seb","Titi","Max","Valentin","Lucas"];
+const ALIAS_PROFS = {
+  "Loïc":["loic"], "Seb":["seb","sebastien"], "Titi":["titi"],
+  "Max":["max","maxence"], "Valentin":["valentin"], "Lucas":["lucas"],
+};
+const D_SEUIL = 0.86;          // ressemblance minimale pour rapprocher deux noms
+const D_PORTEE = 6;            // un « pas » ne vaut que pour les 6 mots qui suivent
+const D_REFUS = new Set(["pas","sans","jamais","eviter","evite"]);
+// La polarite ne franchit pas ces separateurs : « avec Sébastien (pas le mardi)
+// et Julie » ne doit pas refuser Julie.
+const D_COUPURES = /[.!?;·\n()*]+|\s\/\s|\bmais\b/;
+// Notre propre export ajoute « — Préférences : 1) Mardi 18h–20h · … » a partir
+// des rangs de la grille. Ce n'est pas de l'ecriture de l'adherent, et ca noie
+// la deduction sous des noms de jours.
+const D_SUFFIXE = /—?\s*Pr[ée]f[ée]rences?\s*:[\s\S]*$/i;
+// Mots capitalises qui ne sont jamais des noms de personnes (debuts de phrase,
+// jours, mois). Sans cette liste, « Cette année » devient ANNE et « Merci »
+// se met a ressembler a un patronyme.
+const D_BANALS = new Set(("lundi mardi mercredi jeudi vendredi samedi dimanche "
+  + "janvier fevrier mars avril juin juillet aout septembre octobre novembre "
+  + "decembre preference preferences souhaite souhaiterais idealement possible "
+  + "possibilite changement merci preneur groupe groupes cours temporairement "
+  + "svp avec sans meme memes matin soir aprem apres midi annee saison tennis "
+  + "club pack adhesion horaire horaires creneau creneaux semaine bonjour bien "
+  + "tres plus tout tous toute toutes desolee desole disponible ideal pratique "
+  + "prelevement equipe match matchs").split(" "));
+// Un prenom isole et non reconnu ne compte que s'il suit un de ces mots.
+// « avec Alice » designe quelqu'un ; « en Vendée » et « - NIORT » non.
+const D_CUES = new Set(["avec","et","ou","que","sans","pas","team","groupe",
+                        "equipe","connais","cote","plus"]);
+// Un point apres une initiale (« Thibaut M. », « D. Vidal ») n'est pas une fin
+// de phrase : on le met de cote avant de decouper, et on le remet a l'affichage.
+const D_PT = "\u0001";
+
+const dNrm = s => String(s||"").toLowerCase().normalize("NFD")
+                    .replace(/[̀-ͯ]/g,"");
+// Les mots d'un texte, avec leur graphie d'origine et leur position : la
+// majuscule initiale est le seul indice fiable qu'un mot est un nom propre,
+// et la position sert a savoir si deux mots se touchent (« Pascale Magois »).
+function dMots(s){
+  const out=[], re=/[A-Za-zÀ-ÿ][\wÀ-ÿ'-]*/g;
+  let m;
+  while((m=re.exec(String(s||"")))!==null) out.push({brut:m[0], m:dNrm(m[0]), i:m.index});
+  return out.filter(o=>o.m);
+}
+// Ressemblance entre deux mots, approximation de difflib.SequenceMatcher.ratio
+// (2 x sous-suite commune / longueur totale). C'est ce qui rattrape « Vignerie »
+// -> VIGUERIE, « Bouhiou » -> BOUTIRON, « Hourdusse » -> HOUDUSSE.
+function dRatio(a,b){
+  const n=a.length, m=b.length;
+  if(!n || !m) return 0;
+  let prev=new Array(m+1).fill(0), cur=new Array(m+1).fill(0);
+  for(let i=1;i<=n;i++){
+    cur[0]=0;
+    for(let j=1;j<=m;j++)
+      cur[j] = a[i-1]===b[j-1] ? prev[j-1]+1 : Math.max(prev[j],cur[j-1]);
+    const t=prev; prev=cur; cur=t;
+  }
+  return 2*prev[m]/(n+m);
+}
+function dApparier(mot, table){
+  if(table.has(mot)) return table.get(mot);
+  let best=null, score=0;
+  table.forEach((id,cle)=>{
+    const s=dRatio(mot,cle);
+    if(s>=D_SEUIL && s>score){ score=s; best=id; }
+  });
+  return best;
+}
+const dNomDe = p => ((p.prenom||"")+" "+(p.nom||"")).trim();
+// Patronymes -> fiche, et prenoms -> fiche mais SEULEMENT s'ils sont uniques :
+// avec deux Pascale et deux Aude au club, un prenom seul ne designe personne.
+function dIndex(){
+  const noms=new Map(), parId=new Map(), vus=new Map();
+  players.forEach(p=>{
+    parId.set(p.id, dNomDe(p));
+    dMots(p.nom).forEach(o=>{ if(o.m.length>=4 && !noms.has(o.m)) noms.set(o.m,p.id); });
+  });
+  players.forEach(p=>{
+    dMots(p.prenom).forEach(o=>{
+      if(o.m.length<4) return;
+      if(!vus.has(o.m)) vus.set(o.m,new Set());
+      vus.get(o.m).add(p.id);
+    });
+  });
+  const prenoms=new Map();
+  vus.forEach((ids,m)=>{ if(ids.size===1 && !noms.has(m)) prenoms.set(m,[...ids][0]); });
+  return {noms, prenoms, parId};
+}
+
+const dProf = m => PROFS.find(p=>ALIAS_PROFS[p].indexOf(m)>=0) || null;
+
+function deduireDemandes(obs, moiId){
+  const r={avec:[], sans:[], prof_souhaite:[], prof_refuse:[], ambigus:[]};
+  const {noms, prenoms, parId} = dIndex();
+  const vus=new Set();
+  String(obs||"").replace(D_SUFFIXE,"")
+    .replace(/(^|[^A-Za-zÀ-ÿ])([A-ZÀ-Þ])\./g, "$1$2"+D_PT)
+    .split(D_COUPURES).forEach(prop=>{
+    if(!prop || !prop.trim()) return;
+    const suite=dMots(prop);
+    // Les noms propres qui se touchent forment une seule personne : « Pascale
+    // Magois » est une demande, pas deux. Sans ce regroupement, « Pascale »
+    // (deux adherentes portent ce prenom, donc non attribuable) produisait une
+    // etiquette parasite a cote de la bonne.
+    const groupes=[];
+    let refus=-99, cour=null;
+    suite.forEach((o,pos)=>{
+      if(D_REFUS.has(o.m)){ refus=pos; cour=null; return; }
+      const propre = /^[A-ZÀ-Þ]/.test(o.brut) && !D_BANALS.has(o.m);
+      if(!propre){ cour=null; return; }
+      // colle au precedent s'il n'y a entre eux que des espaces (et le point
+      // d'une initiale, mis de cote plus haut)
+      const entre = cour ? prop.slice(cour.fin, o.i) : null;
+      if(cour && /^[ \t \u0001]*$/.test(entre)) cour.mots.push(o);
+      else{
+        cour={mots:[o], pos, avant: pos>0 ? suite[pos-1].m : null,
+              neg:(pos-refus)<=D_PORTEE};
+        groupes.push(cour);
+      }
+      cour.fin = o.i + o.brut.length;
+      cour.finPos = pos;
+    });
+
+    let retenu=false;                  // le groupe precedent a-t-il ete garde ?
+    groupes.forEach((g,ig)=>{
+      const texte = prop.slice(g.mots[0].i, g.fin).replace(/\u0001/g,".").trim();
+      const utiles = g.mots.filter(o=>o.m.length>=2);
+      const profs = utiles.map(o=>dProf(o.m)).filter(Boolean);
+      const cle = dNrm(texte)+"|"+g.neg;
+      if(vus.has(cle)) return;
+      vus.add(cle);
+      // Un patronyme designe quelqu'un mieux qu'un prenom : « Marie Laure Viel »
+      // vise VIEL, pas la seule autre Laure du fichier.
+      let jid=null;
+      for(const o of g.mots){ if(!jid && o.m.length>=4) jid=dApparier(o.m,noms); }
+      for(const o of g.mots){ if(!jid && o.m.length>=4) jid=dApparier(o.m,prenoms); }
+      if(jid===moiId){ retenu=false; return; }    // on ne se cite pas soi-meme
+
+      // Tous les mots sont des prenoms de profs : « Maxence Lucas et Seb ».
+      if(profs.length===utiles.length && profs.length){
+        profs.forEach((p,i)=>{
+          const mot=utiles[i], autre=dApparier(mot.m,prenoms)||dApparier(mot.m,noms);
+          if(autre && autre!==moiId)
+            r.ambigus.push({mot:mot.brut, prof:p, id:autre, nom:parId.get(autre), neg:g.neg});
+          else (g.neg?r.prof_refuse:r.prof_souhaite).push(p);
+        });
+        retenu=true; return;
+      }
+      if(jid && profs.length){
+        r.ambigus.push({mot:texte, prof:profs[0], id:jid, nom:parId.get(jid), neg:g.neg});
+        retenu=false; return;
+      }
+      if(jid){
+        (g.neg?r.sans:r.avec).push({id:jid, nom:parId.get(jid)});
+        retenu=true; return;
+      }
+      if(profs.length){
+        profs.forEach(p=>(g.neg?r.prof_refuse:r.prof_souhaite).push(p));
+        retenu=true; return;
+      }
+      // Un nom propre qu'aucune fiche ne porte : on le garde tel quel plutot que
+      // de le perdre — le solveur l'ignorera, le club saura de qui il s'agit.
+      // Un mot SEUL ne compte que s'il suit « avec », « et », « ou »…, ou s'il
+      // prolonge une enumeration deja commencee (« avec Aude, Géraldine,
+      // Pascale ») : sinon « en Vendée » et « Comme l'an dernier » deviennent
+      // des adherents.
+      const suite_liste = ig>0 && groupes[ig-1].finPos===g.pos-1 && retenu;
+      retenu=false;
+      if(g.mots.length===1 && !suite_liste
+         && (g.avant===null || !D_CUES.has(g.avant))) return;
+      if(texte.replace(/[^A-Za-zÀ-ÿ]/g,"").length>=4){
+        (g.neg?r.sans:r.avec).push({id:null, nom:texte});
+        retenu=true;
+      }
+    });
+  });
+  const uniqP = a => a.filter((x,i)=>a.indexOf(x)===i);
+  r.prof_souhaite=uniqP(r.prof_souhaite); r.prof_refuse=uniqP(r.prof_refuse);
+  // Un prof cite des deux cotes, ou une personne citee des deux cotes : le refus
+  // l'emporte. « Pas en même temps que Thibault - VERREZ » cite Thibault Verrez
+  // deux fois, une seule fois dans la portee du « pas ».
+  r.prof_souhaite=r.prof_souhaite.filter(p=>r.prof_refuse.indexOf(p)<0);
+  const dedup = l => l.filter((e,i)=>l.findIndex(x=>(x.id||x.nom)===(e.id||e.nom))===i);
+  r.sans=dedup(r.sans);
+  r.avec=dedup(r.avec).filter(e=>!r.sans.some(s=>(s.id||s.nom)===(e.id||e.nom)));
+  return r;
+}
+
+/* ---------- etat et affichage du bloc « Demandes » ---------- */
+let dmd = {avec:[], sans:[], prof_souhaite:[], prof_refuse:[]};
+let dmdAmb = [];        // ambiguites prof/adherent non tranchees
+let dmdDeduit = false;  // la fiche affichee porte une deduction pas encore validee
+// La colonne arrive par migration, comme niveau_club : tant qu'elle n'est pas
+// passee, l'envoyer ferait echouer TOUT l'enregistrement.
+let hasDemandes = false;
+async function checkDemandes(){
+  const { error } = await sb.from("fiches").select("avec").limit(1);
+  hasDemandes = !error;
+  const b=F("dmdBlock");
+  if(b && !hasDemandes){
+    b.style.opacity=".55"; b.style.pointerEvents="none";
+    const lab=b.querySelector("label");
+    if(lab) lab.insertAdjacentHTML("beforeend",
+      ' <span class="src" style="background:#f3d9d3;color:#8a3417">migration à passer</span>');
+  }
+}
+
+const dListe = arr => Array.isArray(arr) ? arr : [];
+function dEntrees(v){                     // jsonb -> [{id,nom}], tolerant
+  return dListe(v).map(e => typeof e==="string" ? {id:null, nom:e}
+                                                : {id:e&&e.id||null, nom:(e&&e.nom)||""})
+                  .filter(e=>e.nom);
+}
+function dAjouter(champ, texte){
+  const t=String(texte||"").trim();
+  if(!t) return;
+  const exact = players.find(p=>dNomDe(p).toLowerCase()===t.toLowerCase());
+  let e;
+  if(exact) e={id:exact.id, nom:dNomDe(exact)};
+  else{
+    const {noms,prenoms,parId}=dIndex();
+    let jid=null;
+    dMots(t).forEach(o=>{ if(!jid && o.m.length>=4) jid=dApparier(o.m,noms)||dApparier(o.m,prenoms); });
+    e = jid ? {id:jid, nom:parId.get(jid)} : {id:null, nom:t};
+  }
+  const cle = e.id||e.nom;
+  if(!dmd[champ].some(x=>(x.id||x.nom)===cle)) dmd[champ].push(e);
+  const autre = champ==="avec" ? "sans" : "avec";
+  dmd[autre]=dmd[autre].filter(x=>(x.id||x.nom)!==cle);
+  renderDemandes();
+}
+function dRenderTok(id, champ){
+  const box=F(id); if(!box) return;
+  box.querySelectorAll(".tk").forEach(e=>e.remove());
+  const inp=box.querySelector("input");
+  dmd[champ].forEach((e,i)=>{
+    const el=document.createElement("span");
+    el.className="tk"+(e.id?"":" libre");
+    el.innerHTML='<b></b><button type="button" title="Retirer">×</button>';
+    el.querySelector("b").textContent=e.nom;
+    el.querySelector("button").onclick=()=>{ dmd[champ].splice(i,1); renderDemandes(); };
+    if(!e.id){
+      // Un nom sans fiche : cliquer dessus le repasse dans la saisie, ou la
+      // liste des adherents s'ouvre. C'est le geste pour rattacher « Aude » a
+      // la bonne des deux Aude du club.
+      el.title="Aucune fiche à ce nom — cliquer pour le rattacher à un adhérent";
+      el.querySelector("b").style.cursor="pointer";
+      el.querySelector("b").onclick=()=>{
+        dmd[champ].splice(i,1); renderDemandes();
+        inp.value=e.nom; inp.focus(); inp.select();
+      };
+    }
+    box.insertBefore(el, inp);
+  });
+}
+function dRenderProfs(id, champ){
+  const box=F(id); if(!box) return;
+  box.innerHTML="";
+  const autre = champ==="prof_souhaite" ? "prof_refuse" : "prof_souhaite";
+  PROFS.forEach(p=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="pf"+(dmd[champ].indexOf(p)>=0?" on":"");
+    b.textContent=p;
+    b.onclick=()=>{
+      const i=dmd[champ].indexOf(p);
+      if(i>=0) dmd[champ].splice(i,1);
+      else{
+        dmd[champ].push(p);
+        const k=dmd[autre].indexOf(p); if(k>=0) dmd[autre].splice(k,1);
+      }
+      renderDemandes();
+    };
+    box.appendChild(b);
+  });
+}
+function dRenderAmb(){
+  const box=F("dmdAmbigus"); if(!box) return;
+  box.innerHTML="";
+  dmdAmb.forEach((a,i)=>{
+    const d=document.createElement("div");
+    d.className="amb";
+    const q=document.createElement("span");
+    q.innerHTML="⚠ « <b></b> » : le prof ou l’adhérent ?";
+    q.querySelector("b").textContent=a.mot;
+    d.appendChild(q);
+    const choix=(txt,fn)=>{
+      const b=document.createElement("button");
+      b.type="button"; b.textContent=txt;
+      b.onclick=()=>{ fn(); dmdAmb.splice(i,1); renderDemandes(); };
+      d.appendChild(b);
+    };
+    const prefixe = a.neg ? "pas " : "";
+    choix(prefixe+"le prof "+a.prof, ()=>{
+      const c=a.neg?"prof_refuse":"prof_souhaite";
+      if(dmd[c].indexOf(a.prof)<0) dmd[c].push(a.prof);
+    });
+    choix(prefixe+a.nom, ()=>dAjouter(a.neg?"sans":"avec", a.nom));
+    choix("ni l’un ni l’autre", ()=>{});
+    box.appendChild(d);
+  });
+}
+function renderDemandes(){
+  dRenderTok("tokAvec","avec"); dRenderTok("tokSans","sans");
+  dRenderProfs("profOk","prof_souhaite"); dRenderProfs("profNon","prof_refuse");
+  dRenderAmb();
+}
+// Charge les demandes d'une fiche, ou les deduit si personne ne les a encore vues.
+function chargerDemandes(p){
+  dmd={avec:dEntrees(p&&p.avec), sans:dEntrees(p&&p.sans),
+       prof_souhaite:dListe(p&&p.prof_souhaite).slice(),
+       prof_refuse:dListe(p&&p.prof_refuse).slice()};
+  dmdAmb=[]; dmdDeduit=false;
+  const vide = !dmd.avec.length && !dmd.sans.length
+            && !dmd.prof_souhaite.length && !dmd.prof_refuse.length;
+  if(vide && !(p && p.demandes_relues)){
+    const d=deduireDemandes(F("obs").value, p?p.id:null);
+    dmd.avec=d.avec; dmd.sans=d.sans;
+    dmd.prof_souhaite=d.prof_souhaite; dmd.prof_refuse=d.prof_refuse;
+    dmdAmb=d.ambigus;
+    dmdDeduit = !!(d.avec.length||d.sans.length||d.prof_souhaite.length
+                  ||d.prof_refuse.length||d.ambigus.length);
+  }
+  renderDemandes();
+  // une deduction n'est pas une lecture : elle se relit comme le reste
+  if(typeof marquerDemandes==="function") marquerDemandes(dmdDeduit);
+}
+// Les deux champs de noms : des etiquettes + une saisie libre completee par la
+// liste des fiches. Construits une fois, jamais reconstruits (le curseur reste).
+[["tokAvec","avec"],["tokSans","sans"]].forEach(function(paire){
+  const box=F(paire[0]), champ=paire[1];
+  if(!box) return;
+  const inp=document.createElement("input");
+  inp.setAttribute("list","dlJoueurs");
+  inp.autocomplete="off";
+  inp.placeholder = champ==="avec" ? "ajouter un nom…" : "personne";
+  inp.onfocus=()=>{                        // liste toujours a jour, sans la reconstruire a chaque frappe
+    const dl=F("dlJoueurs");
+    if(!dl) return;
+    dl.innerHTML="";
+    players.forEach(p=>{
+      if(p.id===editId) return;            // on ne se cite pas soi-meme
+      const o=document.createElement("option"); o.value=dNomDe(p); dl.appendChild(o);
+    });
+  };
+  inp.onkeydown=e=>{
+    if(e.key==="Enter"){ e.preventDefault(); dAjouter(champ,inp.value); inp.value=""; }
+    else if(e.key==="Backspace" && !inp.value && dmd[champ].length){
+      dmd[champ].pop(); renderDemandes();
+    }
+  };
+  inp.onchange=()=>{ if(inp.value.trim()){ dAjouter(champ,inp.value); inp.value=""; } };
+  inp.onblur  =()=>{ if(inp.value.trim()){ dAjouter(champ,inp.value); inp.value=""; } };
+  box.appendChild(inp);
+});
+renderDemandes();
+
 function readForm(){
   return {
     nom:F("nom").value.trim(), prenom:F("prenom").value.trim(), ddn:F("ddn").value.trim(),
@@ -857,6 +1563,11 @@ function readForm(){
     annotations:F("annotations").value.trim(),
     hors_champ:F("hors_champ").value.trim(),
     nouveau:F("nouveau").value==="1",
+    // `demandes_relues` marque que quelqu'un a vu ce bloc : sans lui, une
+    // deduction fausse qu'on efface reviendrait a la prochaine ouverture.
+    ...(hasDemandes ? {avec:dmd.avec, sans:dmd.sans,
+                       prof_souhaite:dmd.prof_souhaite, prof_refuse:dmd.prof_refuse,
+                       demandes_relues:true} : {}),
     avail:sel.map(c=>c.slice())
   };
 }
@@ -865,6 +1576,7 @@ function clearForm(){
   F("reglement").value=""; F("nouveau").value=""; F("niveau_club").value="";
   autoGrowAll();
   clearFlags();
+  chargerDemandes(null);
   sel=DAYS.map(()=>new Array(NSLOT).fill(false));
   curPhoto=null; editPhotoUrl=null;
   document.getElementById("pv").style.display="none"; document.getElementById("pimg").src="";
@@ -1044,6 +1756,7 @@ function edit(id){
   F("nouveau").value=p.nouveau?"1":"";
   autoGrowAll();
   flagDoubtful(p.confiance);
+  chargerDemandes(p);            // apres flagDoubtful : il remet le compteur a zero
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
   curPhoto=null; editPhotoUrl=p.photo_url||null;
   if(editPhotoUrl){
@@ -1101,16 +1814,23 @@ function exportXlsx(){
   // La colonne « Portable » tirait de p.tel (le fixe) : les numeros exportes
   // n'etaient pas ceux affiches. On lit portable, avec tel en dernier recours
   // pour les fiches anciennes.
-  const header=["Nom","Prénom","Date naissance","Portable","E-mail","Niveau (joueur)","Niveau (club)","Règlement","Nb créneaux","Disponibilités","Observations","Annotations","Hors champ","Saisi par","Photo"];
+  // Les demandes sortent en clair (« Pascale Magois ») et non en identifiants :
+  // ce fichier se lit, il ne se donne pas au solveur. Celui-ci passe par
+  // solveur/export_fiches.py, qui ecrit les id.
+  const noms = l => (Array.isArray(l)?l:[]).map(e=>(e&&e.nom)||e||"").filter(Boolean).join(" ; ");
+  const header=["Nom","Prénom","Date naissance","Portable","E-mail","Niveau (joueur)","Niveau (club)","Règlement","Nb créneaux","Disponibilités","Observations","Avec","Pas avec","Prof souhaité","Prof à éviter","Annotations","Hors champ","Saisi par","Photo"];
   const data=[header];
   players.forEach(p=>{
     const iv=intervalsText(p.avail||[]);
     data.push([p.nom,p.prenom,p.ddn||"",p.portable||p.tel||"",p.email||"",p.niveau||"",
                p.niveau_club||"",p.reglement||"",iv.length,iv.join(" ; "),p.obs||"",
+               noms(p.avec),noms(p.sans),
+               (p.prof_souhaite||[]).join(" ; "),(p.prof_refuse||[]).join(" ; "),
                p.annotations||"",p.hors_champ||"",p.saisi_par||"",p.photo_url||""]);
   });
   const ws=XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"]=[{wch:16},{wch:14},{wch:14},{wch:16},{wch:26},{wch:16},{wch:12},{wch:12},{wch:10},{wch:60},{wch:30},{wch:24},{wch:24},{wch:14},{wch:40}];
+  ws["!cols"]=[{wch:16},{wch:14},{wch:14},{wch:16},{wch:26},{wch:16},{wch:12},{wch:12},{wch:10},{wch:60},{wch:30},
+               {wch:26},{wch:26},{wch:16},{wch:16},{wch:24},{wch:24},{wch:14},{wch:40}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Fiches CCA");
   XLSX.writeFile(wb,"Recap_fiches_CCA_2027.xlsx");
@@ -1564,7 +2284,20 @@ function blockOf(id){ const e = F(id); return e ? e.closest(".f") : null; }
 function clearFlags(){
   DOUBT_IDS.forEach(id => { const b = blockOf(id); if(b) b.classList.remove("doubt"); });
   const card = F("availCard"); if(card) card.classList.remove("doubt");
+  const dm = F("dmdBlock"); if(dm) dm.classList.remove("doubt");
   nDoubt = 0; paintDoubtCount();
+}
+// Le bloc « Demandes » est le seul champ rempli par deduction et non par lecture
+// de la fiche : tant que personne ne l'a confirme, il compte comme une chose a
+// verifier, au meme titre qu'un champ que le modele a mal lu.
+function marquerDemandes(deduit){
+  const b = F("dmdBlock");
+  if(!b) return;
+  const avant = b.classList.contains("doubt");
+  b.classList.toggle("doubt", !!deduit);
+  if(deduit && !avant) nDoubt++;
+  else if(!deduit && avant) nDoubt = Math.max(0, nDoubt - 1);
+  paintDoubtCount();
 }
 function paintDoubtCount(){
   const b = F("ficheBadge");
@@ -1614,7 +2347,7 @@ function reviewList(){
 let revTotal = 0, revDone = 0;
 function showScreen(name){
   document.querySelectorAll(".screen").forEach(e=>e.classList.remove("on"));
-  const e = F(name === "accueil" ? "scAccueil" : "scFiche");
+  const e = F(name === "accueil" ? "scAccueil" : name === "groupes" ? "scGroupes" : "scFiche");
   if(e) e.classList.add("on");
   if(name === "accueil") updateCount();
 }
@@ -1777,6 +2510,7 @@ async function unlock(){
   document.body.classList.remove("locked");
   showScreen("accueil");
   await checkNiveauClub();
+  await checkDemandes();
   await loadPlayers();
   refreshQueue();
 }
@@ -1818,6 +2552,764 @@ sb.auth.onAuthStateChange((evt, session) => {
 (async () => {
   const { data:{ session } } = await sb.auth.getSession();
   if(session) await unlock(); else lock();
+})();
+</script>
+
+<script>
+/* =====================================================================
+   GROUPES ET EMPLOI DU TEMPS
+   Le solveur CP-SAT tourne sur le poste du club : le navigateur ne peut
+   pas le lancer. Cet ecran est donc l'editeur du resultat — on relit, on
+   corrige a la main, on fige ce qui est bon, et on ressort un fichier de
+   figeages que la relance suivante consomme.
+
+   S'appuie sur le script precedent : DAYS, F(), PROFS, dl(), showScreen().
+   Tout est prefixe gr / G pour ne rien croiser avec la saisie des fiches.
+   ===================================================================== */
+(function(){
+"use strict";
+
+const CLE = "cca_groupes_v1";
+let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],epingles[],lock,manuel,force,diff}
+let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
+let ctr = null;         // {fichier,date,jours,debut,fin,courts,fermetures[],budget{}}
+let resFic = null;      // {fichier,date}
+let scen = [];          // scenarios : {n,nom,valide,cours,attente}
+let vu = 0, sel = null, selAtt = null, moving = null, forcing = null, trouve = null;
+let profVu = null, filtre = {profs:[], pal:"", etat:""};
+
+const PXH = 46;
+const gmn = t => { const m = String(t).match(/(\d+)\s*h\s*(\d*)/i); return m ? (+m[1])*60 + (m[2]?+m[2]:0) : null; };
+const gtx = m => { const h = Math.floor(m/60), q = m%60; return q ? h+"h"+String(q).padStart(2,"0") : h+"h"; };
+const hh  = h => { const m = Math.round(h*60); return m%60 ? Math.floor(m/60)+"h"+String(m%60).padStart(2,"0") : (m/60)+"h"; };
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const vivants = () => cours.filter(c=>c.diff!=="supp");
+const jours   = () => (ctr && ctr.jours && ctr.jours.length) ? ctr.jours
+                    : DAYS.filter(j=>cours.some(c=>c.jour===j));
+const budget  = (p,j) => (ctr && ctr.budget && ctr.budget[p] ? (ctr.budget[p][j]||0) : null);
+const utilise = (p,j,sauf) => vivants().filter(c=>c.prof===p && c.jour===j && c.cle!==sauf)
+                                       .reduce((s,c)=>s+(c.f-c.d)/60, 0);
+const courts  = () => (ctr && ctr.courts) || 4;
+
+/* ---------------- persistance ---------------- */
+function sauver(){
+  try{
+    localStorage.setItem(CLE, JSON.stringify({cours, attente, ctr, resFic, scen, vu}));
+  }catch(e){ /* quota : on continue sans persister plutot que de bloquer l'ecran */ }
+}
+function relire(){
+  try{
+    const o = JSON.parse(localStorage.getItem(CLE) || "null");
+    if(!o) return;
+    cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
+    resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0;
+  }catch(e){ /* donnees illisibles : on repart a vide */ }
+}
+
+/* ---------------- lecture des classeurs ---------------- */
+function aoa(wb, nom){
+  const ws = wb.Sheets[wb.SheetNames.find(n => n.toLowerCase() === nom.toLowerCase())];
+  return ws ? XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false}) : null;
+}
+function idx(entete){ const m={}; entete.forEach((v,i)=>{ if(v) m[String(v).trim().toLowerCase()]=i; }); return m; }
+const cleDe = c => [c.jour, gtx(c.d), c.prof, c.type].join("|");
+
+function lireResultat(wb){
+  const gr = aoa(wb, "Groupes"), co = aoa(wb, "Cours");
+  if(!co) throw new Error("Onglet « Cours » introuvable. Est-ce bien resultat-cca.xlsx ?");
+  const ic = idx(co[0]);
+  const par = {};
+  cours = co.slice(1).filter(r=>r[ic["jour"]]).map(r=>{
+    const c = {
+      jour: String(r[ic["jour"]]).trim(),
+      d: gmn(r[ic["debut"]]), f: gmn(r[ic["fin"]]),
+      prof: String(r[ic["prof"]]||"").trim(),
+      type: String(r[ic["type"]]||"A").trim(),
+      pal: String(r[ic["palier"]]||"").trim(),
+      sexe: String(r[ic["sexe"]]||"").trim().toUpperCase(),
+      min: +r[ic["min"]] || 3, max: +r[ic["max"]] || 4,
+      membres: [], epingles: [], lock: 0, manuel: false, diff: null
+    };
+    c.cle = cleDe(c);
+    par[String(r[ic["groupe"]]||"").trim()] = c;
+    return c;
+  });
+  // les joueurs viennent de l'onglet Groupes : il porte le niveau et l'email
+  if(gr){
+    const ig = idx(gr[0]);
+    gr.slice(1).forEach(r=>{
+      const c = par[String(r[ig["groupe"]]||"").trim()];
+      if(!c) return;
+      c.membres.push({
+        nom: [r[ig["nom"]], r[ig["prenom"]]].filter(Boolean).join(" ").trim(),
+        email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim()
+      });
+    });
+  } else {
+    // pas d'onglet Groupes : on retombe sur la colonne « joueurs » de Cours
+    co.slice(1).forEach((r,k)=>{
+      const c = cours[k]; if(!c) return;
+      c.membres = String(r[ic["joueurs"]]||"").split("·").map(s=>s.trim()).filter(Boolean)
+                    .map(n=>({nom:n, email:"", niveau:(c.pal||"?")[0]}));
+    });
+  }
+  const np = aoa(wb, "Non places");
+  attente = [];
+  if(np){
+    const inp = idx(np[0]);
+    attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>({
+      nom: String(r[inp["nom"]]).trim(), sexe: String(r[inp["sexe"]]||"").toUpperCase(),
+      niveau: String(r[inp["niveau"]]||"").trim(),
+      dispos: r[inp["dispos"]]||"", raison: r[inp["raison"]]||""
+    }));
+  }
+  cours.sort((a,b)=>DAYS.indexOf(a.jour)-DAYS.indexOf(b.jour) || a.d-b.d);
+}
+
+function lireContraintes(wb){
+  const o = {jours:[], debut:9*60, fin:21*60+30, courts:4, fermetures:[], budget:{}};
+  const ge = aoa(wb, "General");
+  if(ge) ge.slice(1).forEach(r=>{
+    const k = String(r[0]||"").trim().toLowerCase(), v = r[1];
+    if(k==="jours")           o.jours = String(v).split(";").map(s=>s.trim()).filter(Boolean);
+    if(k==="ouverture_debut") o.debut = gmn(v) ?? o.debut;
+    if(k==="ouverture_fin")   o.fin   = gmn(v) ?? o.fin;
+    if(k==="courts")          o.courts = +v || o.courts;
+  });
+  const fe = aoa(wb, "Fermetures");
+  if(fe) fe.slice(1).forEach(r=>{
+    if(!r[0] || !r[1] || !r[2]) return;
+    o.fermetures.push({jour:String(r[0]).trim(), de:gmn(r[1]), a:gmn(r[2]), motif:String(r[3]||"").trim()});
+  });
+  const pr = aoa(wb, "Profs");
+  if(pr){
+    const ent = pr[0].map(v=>String(v||"").trim());
+    pr.slice(1).forEach(r=>{
+      const nom = String(r[0]||"").trim();
+      if(!nom || nom.length > 24) return;             // la ligne de commentaire du modele
+      o.budget[nom] = {};
+      ent.slice(1).forEach((j,k)=>{ if(j) o.budget[nom][j] = +r[k+1] || 0; });
+    });
+  }
+  ctr = o;
+}
+
+/* ---------------- ecran d'import ---------------- */
+function rendFichiers(){
+  const li = [
+    {k:"res", lab:"Résultat du calcul", fic:"resultat-cca.xlsx",
+     val:resFic ? `<b>${vivants().length} cours</b>, ${vivants().reduce((s,c)=>s+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
+                : "Les groupes et l'emploi du temps produits par le solveur.",
+     etat:resFic ? `${esc(resFic.fichier)} — déposé ${resFic.date}` : "aucun fichier déposé"},
+    {k:"ctr", lab:"Contraintes", fic:"contraintes-tennis.xlsx",
+     val:ctr ? `${Object.keys(ctr.budget).length} profs, ${ctr.courts} courts, ${ctr.fermetures.length} fermetures`
+             : "Facultatif — sans lui, ni heures des profs ni fermetures affichées.",
+     etat:ctr ? `${esc(ctr.fichier)} — déposé ${ctr.date}` : "aucun fichier déposé"}
+  ];
+  F("grFiles").innerHTML = li.map(f=>
+    `<div data-k="${f.k}">
+       <span class="lab">${f.lab}</span>
+       <span class="val">${f.val}<span class="fic">${f.fic} — ${f.etat}</span></span>
+       <span class="acts"><button class="mini">Remplacer…</button></span>
+     </div>`).join("");
+  F("grFiles").querySelectorAll("[data-k] button").forEach(b=>{
+    b.onclick = ()=>choisir(b.closest("[data-k]").dataset.k);
+  });
+}
+function choisir(quoi){
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = ".xlsx,.xls";
+  i.onchange = async ()=>{
+    const f = i.files[0]; if(!f) return;
+    F("grErr").textContent = "";
+    try{
+      const wb = XLSX.read(await f.arrayBuffer(), {type:"array"});
+      const quand = new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+      if(quoi === "res"){ lireResultat(wb); resFic = {fichier:f.name, date:quand};
+        scen = []; vu = 0; sel = null; selAtt = null; }
+      else { lireContraintes(wb); ctr.fichier = f.name; ctr.date = quand; }
+      instantane(quoi === "res" ? "Import" : null);
+      sauver(); rend();
+    }catch(e){
+      F("grErr").textContent = "Fichier illisible : " + e.message;
+    }
+  };
+  i.click();
+}
+
+/* ---------------- scenarios ---------------- */
+function instantane(nom){
+  if(!nom) return;
+  scen.push({n:scen.length+1, nom:nom+" "+(scen.length+1), valide:false,
+    cours:JSON.parse(JSON.stringify(cours)), attente:JSON.parse(JSON.stringify(attente))});
+  vu = scen.length;
+}
+function rendPills(){
+  const w = F("grPills");
+  w.innerHTML = "";
+  if(!cours.length) return;
+  scen.forEach(e=>{
+    const b = document.createElement("button");
+    b.className = "grpill" + (e.n===vu?" on":"") + (e.valide?" val":"");
+    b.textContent = (e.valide?"★ ":"") + e.nom;
+    b.title = "Revenir à « " + e.nom + " »";
+    b.onclick = ()=>{
+      cours = JSON.parse(JSON.stringify(e.cours));
+      attente = JSON.parse(JSON.stringify(e.attente));
+      vu = e.n; sel = null; selAtt = null; moving = null; trouve = null;
+      sauver(); rend();
+    };
+    w.appendChild(b);
+  });
+  const cur = scen.find(e=>e.n===vu);
+  if(!cur) return;
+  const ren = document.createElement("button");
+  ren.className = "grpill"; ren.textContent = "✎"; ren.title = "Renommer ce scénario";
+  ren.onclick = ()=>{
+    const inp = document.createElement("input");
+    inp.value = cur.nom;
+    inp.onblur = ()=>{ cur.nom = inp.value.trim() || cur.nom; sauver(); rend(); };
+    inp.onkeydown = ev=>{ if(ev.key==="Enter") inp.blur(); if(ev.key==="Escape"){ inp.onblur=null; rend(); } };
+    w.replaceChild(inp, ren); inp.focus(); inp.select();
+  };
+  w.appendChild(ren);
+  const val = document.createElement("button");
+  val.className = "grpill" + (cur.valide?" val":"");
+  val.textContent = cur.valide ? "✓ Validé" : "Valider";
+  val.title = "Le scénario validé est celui qui part en emails. Un seul à la fois.";
+  val.onclick = ()=>{ const v = !cur.valide; scen.forEach(e=>e.valide=false); cur.valide = v; sauver(); rend(); };
+  w.appendChild(val);
+}
+function memoriser(nom){       // apres une retouche : on garde une trace nommee
+  const cur = scen.find(e=>e.n===vu);
+  if(cur){ cur.cours = JSON.parse(JSON.stringify(cours)); cur.attente = JSON.parse(JSON.stringify(attente)); }
+  sauver();
+}
+
+/* ---------------- rendu ---------------- */
+function rend(){
+  const ok = cours.length > 0;
+  F("grEmpty").style.display = ok ? "none" : "flex";
+  F("grView").style.display  = ok ? "grid" : "none";
+  F("grSearch").style.display = ok ? "block" : "none";
+  F("grExport").disabled = !ok;
+  rendFichiers(); rendPills();
+  if(!ok){ F("grBadge").className = "badge"; return; }
+  rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendProfs(); rendBar();
+  majTuile();
+}
+function majTuile(){
+  const t = F("tGroupesSub"), g = F("tGroupesGo");
+  if(!t) return;
+  if(!cours.length){ t.textContent = "Aucun résultat de calcul importé pour l'instant."; g.textContent = "Ouvrir →"; return; }
+  const pl = vivants().reduce((s,c)=>s+c.membres.length,0);
+  const cur = scen.find(e=>e.n===vu);
+  t.textContent = `${vivants().length} cours · ${pl} joueurs placés, ${attente.length} sans groupe`
+    + (cur ? ` · « ${cur.nom} »` : "");
+  g.textContent = "Reprendre →";
+}
+function kpi(v,l,up){ return `<div class="grk"><b>${v}${up?`<span class="up">${up}</span>`:""}</b><span>${l}</span></div>`; }
+function rendSum(){
+  const pl = vivants().reduce((s,c)=>s+c.membres.length,0), tot = pl + attente.length;
+  const nMan = cours.filter(c=>c.manuel).length;
+  const cur = scen.find(e=>e.n===vu);
+  F("grBadge").className = "badge on ok";
+  F("grBadge").textContent = (cur ? (cur.valide?"★ ":"")+cur.nom+" · " : "") + pl + "/" + tot + " placés";
+  F("grSum").innerHTML =
+    kpi(pl+"/"+tot, "joueurs placés","") +
+    kpi(vivants().length, "cours ouverts","") +
+    kpi(attente.length, "sans groupe","") +
+    kpi(cours.filter(c=>c.lock>0).length, "cours figés","") +
+    (nMan ? kpi(nMan, "cours retouchés","") : "") +
+    `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni fermetures ni heures des profs."}</div>`;
+}
+function actif(){ return filtre.profs.length || filtre.pal || filtre.etat; }
+function passe(c){
+  if(filtre.profs.length && filtre.profs.indexOf(c.prof)<0) return false;
+  if(filtre.pal && c.pal !== filtre.pal) return false;
+  if(filtre.etat==="fige"  && c.lock===0) return false;
+  if(filtre.etat==="libre" && c.lock>0)   return false;
+  if(filtre.etat==="chg"   && !c.manuel)  return false;
+  return true;
+}
+function rendFil(){
+  const profs = [...new Set(vivants().map(c=>c.prof))].sort();
+  const pals  = [...new Set(vivants().map(c=>c.pal))].sort();
+  F("grFil").innerHTML =
+    `<span class="g"><span class="lb">Prof</span>${profs.map(p=>
+      `<button class="grchip ${filtre.profs.indexOf(p)>=0?"on":""}" data-p="${esc(p)}">${esc(p)}</button>`).join("")}</span>
+     <span class="g"><span class="lb">Niveau</span><select id="grPal">
+       <option value="">tous les paliers</option>
+       ${pals.map(p=>`<option ${filtre.pal===p?"selected":""}>${esc(p)}</option>`).join("")}</select></span>
+     <span class="g"><span class="lb">État</span>
+       <button class="grchip ${filtre.etat==="fige"?"on":""}" data-e="fige">figés</button>
+       <button class="grchip ${filtre.etat==="libre"?"on":""}" data-e="libre">libres</button>
+       <button class="grchip ${filtre.etat==="chg"?"on":""}" data-e="chg">retouchés</button></span>
+     <span class="cnt">${actif()
+       ? `<b>${vivants().filter(passe).length}</b> cours sur ${vivants().length} · <button class="grchip" id="grClr">effacer</button>`
+       : `${vivants().length} cours · ${attente.length} sans groupe`}</span>`;
+  F("grFil").querySelectorAll("[data-p]").forEach(b=>b.onclick = ()=>{
+    const p = b.dataset.p, i = filtre.profs.indexOf(p);
+    i>=0 ? filtre.profs.splice(i,1) : filtre.profs.push(p);
+    rend();
+  });
+  F("grFil").querySelectorAll("[data-e]").forEach(b=>b.onclick = ()=>{
+    filtre.etat = filtre.etat===b.dataset.e ? "" : b.dataset.e; rend();
+  });
+  const sp = F("grPal"); if(sp) sp.onchange = ()=>{ filtre.pal = sp.value; rend(); };
+  const cl = F("grClr"); if(cl) cl.onclick = ()=>{ filtre = {profs:[],pal:"",etat:""}; rend(); };
+}
+
+/* -------- deplacer un joueur : meme geste depuis un cours ou l'attente -------- */
+function cible(){
+  if(moving) return moving;
+  if(selAtt!==null && attente[selAtt]){
+    const p = attente[selAtt];
+    return {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null};
+  }
+  return null;
+}
+function compat(c,t){
+  return t && c.diff!=="supp" && c.cle!==t.from && (!t.sexe || c.sexe===t.sexe)
+      && (!t.niveau || !c.pal || c.pal.indexOf(t.niveau)>=0);
+}
+function poser(c){
+  const t = cible(); if(!t) return;
+  let m = {nom:t.nom, email:"", niveau:t.niveau};
+  if(t.from){
+    const src = cours.find(x=>x.cle===t.from);
+    const k = src.membres.findIndex(x=>x.nom===t.nom);
+    if(k>=0) m = src.membres.splice(k,1)[0];
+    src.epingles = src.epingles.filter(n=>n!==t.nom);
+    src.manuel = true;
+  } else {
+    const k = attente.findIndex(a=>a.nom===t.nom);
+    if(k>=0){ const a = attente.splice(k,1)[0]; m = {nom:a.nom, email:a.email||"", niveau:a.niveau}; }
+    selAtt = null;
+  }
+  c.membres.push(m);
+  if(c.epingles.indexOf(m.nom)<0) c.epingles.push(m.nom);
+  c.manuel = true; moving = null; forcing = null; sel = c.cle;
+  memoriser(); rend();
+}
+function rendMove(){
+  const bar = F("grMove"), t = cible();
+  if(!t){ bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  const poss = vivants().filter(c=>compat(c,t));
+  const libres = poss.filter(c=>c.membres.length < c.max);
+  if(forcing){
+    const c = cours.find(x=>x.cle===forcing);
+    bar.className = "grmove ko";
+    bar.innerHTML = `<span><b>${esc(c.prof)} · ${esc(c.jour)} ${gtx(c.d)}</b> est complet (${c.membres.length}/${c.max}).
+      Le placer quand même ? Le cours passera au-dessus du plafond, et il faudra que le solveur respecte ce choix.</span>
+      <span class="sp"></span><button class="mini" id="grForce">Forcer</button><button class="mini" id="grCancel">Annuler</button>`;
+    F("grForce").onclick = ()=>{ const cc = cours.find(x=>x.cle===forcing); cc.force = true; poser(cc); };
+  } else {
+    bar.className = "grmove";
+    bar.innerHTML = `<span>Déplacer <b>${esc(t.nom)}</b>${t.niveau?" (niveau "+esc(t.niveau)+")":""} —
+      cliquez le cours d'arrivée. <b>${libres.length}</b> possible${libres.length>1?"s":""} avec une place libre${
+      poss.length>libres.length ? `, ${poss.length-libres.length} complet${poss.length-libres.length>1?"s":""}` : ""}.</span>
+      <span class="sp"></span><button class="mini" id="grCancel">Annuler</button>`;
+  }
+  F("grCancel").onclick = ()=>{ moving = null; forcing = null; selAtt = null; rend(); };
+}
+
+/* -------- un creneau est-il posable ? -------- */
+function valide(c, jour, d, prof){
+  const pf = prof || c.prof, f = d + (c.f - c.d);
+  const h0 = ctr ? ctr.debut : 9*60, h1 = ctr ? ctr.fin : 21*60+30;
+  if(d < h0 || f > h1) return {ok:false, why:"hors des heures d'ouverture ("+gtx(h0)+" → "+gtx(h1)+")"};
+  if(ctr) for(const z of ctr.fermetures)
+    if(z.jour===jour && d < z.a && f > z.de)
+      return {ok:false, why:"pendant la fermeture" + (z.motif?" « "+z.motif+" »":"")};
+  const k = vivants().find(x=>x.cle!==c.cle && x.prof===pf && x.jour===jour && d < x.f && f > x.d);
+  if(k) return {ok:false, why:pf+" a déjà un cours à cette heure ("+gtx(k.d)+")"};
+  let pic = 0;
+  for(let t=d; t<f; t+=15){
+    const n = vivants().filter(x=>x.cle!==c.cle && x.jour===jour && x.d<=t && x.f>t).length;
+    if(n+1 > pic) pic = n+1;
+  }
+  if(pic > courts()) return {ok:false, why:"il faudrait "+pic+" courts, il y en a "+courts()};
+  const b = budget(pf, jour);
+  if(b === null) return {ok:true, courts:pic};
+  const u = utilise(pf, jour, c.cle) + (f-d)/60;
+  if(b === 0)      return {ok:true, courts:pic, warn:pf+" n'a pas d'heures le "+jour.toLowerCase()};
+  if(u > b + 1e-9) return {ok:true, courts:pic, warn:pf+" passerait à "+hh(u)+" sur "+hh(b)+" ce jour-là"};
+  return {ok:true, courts:pic, hres:hh(u)+" / "+hh(b)};
+}
+
+/* ---------------- la semaine ---------------- */
+let dragFini = 0;
+function bornes(){
+  const h0 = ctr ? ctr.debut : Math.min(...cours.map(c=>c.d)) - 30;
+  const h1 = ctr ? ctr.fin   : Math.max(...cours.map(c=>c.f)) + 30;
+  return [Math.floor(h0/60)*60, Math.ceil(h1/60)*60];
+}
+function rendWeek(){
+  const w = F("grWeek"), J = jours(), [H0,H1] = bornes(), H = (H1-H0)/60*PXH;
+  w.style.gridTemplateColumns = "46px repeat(" + J.length + ",1fr)";
+  w.innerHTML = "";
+  const vide = document.createElement("div"); vide.className = "grhead"; vide.style.cursor = "default";
+  vide.innerHTML = "<b></b><em></em>"; w.appendChild(vide);
+  J.forEach(j=>{
+    const d = document.createElement("div"); d.className = "grhead";
+    const lst = vivants().filter(c=>c.jour===j), nl = lst.filter(c=>c.lock>0).length;
+    if(lst.length && nl===lst.length) d.classList.add("locked");
+    d.innerHTML = `<b>${esc(j)}</b><em>${lst.length ? lst.length+" cours"+(nl?" · "+nl+" figé"+(nl>1?"s":""):"") : "—"}</em>`;
+    d.title = "Figer ou libérer tout le " + j.toLowerCase();
+    d.onclick = ()=>{ const tout = lst.length && lst.every(c=>c.lock>0);
+      lst.forEach(c=>c.lock = tout?0:2); memoriser(); rend(); };
+    w.appendChild(d);
+  });
+  const g = document.createElement("div"); g.className = "grgut"; g.style.height = H+"px";
+  for(let h=H0; h<=H1; h+=60){
+    const i = document.createElement("i"); i.style.top = ((h-H0)/60*PXH)+"px";
+    i.textContent = (h/60)+"h"; g.appendChild(i);
+  }
+  w.appendChild(g);
+
+  J.forEach(j=>{
+    const col = document.createElement("div"); col.className = "grcol"; col.style.height = H+"px";
+    for(let h=H0; h<=H1; h+=60){
+      const l = document.createElement("div"); l.className = "grline";
+      l.style.top = ((h-H0)/60*PXH)+"px"; col.appendChild(l);
+    }
+    if(ctr) ctr.fermetures.filter(z=>z.jour===j).forEach(z=>{
+      const e = document.createElement("div"); e.className = "grclosed";
+      e.style.top = ((z.de-H0)/60*PXH)+"px"; e.style.height = ((z.a-z.de)/60*PXH)+"px";
+      e.innerHTML = `<em>${esc(z.motif)}</em>`; col.appendChild(e);
+    });
+    // largeur calculee par grappe de chevauchement : un cours isole du matin
+    // ne doit pas etre aussi etroit que les quatre courts de 19h
+    const lst = cours.filter(c=>c.jour===j).sort((a,b)=>a.d-b.d || a.prof.localeCompare(b.prof));
+    let gr = [], fin = -1;
+    const clore = ()=>{ const n = Math.max(1, Math.max(0,...gr.map(c=>c._v))+1);
+      gr.forEach(c=>c._n = n); gr = []; };
+    lst.forEach(c=>{
+      if(gr.length && c.d >= fin){ clore(); fin = -1; }
+      const occ = gr.filter(x=>x.f > c.d).map(x=>x._v);
+      let k = 0; while(occ.indexOf(k)>=0) k++;
+      c._v = k; gr.push(c); fin = Math.max(fin, c.f);
+    });
+    clore();
+    const t = cible();
+    lst.forEach(c=>{
+      const n = c._n || 1;
+      const el = document.createElement("div");
+      el.className = "grc" + (c.lock===1?" f1":c.lock===2?" f2":"") + (c.manuel?" manuel":"")
+                   + (sel===c.cle?" sel":"") + (trouve===c.cle?" trouve":"");
+      if(t){
+        if(!compat(c,t)) el.classList.add("dim");
+        else el.classList.add(c.membres.length < c.max ? "cible" : "plein");
+      } else if(actif() && !passe(c)) el.classList.add("dim");
+      el.style.top = ((c.d-H0)/60*PXH)+"px";
+      el.style.height = Math.max(28,(c.f-c.d)/60*PXH-2)+"px";
+      el.style.left = (c._v*(100/n))+"%";
+      el.style.width = "calc("+(100/n)+"% - 3px)";
+      el.innerHTML = `<b>${esc(c.prof)}</b><div class="l2">${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`
+        + `<span class="lk">${c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span>`
+        + (c.manuel ? `<span class="tg" style="color:#7a4fb5">à la main</span>` : "");
+      el.title = `${c.prof} · ${c.jour} ${gtx(c.d)}–${gtx(c.f)} · palier ${c.pal} · ${c.membres.length} joueurs`;
+      if(!t){ el.classList.add("grab"); el.onpointerdown = ev=>debutDrag(ev, c, el); }
+      el.onclick = ev=>{
+        if(Date.now() - dragFini < 250) return;
+        if(ev.target.classList.contains("lk")){ c.lock = (c.lock+1)%3; memoriser(); rend(); return; }
+        const tt = cible();
+        if(tt){
+          if(!compat(c,tt)) return;
+          if(c.membres.length >= c.max){ forcing = c.cle; rend(); return; }
+          poser(c); return;
+        }
+        sel = sel===c.cle ? null : c.cle; selAtt = null; trouve = null; rend();
+      };
+      col.appendChild(el);
+    });
+    w.appendChild(col);
+  });
+}
+
+/* -------- glisser un cours vers un autre creneau -------- */
+function debutDrag(ev, c, el){
+  if(ev.button !== 0 || ev.target.classList.contains("lk")) return;
+  const J = jours(), [H0,H1] = bornes();
+  const x0 = ev.clientX, y0 = ev.clientY, w = el.getBoundingClientRect();
+  const gx = x0 - w.left, gy = y0 - w.top;
+  const cols = [...F("grWeek").querySelectorAll(".grcol")].map(n=>({n, r:n.getBoundingClientRect()}));
+  const o = {jour:c.jour, d:c.d, f:c.f}, dur = c.f - c.d, fin = ctr ? ctr.fin : H1;
+  let lance = false, gh, hi, zo, cand = null;
+
+  const move = e=>{
+    if(!lance){
+      if(Math.abs(e.clientX-x0) < 4 && Math.abs(e.clientY-y0) < 4) return;
+      lance = true; el.classList.add("ghosted");
+      gh = document.createElement("div"); gh.className = "grghost";
+      gh.style.width = w.width+"px"; gh.style.height = w.height+"px";
+      gh.innerHTML = `<b>${esc(c.prof)}</b><div>${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`;
+      hi = document.createElement("div"); hi.className = "grhint";
+      zo = document.createElement("div"); zo.className = "grzone";
+      document.body.appendChild(gh); document.body.appendChild(hi);
+    }
+    let k = cols.findIndex(q=>e.clientX >= q.r.left && e.clientX <= q.r.right);
+    if(k < 0) k = e.clientX < cols[0].r.left ? 0 : cols.length-1;
+    const col = cols[k], j = J[k];
+    let d = H0 + Math.round((((e.clientY - gy) - col.r.top)/PXH*60)/15)*15;
+    d = Math.max(H0, Math.min(fin - dur, d));
+    c.jour = o.jour; c.d = o.d; c.f = o.f;            // mesurer depuis l'etat d'origine
+    const v = valide(c, j, d);
+    if(v.ok){ c.jour = j; c.d = d; c.f = d + dur; }   // puis appliquer, pour que les heures profs suivent
+    rendProfs();
+    cand = v.ok ? {jour:j, d:d} : null;
+    gh.style.left = (e.clientX - gx)+"px"; gh.style.top = (e.clientY - gy)+"px";
+    gh.classList.toggle("ko", !v.ok);
+    hi.className = "grhint" + (v.ok ? "" : " ko");
+    hi.innerHTML = `<b>${esc(j)} ${gtx(d)}–${gtx(d+dur)}</b>` + (v.ok
+      ? `<em>${v.courts}/${courts()} courts${v.warn?" · ⚠ "+esc(v.warn):v.hres?" · "+esc(c.prof)+" "+v.hres:""}</em>`
+      : `<em>impossible : ${esc(v.why)}</em>`);
+    hi.style.left = Math.min(e.clientX+16, innerWidth-340)+"px";
+    hi.style.top = (e.clientY+18)+"px";
+    zo.className = "grzone" + (v.ok ? "" : " ko");
+    zo.style.top = ((d-H0)/60*PXH)+"px"; zo.style.height = (dur/60*PXH-2)+"px";
+    col.n.appendChild(zo);
+  };
+  const up = ()=>{
+    document.removeEventListener("pointermove", move);
+    document.removeEventListener("pointerup", up);
+    if(!lance) return;
+    gh.remove(); hi.remove(); zo.remove(); el.classList.remove("ghosted");
+    dragFini = Date.now();
+    if(cand){
+      c.jour = cand.jour; c.d = cand.d; c.f = cand.d + dur;
+      c.manuel = true; if(c.lock === 0) c.lock = 1;
+      sel = c.cle; memoriser();
+    } else { c.jour = o.jour; c.d = o.d; c.f = o.f; }
+    rend();
+  };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+}
+
+/* ---------------- panneau de droite ---------------- */
+function rendSide(){
+  const head = F("grSh"), body = F("grSb");
+  const c = sel ? cours.find(x=>x.cle===sel) : null;
+  if(c){
+    const b = budget(c.prof, c.jour), u = utilise(c.prof, c.jour);
+    const dep = b !== null && (b === 0 || u > b + 1e-9);
+    head.innerHTML = `<button class="mini" id="grBack">←</button>
+      <div><b>${esc(c.prof)} · ${gtx(c.d)}–${gtx(c.f)}</b>
+      <div class="sub">${esc(c.jour)} · palier ${esc(c.pal)} · ${c.sexe==="F"?"féminin":c.sexe==="H"?"masculin":"—"} · ${c.membres.length}/${c.max}</div></div>`;
+    F("grBack").onclick = ()=>{ sel = null; rend(); };
+    const profs = [...new Set(PROFS.concat(cours.map(x=>x.prof)))].filter(Boolean);
+    body.innerHTML =
+      `<div class="grseg">
+         <button data-l="0" class="${c.lock===0?"on":""}">🔓 Libre</button>
+         <button data-l="1" class="${c.lock===1?"on":""}">🕘 Créneau figé</button>
+         <button data-l="2" class="${c.lock===2?"on":""}">🔒 Tout figé</button>
+       </div>
+       <p class="grnote">${c.lock===0 ? "Le prochain calcul peut déplacer ce cours, changer son prof, ou le supprimer."
+         : c.lock===1 ? "L'horaire et le prof sont conservés. Le solveur peut changer qui est dans le groupe."
+         : "Rien ne bougera : ni l'horaire, ni le prof, ni la composition."}</p>
+       <div class="two" style="margin-top:12px;align-items:end">
+         <div><label style="margin:0 0 3px">Prof</label>
+           <select id="grProf">${profs.map(p=>`<option ${p===c.prof?"selected":""}>${esc(p)}</option>`).join("")}</select></div>
+         <div><label style="margin:0 0 3px">Ce ${esc(c.jour.toLowerCase())}</label>
+           <div style="font-size:13px;padding:8px 0;font-variant-numeric:tabular-nums;
+             color:${dep?"var(--warn)":"var(--ink)"};font-weight:${dep?700:400}">
+             ${b===null ? "budget inconnu" : b===0 ? "indisponible" : hh(u)+" / "+hh(b)}${dep?" ⚠":""}</div></div>
+       </div>
+       <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change le prof. Les deux figent le créneau.</p>
+       <div style="margin-top:12px">${c.membres.map((m,i)=>{
+         const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
+         return `<div class="grm ${ep?"ep":""}">
+           <span class="nm" title="${esc(m.email||"")}">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</span>
+           <span class="act"><button data-mv="${i}">Déplacer</button><button data-rm="${i}">Retirer</button></span>
+           <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}>📌</button></div>`;
+       }).join("")}
+       ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
+       </div>
+       <p class="grnote">Un joueur déplacé à la main est épinglé d'office : sans ça le calcul suivant déferait le déplacement.</p>`;
+    body.querySelectorAll(".grseg button").forEach(b2=>b2.onclick = ()=>{
+      c.lock = +b2.dataset.l; memoriser(); rend(); });
+    F("grProf").onchange = e=>{
+      const np = e.target.value, v = valide(c, c.jour, c.d, np);
+      if(!v.ok){ e.target.value = c.prof;
+        F("grPmsg").innerHTML = `<span style="color:var(--warn)">Impossible : ${esc(v.why)}.</span>`; return; }
+      c.prof = np; c.manuel = true; if(c.lock===0) c.lock = 1;
+      c.cle = cleDe(c); sel = c.cle; memoriser(); rend();
+      if(v.warn) F("grPmsg").innerHTML = `<span style="color:var(--warn)">⚠ ${esc(v.warn)}. Le cours est gardé ; le dépassement reste visible dans le bandeau des heures.</span>`;
+    };
+    body.querySelectorAll("[data-mv]").forEach(b2=>b2.onclick = ()=>{
+      const m = c.membres[+b2.dataset.mv];
+      moving = {nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle};
+      selAtt = null; rend();
+    });
+    body.querySelectorAll("[data-rm]").forEach(b2=>b2.onclick = ()=>{
+      const m = c.membres.splice(+b2.dataset.rm,1)[0];
+      c.epingles = c.epingles.filter(n=>n!==m.nom);
+      c.manuel = true;
+      attente.push({nom:m.nom, sexe:c.sexe, niveau:m.niveau, email:m.email,
+        dispos:"", raison:"retiré à la main du cours de "+c.prof});
+      memoriser(); rend();
+    });
+    body.querySelectorAll("[data-ep]").forEach(b2=>b2.onclick = ()=>{
+      const n = c.membres[+b2.dataset.ep].nom, i = c.epingles.indexOf(n);
+      i>=0 ? c.epingles.splice(i,1) : c.epingles.push(n);
+      memoriser(); rend();
+    });
+    return;
+  }
+  const vus = attente.map((p,i)=>[p,i]).filter(([p])=> !filtre.pal || filtre.pal.indexOf(p.niveau)>=0);
+  head.innerHTML = `<div><b>${attente.length} sans groupe</b>
+    <div class="sub">${filtre.pal && vus.length!==attente.length
+      ? vus.length+" au palier "+esc(filtre.pal)+" · cliquez un nom pour le placer"
+      : "Cliquez un nom : la grille montre où il peut aller."}</div></div>`;
+  body.innerHTML = vus.map(([p,i])=>
+    `<div class="grp ${selAtt===i?"on":""}" data-i="${i}">
+       <span class="niv">${esc(p.niveau||"?")}</span>
+       <span class="tx"><b>${esc(p.nom)}</b><span class="why">${esc(p.raison||p.dispos||"")}</span></span>
+     </div>`).join("") || `<p class="grnote">Personne ici.</p>`;
+  body.querySelectorAll(".grp").forEach(el=>el.onclick = ()=>{
+    const i = +el.dataset.i; selAtt = selAtt===i?null:i; moving = null; forcing = null; rend(); });
+}
+
+/* ---------------- heures des profs ---------------- */
+function rendProfs(){
+  const bar = F("grProfs"), J = jours();
+  const noms = [...new Set(cours.map(c=>c.prof).concat(ctr ? Object.keys(ctr.budget) : []))].filter(Boolean);
+  bar.innerHTML = `<span class="lb">Heures profs</span>` + noms.map(p=>{
+    const sem = J.reduce((s,j)=>s + (budget(p,j)||0), 0);
+    const use = J.reduce((s,j)=>s + utilise(p,j), 0);
+    const dep = J.filter(j=>budget(p,j)!==null && utilise(p,j) > (budget(p,j)||0) + 1e-9);
+    const pl  = J.filter(j=>budget(p,j)>0 && Math.abs(utilise(p,j)-budget(p,j))<1e-9);
+    const cl = dep.length ? "over" : pl.length ? "plein" : "";
+    return `<button class="grpb ${cl} ${profVu===p?"on":""}" data-pr="${esc(p)}">
+      <b>${esc(p)}</b><i class="g"><s style="width:${sem?Math.min(100,use/sem*100):0}%"></s></i>
+      <span class="v">${hh(use)}${sem?" / "+hh(sem):""}</span>
+      ${dep.length?`<span class="v">⚠ ${dep.map(d=>d.toLowerCase()).join(", ")}</span>`
+        : pl.length?`<span class="v">complet ${pl.map(d=>d.toLowerCase()).join(", ")}</span>`:""}</button>`;
+  }).join("") + (ctr ? "" : `<span class="v" style="color:var(--muted);font-size:12px">
+    heures posées seulement — déposez contraintes-tennis.xlsx pour voir les plafonds</span>`);
+  bar.querySelectorAll("[data-pr]").forEach(b=>b.onclick = ()=>{
+    profVu = profVu===b.dataset.pr ? null : b.dataset.pr; rendProfs(); });
+
+  const d = F("grPd");
+  if(!profVu || !ctr){ d.style.display = "none"; return; }
+  d.style.display = "flex";
+  d.innerHTML = `<b style="font-size:12.5px">${esc(profVu)}</b>` + J.map(j=>{
+    const b = budget(profVu,j)||0, u = utilise(profVu,j);
+    const cl = b===0 ? "off" : u > b+1e-9 ? "over" : Math.abs(u-b)<1e-9 ? "plein" : "";
+    return `<span class="d ${cl}"><em>${esc(j)}</em>
+      <i class="g"><s style="width:${b?Math.min(100,u/b*100):0}%"></s></i>
+      <span>${b===0?"indisponible":hh(u)+" / "+hh(b)}</span></span>`;
+  }).join("") + `<span style="margin-left:auto;color:var(--muted)">Plafond dur : un dépassement ne peut venir que d'un geste à la main.</span>`;
+}
+
+function rendBar(){
+  const n = cours.filter(c=>c.lock>0 && c.diff!=="supp").length, l = vivants().length - n;
+  F("grBarTx").innerHTML = n===0
+    ? `Rien n'est figé.<em>Le prochain calcul repartira d'une page blanche : les ${vivants().length} cours peuvent tous changer.</em>`
+    : `<span class="nb">${n} cours figé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
+       <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.</em>`;
+  F("grAll").textContent = n===vivants().length && n>0 ? "Tout libérer" : "Tout figer";
+}
+
+/* ---------------- recherche ---------------- */
+function chercher(q){
+  const n = q.trim().toLowerCase(), box = F("grSres");
+  if(n.length < 2){ box.classList.remove("on"); box.innerHTML = ""; return; }
+  const hits = [];
+  vivants().forEach(c=>c.membres.forEach(m=>{
+    if(m.nom.toLowerCase().indexOf(n)>=0)
+      hits.push({nom:m.nom, ou:`${c.jour} ${gtx(c.d)} · ${c.prof}`, cle:c.cle});
+  }));
+  attente.forEach((p,i)=>{ if(p.nom.toLowerCase().indexOf(n)>=0) hits.push({nom:p.nom, ou:"sans groupe", att:i}); });
+  box.classList.add("on");
+  if(!hits.length){ box.innerHTML = `<div class="none">Aucun joueur ne correspond à « ${esc(q)} ».</div>`; return; }
+  box.innerHTML = hits.slice(0,12).map((h,k)=>
+    `<button data-k="${k}"><span class="n">${esc(h.nom)}</span><span class="w">${esc(h.ou)}</span></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick = ()=>{
+    const h = hits[+b.dataset.k];
+    if(h.cle){ sel = h.cle; trouve = h.cle; selAtt = null; } else { sel = null; selAtt = h.att; trouve = null; }
+    box.classList.remove("on"); F("grQ").value = ""; rend();
+    const el = F("grWeek").querySelector(".grc.trouve");
+    if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
+  });
+}
+
+/* ---------------- sorties Excel ---------------- */
+function nomCours(c,i){ return "G"+String(i+1).padStart(2,"0")+" "+c.jour+" "+gtx(c.d)+" "+c.prof; }
+function ordonne(){ return vivants().slice().sort((a,b)=>
+  jours().indexOf(a.jour)-jours().indexOf(b.jour) || a.d-b.d || a.prof.localeCompare(b.prof)); }
+
+function exportResultat(){
+  const L = ordonne(), wb = XLSX.utils.book_new();
+  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","sexe","effectif","epingle","a_la_main"]];
+  L.forEach((c,i)=>c.membres.forEach(m=>g.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,
+    m.nom,m.email||"",m.niveau||"",c.sexe,c.membres.length,
+    (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":""])));
+  const gws = XLSX.utils.aoa_to_sheet(g);
+  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},{wch:8},{wch:6},{wch:9},{wch:9},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, gws, "Groupes");
+
+  const co = [["groupe","jour","debut","fin","prof","type","palier","effectif","max","sexe","figeage","a_la_main","joueurs"]];
+  L.forEach((c,i)=>co.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,c.membres.length,c.max,c.sexe,
+    ["libre","creneau","tout"][c.lock], c.manuel?"oui":"", c.membres.map(m=>m.nom).join(" · ")]));
+  const cws = XLSX.utils.aoa_to_sheet(co);
+  cws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:6},{wch:6},{wch:9},{wch:10},{wch:70}];
+  XLSX.utils.book_append_sheet(wb, cws, "Cours");
+
+  const np = [["nom","sexe","niveau","dispos","raison"]];
+  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.dispos||"",p.raison||""]));
+  const nws = XLSX.utils.aoa_to_sheet(np);
+  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:46},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, nws, "Non places");
+
+  XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
+  XLSX.writeFile(wb, "groupes-cca.xlsx");
+}
+
+/* La feuille que la relance suivante consomme. La cle est stable d'un essai
+   a l'autre — jour, heure, prof, type — la ou « G01 » est un rang d'affichage
+   qui change des qu'un cours s'ouvre plus tot dans la semaine. */
+function feuilleFigeages(){
+  const a = [["cle","jour","debut","fin","prof","type","palier","mode","effectif_force","joueurs_epingles"]];
+  ordonne().filter(c=>c.lock>0 || c.epingles.length || c.force).forEach(c=>{
+    a.push([c.cle, c.jour, gtx(c.d), gtx(c.f), c.prof, c.type, c.pal,
+      ["libre","creneau","tout"][c.lock],
+      c.membres.length > c.max ? c.membres.length : "",
+      (c.lock===2 ? c.membres.map(m=>m.nom) : c.epingles).join(" ; ")]);
+  });
+  a.push([]);
+  a.push(["mode : creneau = jour, heure et prof imposes, composition libre — tout = composition imposee aussi."]);
+  a.push(["effectif_force : effectif au-dessus du plafond, assume a la main. Le modele doit l'accepter sur ce cours."]);
+  const ws = XLSX.utils.aoa_to_sheet(a);
+  ws["!cols"]=[{wch:30},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:14},{wch:70}];
+  return ws;
+}
+function exportFigeages(){
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
+  XLSX.writeFile(wb, "figeages-cca.xlsx");
+}
+
+/* ---------------- cablage ---------------- */
+F("grHome").onclick = ()=>showScreen("accueil");
+F("grExport").onclick = exportResultat;
+F("grFig").onclick = exportFigeages;
+F("grAll").onclick = ()=>{
+  const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
+  v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
+};
+F("grQ").oninput = e=>chercher(e.target.value);
+F("grQ").onkeydown = e=>{ if(e.key==="Escape"){ e.target.value=""; F("grSres").classList.remove("on"); } };
+document.addEventListener("click", e=>{ if(!F("grSearch").contains(e.target)) F("grSres").classList.remove("on"); });
+const tuile = F("tGroupes");
+if(tuile) tuile.onclick = ()=>{ showScreen("groupes"); rend(); };
+
+relire();
+rend();
 })();
 </script>
 </body>
