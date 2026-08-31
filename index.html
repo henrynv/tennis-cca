@@ -96,11 +96,15 @@
   .revbar.on{display:flex}
   .card.doubt{border-color:#e0a000;box-shadow:0 0 0 3px #fdeec4}
   /* --- ecran de connexion --- */
+  /* overflow:auto + margin:auto sur la boite : centre quand il y a la place,
+     laisse defiler sinon. align-items:center rognerait le haut du formulaire
+     sans possibilite de le rattraper sur une fenetre basse. */
   .auth-bg{position:fixed;inset:0;background:var(--bg);z-index:200;
-    display:none;align-items:center;justify-content:center;padding:20px}
+    display:none;overflow:auto;padding:20px}
   .auth-bg.on{display:flex}
-  .auth-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    padding:28px 30px;width:min(380px,100%);box-shadow:0 18px 50px rgba(0,0,0,.10)}
+  .auth-box{margin:auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:28px 30px;width:min(380px,100%);
+    box-shadow:0 18px 50px rgba(0,0,0,.10)}
   .auth-box h1{font-size:18px;margin:0 0 4px}
   .auth-box p{color:var(--muted);font-size:13px;margin:0 0 18px}
   .auth-box button{width:100%;margin-top:16px;padding:10px}
