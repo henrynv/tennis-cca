@@ -19,16 +19,24 @@
     display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20}
   header h1{font-size:14px;margin:0;font-weight:650}
   header .grow{flex:1;color:var(--muted);font-size:12px}
-  header .count{color:var(--muted);font-size:12px;margin-right:4px}
   .wrap{max-width:1680px;margin:0 auto;padding:10px 18px 40px}
   .grid3{display:grid;grid-template-columns:1.5fr 1fr 1.15fr;gap:16px;align-items:start}
   @media(max-width:1200px){.grid3{grid-template-columns:1fr 1fr}}
   @media(max-width:820px){.grid3{grid-template-columns:1fr}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .cols3 .idcard{padding:8px 12px}
   .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
   label{display:block;font-size:12px;color:var(--muted);margin:7px 0 3px}
-  input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:14px;background:#fff}
-  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  /* Sans font-family explicite, input et select retombent sur la police par
+     defaut du navigateur (Arial) pendant que le reste de la page est en
+     -apple-system : deux polices differentes dans le meme formulaire. */
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);
+    border-radius:7px;font-size:14px;background:#fff;font-family:inherit;color:var(--ink)}
+  /* Un simple changement de bordure ne se voit pas au clavier. Ces utilisatrices
+     enchainent douze champs a la tabulation : le focus doit sauter aux yeux. */
+  input:focus,select:focus,textarea:focus{outline:3px solid #9fd3b7;outline-offset:1px;
+    border-color:var(--accent)}
+  button:focus-visible{outline:3px solid #9fd3b7;outline-offset:2px}
   .row{display:flex;gap:10px}
   .row>*{flex:1}
   .photo-drop{border:2px dashed var(--line);border-radius:10px;padding:10px;text-align:center;color:var(--muted);cursor:pointer;font-size:13px}
@@ -91,9 +99,6 @@
   table.q td{border-bottom:1px solid var(--line);padding:4px 6px}
   .st-wait{color:var(--muted)} .st-run{color:#0a6ebd} .st-done{color:var(--accent)}
   .st-skip{color:#999} .st-err{color:var(--warn)}
-  .revbar{background:#fff8e6;border:1px solid #f0d79a;border-radius:10px;padding:10px 14px;
-    display:none;gap:10px;align-items:center;margin:0 0 12px}
-  .revbar.on{display:flex}
   .card.doubt{border-color:#e0a000;box-shadow:0 0 0 3px #fdeec4}
   /* --- ecran de connexion --- */
   /* overflow:auto + margin:auto sur la boite : centre quand il y a la place,
@@ -114,7 +119,144 @@
   .gridwarn{display:none;background:#fff8e6;border:1px solid #f0d79a;border-radius:7px;
     padding:6px 9px;font-size:12px;color:#7a5200;margin:0 0 8px}
   .card.doubt .gridwarn{display:block}
-  .revbar .grow{flex:1;font-size:13px}
+
+  /* =====================================================================
+     Ecrans : accueil et fiche. Un seul jeu de champs sert la saisie et la
+     relecture ; seule la barre du haut change. Dupliquer le formulaire
+     aurait duplique les identifiants, donc tout le cablage existant.
+     ===================================================================== */
+  .screen{display:none}
+  .screen.on{display:flex;flex-direction:column;height:100vh}
+  body.locked .screen{visibility:hidden}
+
+  .topbar{display:flex;align-items:center;gap:12px;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:0 16px;height:54px;flex:none}
+  .topbar .brand{font-weight:700;font-size:16px;white-space:nowrap}
+  .topbar .spacer{flex:1}
+  .topbar button{padding:0 14px;height:38px;font-size:15px}
+  .topbar .step{font-size:18px;font-weight:700;white-space:nowrap}
+  .topbar .prog{flex:1;height:9px;border-radius:5px;background:#e3e8e3;overflow:hidden;
+    min-width:60px;max-width:520px;display:none}
+  .topbar .prog.on{display:block}
+  .topbar .prog>i{display:block;height:100%;width:0;background:var(--accent);
+    border-radius:5px;transition:width .25s}
+  .topbar .badge{background:#fdf0d2;border:1px solid #e7cf95;color:#6b4d00;font-size:15px;
+    font-weight:700;padding:5px 12px;border-radius:7px;white-space:nowrap;display:none}
+  .topbar .badge.on{display:block}
+  .topbar .badge.ok{background:var(--accent-soft);border-color:#b7d6c5;color:#14512f}
+  .whochip{height:38px;padding:0 13px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;font-size:15px;display:flex;align-items:center;gap:7px;
+    white-space:nowrap;cursor:pointer}
+  .whochip:hover{border-color:var(--accent)}
+
+  /* ---------- accueil ---------- */
+  .home{flex:1;min-height:0;overflow:auto;padding:34px 44px;display:flex;flex-direction:column;
+    max-width:1400px;width:100%;margin:0 auto}
+  .home h1{font-size:36px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.1}
+  .home .hellosub{color:var(--muted);font-size:16px;margin:7px 0 0}
+  .tiles{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px;margin-top:26px}
+  @media(max-width:900px){.tiles{grid-template-columns:1fr}}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;
+    display:flex;flex-direction:column;gap:7px;text-align:left;cursor:pointer;font:inherit}
+  .tile:hover{border-color:var(--accent)}
+  .tile .ic{font-size:26px;line-height:1}
+  .tile b{font-size:19px}
+  .tile span{font-size:15px;color:var(--muted);line-height:1.4}
+  .tile.main{background:var(--accent);border-color:var(--accent);color:#fff;
+    grid-row:span 2;justify-content:center}
+  .tile.main b{font-size:29px;letter-spacing:-.01em}
+  .tile.main span{color:#c6e6d4;font-size:16px}
+  .tile.main .go{margin-top:16px;background:#fff;color:var(--accent);border-radius:9px;
+    height:52px;font-size:18px;font-weight:700;display:flex;align-items:center;
+    justify-content:center;gap:9px}
+  .tile.main:hover{filter:brightness(1.06)}
+  .tile[disabled]{opacity:.5;cursor:default}
+  .tile[disabled]:hover{border-color:var(--line);filter:none}
+  .homefoot{margin-top:auto;display:flex;align-items:center;gap:16px;font-size:15px;
+    color:var(--muted);padding-top:22px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .homefoot .conn{display:flex;align-items:center;gap:7px;margin-left:auto}
+
+  /* ---------- fiche : trois colonnes qui remplissent la fenetre ---------- */
+  .cols3{flex:1;min-height:0;display:grid;
+    grid-template-columns:minmax(280px,1fr) minmax(430px,1.3fr) minmax(400px,460px);
+    gap:12px;padding:10px 12px}
+  @media(max-width:1280px){.cols3{grid-template-columns:1fr 1fr;overflow:auto}}
+  @media(max-width:900px){.cols3{grid-template-columns:1fr;overflow:auto}}
+  .cols3 > div{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
+  .cols3 .card{min-height:0}
+
+  .fcard{display:flex;flex-direction:column;min-height:0}
+  .cols3 .papercard,.cols3 #availCard{flex:1;overflow:hidden}
+  .cols3 .idcard{flex:none}
+  /* si la fenetre est trop basse pour tout montrer, c'est la colonne du milieu
+     qui defile — jamais un champ qui disparait */
+  .cols3 .colmid{overflow:auto}
+  .fcard.papercard .photo-view{flex:1;min-height:0;display:flex;flex-direction:column}
+  .fcard.papercard .photo-view img{flex:1;min-height:0;max-height:none;width:100%}
+
+  /* un champ, un bloc : le marquage « a verifier » se pose SUR le champ et ne
+     deplace rien, pour que les positions ne bougent pas d'une fiche a l'autre */
+  .f{margin-bottom:3px}
+  .f:last-child{margin-bottom:0}
+  .f > label{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;
+    font-weight:600;color:#5b665e;margin:0 0 3px;line-height:1.2}
+  .f input,.f select,.f textarea{height:38px;font-size:17px;padding:0 11px;border-width:1.5px;
+    border-color:#c8d0c8}
+  .f select{padding:0 8px}
+  /* les zones de texte grandissent avec le contenu, jusqu'a une limite au-dela
+     de laquelle elles defilent : le texte n'est jamais tronque a l'affichage,
+     et une observation bavarde ne chasse pas les champs de l'ecran */
+  .f textarea{height:auto;padding:8px 11px;font-size:17px;line-height:1.35;resize:vertical;
+    min-height:50px;max-height:34vh}
+  .textcard .two textarea{min-height:46px}
+  .f.doubt > label{color:#6b4d00}
+  .f.doubt input,.f.doubt select,.f.doubt textarea{
+    border-color:#c79014;border-left:5px solid #c79014;background:#fffdf4}
+  .pill{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    background:#f7e6bd;color:#5c4200;padding:3px 8px;border-radius:4px;white-space:nowrap;
+    display:none}
+  .f.doubt .pill{display:inline-block}
+  .src{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    background:#e7ebe6;color:#4a544c;padding:2px 7px;border-radius:3px;white-space:nowrap}
+  .src.club{background:#dbe9f6;color:#1a4568}
+  /* Un champ vide dit qu'il est vide : sinon rien ne distingue « rien sur la
+     fiche » de « le modele n'a pas su lire ». Le gris precedent (#a3ada4) tombait
+     a 2,4:1 sur blanc — sous le minimum lisible. Celui-ci passe a 4,6:1. */
+  .f input::placeholder,.f textarea::placeholder{color:#6b7683;font-style:italic;font-size:16px}
+  #niveau_club{font-weight:700;font-size:19px}
+  /* un libelle qui passe sur deux lignes ne doit pas decaler le champ voisin :
+     les champs d'une meme ligne s'alignent par le bas */
+  .r3{display:flex;gap:10px;align-items:flex-end}
+  .r3 > *{flex:1;min-width:0}
+  .two{align-items:end}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .textcard{flex:none;padding:9px 12px}
+  .textcard .f{margin-bottom:5px}
+  .actionrow{display:flex;gap:11px;align-items:center;margin-top:auto;
+    position:sticky;bottom:0;background:var(--bg);padding:6px 0 0;z-index:2}
+  .actionrow .big{flex:1;height:54px;border-radius:10px;font-size:19px;font-weight:700}
+  .actionrow .later{height:54px;padding:0 22px;border-radius:10px;font-size:16px}
+
+  .gridhead{display:flex;align-items:center;gap:9px;margin:0 0 5px;flex:none}
+  .gridhead b{font-size:15px}
+  .gridhead .legend{margin:0 0 0 auto;gap:12px}
+  #gridwarn{padding:4px 8px;font-size:11.5px;margin:0 0 5px}
+  .gridwrap{flex:1;min-height:0;overflow:auto}
+  /* la case s'ajuste a la fenetre : la grille entiere tient sans defiler des
+     que la fenetre fait au moins 768 px de haut */
+  table.avail td.cell{height:clamp(9px,calc((100vh - 181px) / 50),22px)}
+
+  /* ---------- filet de securite apres validation ---------- */
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:-100px;z-index:120;
+    background:#17211c;color:#fff;border-radius:11px;padding:14px 18px 14px 22px;
+    display:flex;align-items:center;gap:20px;font-size:17px;
+    box-shadow:0 8px 30px rgba(0,0,0,.3);transition:bottom .25s ease}
+  .toast.on{bottom:18px}
+  .toast .tick{color:#8fe0b3;font-size:19px}
+  .toast .secs{font-size:14px;color:#9aa79e;font-variant-numeric:tabular-nums}
+  .toast button{background:none;border:none;color:#8fe0b3;font-weight:700;font-size:16px;
+    border-bottom:2px solid #8fe0b3;border-radius:0;padding:0 0 2px;cursor:pointer}
+  .toast button:hover{color:#fff;border-color:#fff}
 </style>
 </head>
 <body class="locked">
@@ -132,106 +274,177 @@
   </form>
 </div>
 
-<header>
-  <h1>🎾 Saisie fiches CCA</h1>
-  <input id="saisiPar" class="mini" placeholder="Ton prénom" style="width:120px;padding:5px 8px">
-  <span class="grow" id="editmode"></span>
-  <span class="count" id="count">0 fiche</span>
-  <span id="conn" title="Connexion base" style="font-size:12px">⏳</span>
-  <button id="clear" class="ghost mini">Vider</button>
-  <button id="save" class="primary mini">Enregistrer &amp; suivant ⏎</button>
-  <button id="openImport" class="mini">📥 Import en masse</button>
-  <button id="openReview" class="mini">🔍 Relire <span id="nrev">0</span></button>
-  <button id="openList" class="mini">📋 Fiches</button>
-  <button id="expXlsx" class="mini">⬇︎ Export Excel</button>
-  <button id="logout" class="ghost mini" title="Se déconnecter">⏻</button>
-</header>
-
-<div class="wrap">
-  <div class="revbar" id="revbar">
-    <span class="grow" id="revinfo"></span>
-    <button id="revSkip" class="mini">Passer →</button>
-    <button id="revOk" class="primary mini">✓ Valider &amp; suivante</button>
-    <button id="revQuit" class="ghost mini">Quitter</button>
+<!-- ============================ ACCUEIL ============================ -->
+<div class="screen" id="scAccueil">
+  <div class="topbar">
+    <span class="brand">🎾 Fiches CCA</span>
+    <span class="spacer"></span>
+    <button class="whochip" id="whoBtn"><b id="whoName">—</b> · changer</button>
+    <button id="logout" class="ghost mini" title="Se déconnecter">⏻</button>
   </div>
-  <div class="grid3">
-    <!-- COL 1 : photo -->
-    <div class="card">
-      <h2>Photo de la fiche</h2>
-      <div class="photo-drop" id="drop">📷 Cliquer ou déposer la fiche (photo ou PDF)</div>
-      <input type="file" id="file" accept="image/*,application/pdf,.pdf" hidden>
-      <div class="photo-view" id="pv" style="display:none">
-        <div class="protools">
-          <button type="button" class="mini primary" id="readAI">✨ Lire la fiche</button>
-          <button type="button" class="mini" id="rotL">↺ Pivoter</button>
-          <button type="button" class="mini" id="rotR">Pivoter ↻</button>
-          <button type="button" class="mini" id="chg">Changer</button>
-          <span class="hint" style="margin:0 0 0 auto">Clic = zoom.</span>
-        </div>
-        <img id="pimg" alt="fiche">
-      </div>
+  <div class="home">
+    <h1>Bonjour <span id="helloName">—</span></h1>
+    <p class="hellosub" id="helloSub">Chargement…</p>
+    <div class="tiles">
+      <button class="tile main" id="tRelire">
+        <span class="ic">🔍</span>
+        <b id="tRelireN">0 fiche à relire</b>
+        <span>Les moins sûres d'abord. Comptez environ une minute par fiche.</span>
+        <span class="go">Commencer la relecture →</span>
+      </button>
+      <button class="tile" id="tImport">
+        <span class="ic">📄</span>
+        <b>Importer des fiches</b>
+        <span>Un PDF ou des photos. L'ordinateur les lit, vous les relisez ensuite.</span>
+      </button>
+      <button class="tile" id="tSaisie">
+        <span class="ic">✎</span>
+        <b>Saisir une fiche à la main</b>
+        <span>Pour une fiche arrivée seule, sans passer par l'import.</span>
+      </button>
+      <button class="tile" id="tListe">
+        <span class="ic">📋</span>
+        <b id="tListeN">Voir les fiches</b>
+        <span>Rechercher quelqu'un, corriger, supprimer.</span>
+      </button>
+      <button class="tile" id="tExport">
+        <span class="ic">⬇︎</span>
+        <b id="tExportN">Télécharger l'Excel</b>
+        <span>Toutes les fiches enregistrées, prêtes pour le classeur des groupes.</span>
+      </button>
     </div>
-
-    <!-- COL 2 : identity -->
-    <div class="card">
-      <h2>Identité</h2>
-      <div class="row">
-        <div style="flex:3"><label>Nom</label><input id="nom"></div>
-        <div style="flex:2"><label>Prénom</label><input id="prenom"></div>
-      </div>
-      <div class="row">
-        <div><label>Date de naissance</label><input id="ddn"></div>
-        <div><label>Niveau de jeu</label><input id="niveau"></div>
-      </div>
-      <label>Adresse</label>
-      <input id="adresse">
-      <div class="row">
-        <div style="flex:1"><label>Code postal</label><input id="code_postal"></div>
-        <div style="flex:2"><label>Ville</label><input id="ville"></div>
-      </div>
-      <div class="row">
-        <div><label>Tél. fixe</label><input id="tel"></div>
-        <div><label>Portable</label><input id="portable"></div>
-      </div>
-      <label>E-mail</label>
-      <input id="email">
-      <label>Type de règlement</label>
-      <select id="reglement">
-        <option value="">—</option>
-        <option value="Chèque">Chèque</option>
-        <option value="Prélèvement">Prélèvement</option>
-        <option value="CB">CB</option>
-        <option value="Autre">Autre</option>
-      </select>
-      <div class="row">
-        <div><label>Soirée d'évaluation</label><input id="soiree_eval" placeholder="ex : 18h à 18h30"></div>
-        <div>
-          <label>Nouveau au club</label>
-          <select id="nouveau"><option value="">Non</option><option value="1">Oui</option></select>
-        </div>
-      </div>
-      <label>Observations</label>
-      <input id="obs">
-      <label>Annotations du club (marges)</label>
-      <input id="annotations" placeholder="paiement, n° adhérent…">
-      <label>Hors champ (écriture du joueur hors des cases)</label>
-      <input id="hors_champ" placeholder="marges de la grille, flèches, entre deux blocs…">
-    </div>
-
-    <!-- RIGHT : availability -->
-    <div class="card" id="availCard">
-      <h2>Disponibilités — cliquer ou glisser pour cocher</h2>
-      <div class="gridwarn" id="gridwarn"></div>
-      <table class="avail" id="avail"></table>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--accent)"></i> Disponible</span>
-        <span><i class="sw" style="background:repeating-linear-gradient(45deg,#c9ced6,#c9ced6 3px,#e2e6ec 3px,#e2e6ec 6px)"></i> Club fermé (bloqué)</span>
-        <span><i class="sw" style="background:#fff"></i> Non coché</span>
-      </div>
-      <p class="hint" id="selsum">Aucun créneau coché.</p>
+    <div class="homefoot">
+      <span id="homeInfo"></span>
+      <span class="conn"><span id="conn" title="Connexion base">⏳</span> <span id="connTxt">Connexion…</span></span>
     </div>
   </div>
+</div>
 
+<!-- ===================== FICHE : saisie et relecture ===================== -->
+<div class="screen" id="scFiche">
+  <div class="topbar">
+    <button id="btnHome" class="mini">← Accueil</button>
+    <span class="step" id="ficheStep"></span>
+    <span class="prog" id="ficheProg"><i></i></span>
+    <span class="badge" id="ficheBadge"></span>
+    <span class="spacer"></span>
+    <span class="grow" id="editmode" style="color:var(--muted);font-size:13px"></span>
+    <button id="clear" class="ghost mini">Vider</button>
+    <span class="whochip" id="whoChip2"><b id="whoName2">—</b></span>
+  </div>
+
+  <div class="cols3">
+    <!-- COLONNE 1 : la fiche papier -->
+    <div>
+      <div class="card fcard papercard">
+        <div class="photo-drop" id="drop">📷 Cliquer ou déposer la fiche (photo ou PDF)</div>
+        <input type="file" id="file" accept="image/*,application/pdf,.pdf" hidden>
+        <div class="photo-view" id="pv" style="display:none">
+          <div class="protools">
+            <button type="button" class="mini primary" id="readAI">✨ Lire la fiche</button>
+            <button type="button" class="mini" id="rotL">↺</button>
+            <button type="button" class="mini" id="rotR">↻</button>
+            <button type="button" class="mini" id="chg">Changer</button>
+            <span class="hint" style="margin:0 0 0 auto">Clic = zoom.</span>
+          </div>
+          <img id="pimg" alt="fiche">
+        </div>
+      </div>
+    </div>
+
+    <!-- COLONNE 2 : identité, textes libres, actions -->
+    <div class="colmid">
+      <div class="card fcard idcard">
+        <h2 style="margin-bottom:5px">Identité</h2>
+        <div class="r3">
+          <div class="f"><label for="nom">Nom <span class="pill">À vérifier</span></label><input id="nom" placeholder="rien sur la fiche"></div>
+          <div class="f"><label for="prenom">Prénom <span class="pill">À vérifier</span></label><input id="prenom" placeholder="rien sur la fiche"></div>
+          <div class="f"><label for="ddn">Date de naissance <span class="pill">À vérifier</span></label><input id="ddn" placeholder="rien sur la fiche"></div>
+        </div>
+        <div class="f"><label for="adresse">Adresse <span class="pill">À vérifier</span></label><input id="adresse" placeholder="rien sur la fiche"></div>
+        <div class="r3">
+          <div class="f"><label for="code_postal">Code postal <span class="pill">À vérifier</span></label><input id="code_postal" placeholder="rien"></div>
+          <div class="f"><label for="ville">Ville <span class="pill">À vérifier</span></label><input id="ville" placeholder="rien sur la fiche"></div>
+          <div class="f"><label for="portable">Portable <span class="pill">À vérifier</span></label><input id="portable" placeholder="rien sur la fiche"></div>
+        </div>
+        <div class="f"><label for="email">E-mail <span class="pill">À vérifier</span></label><input id="email" placeholder="rien sur la fiche"></div>
+        <div class="r3">
+          <div class="f">
+            <label for="niveau">Niveau (joueur) <span class="src">adhérent</span> <span class="pill">À vérifier</span></label>
+            <input id="niveau" placeholder="rien sur la fiche">
+          </div>
+          <div class="f">
+            <label for="niveau_club">Niveau (club) <span class="src club">club</span></label>
+            <select id="niveau_club"></select>
+          </div>
+        </div>
+        <div class="r3">
+          <div class="f">
+            <label for="reglement">Règlement <span class="pill">À vérifier</span></label>
+            <select id="reglement">
+              <option value="">non indiqué</option>
+              <option value="Chèque">Chèque</option>
+              <option value="Prélèvement">Prélèvement</option>
+              <option value="CB">CB</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="f">
+            <label for="nouveau">Nouveau au club</label>
+            <select id="nouveau"><option value="">Non</option><option value="1">Oui</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fcard textcard">
+        <div class="f">
+          <label for="obs">Observations <span class="src">adhérent</span> <span class="pill">À vérifier</span></label>
+          <textarea id="obs" rows="3" placeholder="rien sur la fiche"></textarea>
+        </div>
+        <div class="two">
+          <div class="f">
+            <label for="hors_champ">Hors champ <span class="src">adhérent</span> <span class="pill">À vérifier</span></label>
+            <textarea id="hors_champ" rows="2" placeholder="marges, flèches…"></textarea>
+          </div>
+          <div class="f">
+            <label for="annotations">Annotations <span class="src club">club</span> <span class="pill">À vérifier</span></label>
+            <textarea id="annotations" rows="2" placeholder="paiement, n° adhérent…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="actionrow">
+        <button id="save" class="primary big">Enregistrer &amp; suivant ⏎</button>
+        <button id="revOk" class="primary big" style="display:none">✓ Tout est bon — Valider</button>
+        <button id="revSkip" class="later" style="display:none">Plus tard</button>
+      </div>
+    </div>
+
+    <!-- COLONNE 3 : la grille des jours, à l'identique de la fiche papier -->
+    <div>
+      <div class="card fcard" id="availCard">
+        <div class="gridhead">
+          <b>Disponibilités</b>
+          <span class="pill" id="gridPill">À vérifier</span>
+          <span class="legend">
+            <span><i class="sw" style="background:var(--accent)"></i> Disponible</span>
+            <span><i class="sw" style="background:repeating-linear-gradient(45deg,#c9ced6,#c9ced6 3px,#e2e6ec 3px,#e2e6ec 6px)"></i> Club fermé</span>
+          </span>
+        </div>
+        <div class="gridwarn" id="gridwarn"></div>
+        <div class="gridwrap"><table class="avail" id="avail"></table></div>
+        <p class="hint" id="selsum" hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- filet de securite : six secondes pour revenir en arriere -->
+<div class="toast" id="toast">
+  <span class="tick">✓</span>
+  <span id="toastMsg"></span>
+  <span class="secs" id="toastSecs"></span>
+  <button id="toastUndo">Annuler</button>
 </div>
 
 <!-- MODALE : fiches enregistrées -->
@@ -306,12 +519,22 @@ const START=9*60, END=21*60+30, STEP=15;               // 9h00 -> 21h30, pas 15 
 const SLOTS=[];
 for(let t=START;t<END;t+=STEP) SLOTS.push(t);          // début de chaque bloc
 const NSLOT=SLOTS.length;
-// zones "club fermé" présentes sur toutes les fiches
+// Fenetres ou aucun cours CCA ne peut etre place. Source unique de verite :
+// solveur/creer_contraintes.py, feuille "Fermetures". Toute modification ici
+// doit etre reportee la-bas, sinon on saisit des creneaux que le solveur refuse.
+const FERMETURES = [
+  {jour:0, de: 15*60,      a: 17*60,      motif:"Fénelon — 3 courts pris par le lycée"},
+  {jour:3, de: 13*60+30,   a: 17*60+30,   motif:"Université + Fénelon"},
+  {jour:2, de:  9*60,      a: 19*60,      motif:"École de tennis"},
+  {jour:5, de: 14*60,      a: 22*60,      motif:"Club fermé le samedi après-midi"},
+];
 function isBlocked(dayIdx,tStart){
-  if(dayIdx===2 && tStart>=12*60+30 && tStart<19*60) return true; // Mercredi 12h30-19h
-  if(dayIdx===5 && tStart>=14*60) return true;                    // Samedi 14h-22h
-  return false;
+  return FERMETURES.some(f => f.jour===dayIdx && tStart>=f.de && tStart<f.a);
 }
+
+// Niveaux attribues par le club. A REMPLACER par la liste reelle du document
+// des niveaux : ces lettres sont un gabarit, pas la nomenclature du club.
+const NIVEAUX_CLUB = ["A","B","C","D","E","F"];
 const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return mm===0?h+"h":h+"h"+String(mm).padStart(2,"0");};
 
 /* ---------- Supabase (base partagée) ---------- */
@@ -320,8 +543,12 @@ const SB_KEY="sb_publishable_ZMJBbQxcOleaZpYCgN5gzA_JFXP_UB5";
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 function setConn(ok){
   const el=document.getElementById("conn");
-  el.textContent = ok? "🟢" : "🔴";
-  el.title = ok? "Connecté à la base partagée" : "Hors ligne — vérifie ta connexion";
+  if(el){
+    el.textContent = ok? "🟢" : "🔴";
+    el.title = ok? "Connecté à la base partagée" : "Hors ligne — vérifie ta connexion";
+  }
+  const t=document.getElementById("connTxt");
+  if(t) t.textContent = ok? "Connecté — tout est sauvegardé" : "Hors ligne — rien n'est sauvegardé";
 }
 
 /* ---------- état ---------- */
@@ -331,10 +558,36 @@ let editId = null;
 let curPhoto = null;      // nouvelle photo (dataURL) à uploader
 let editPhotoUrl = null;  // photo déjà en base pour la fiche en cours d'édition
 
-// mémorise le prénom de l'assistante localement
-const saisiInput=document.getElementById("saisiPar");
-saisiInput.value=localStorage.getItem("cca_saisiPar")||"";
-saisiInput.oninput=()=>localStorage.setItem("cca_saisiPar",saisiInput.value.trim());
+// Le prenom de l'assistante : demande une fois, rappele en haut de chaque ecran.
+let saisiPar = localStorage.getItem("cca_saisiPar") || "";
+function paintWho(){
+  const n = saisiPar || "Qui êtes-vous ?";
+  ["whoName","whoName2"].forEach(id=>{ const e=F(id); if(e) e.textContent=n; });
+  const h=F("helloName"); if(h) h.textContent = saisiPar || "vous";
+}
+function askWho(force){
+  if(saisiPar && !force) return saisiPar;
+  const v = prompt("Votre prénom, pour savoir qui a relu chaque fiche :", saisiPar || "");
+  if(v!==null){ saisiPar = v.trim(); localStorage.setItem("cca_saisiPar", saisiPar); paintWho(); }
+  return saisiPar;
+}
+
+/* La colonne niveau_club arrive par migration. Tant qu'elle n'est pas passee,
+   l'inclure dans un insert ferait echouer TOUT l'enregistrement : on la detecte
+   une fois au demarrage et on s'en passe proprement en attendant. */
+let hasNiveauClub = false;
+async function checkNiveauClub(){
+  const { error } = await sb.from("fiches").select("niveau_club").limit(1);
+  hasNiveauClub = !error;
+  const sel = F("niveau_club");
+  if(sel && !hasNiveauClub){
+    sel.disabled = true;
+    sel.title = "En attente de la migration 20260901_fiches_niveau_club.sql";
+    const lab = sel.previousElementSibling;
+    if(lab) lab.insertAdjacentHTML("beforeend",
+      ' <span class="src" style="background:#f3d9d3;color:#8a3417">migration à passer</span>');
+  }
+}
 
 async function loadPlayers(){
   const {data,error}=await sb.from("fiches").select("*").order("created_at",{ascending:true});
@@ -500,9 +753,12 @@ function fillDispos(dispos){
 function applyFiche(f){
   if(!f) return;
   const set=(id,v)=>{ if(v && String(v).trim()) F(id).value=String(v).trim(); };
-  set("nom",f.nom); set("prenom",f.prenom); set("ddn",f.ddn); set("tel",f.tel);
+  set("nom",f.nom); set("prenom",f.prenom); set("ddn",f.ddn);
+  set("portable",f.portable||f.tel);
+  set("adresse",f.adresse); set("code_postal",f.code_postal); set("ville",f.ville);
   set("email",f.email); set("niveau",f.niveau); set("obs",f.obs);
-  set("hors_champ",f.hors_champ);
+  set("annotations",f.annotations); set("hors_champ",f.hors_champ);
+  autoGrowAll();
   if(Array.isArray(f.dispos)) fillDispos(f.dispos);
 }
 async function extractFiche(){
@@ -562,24 +818,29 @@ document.getElementById("chg").onclick=()=>file.click();
 
 /* ---------- formulaire ---------- */
 const F=id=>document.getElementById(id);
+const TEXT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","portable",
+                  "email","niveau","obs","annotations","hors_champ"];
 function readForm(){
   return {
     nom:F("nom").value.trim(), prenom:F("prenom").value.trim(), ddn:F("ddn").value.trim(),
     adresse:F("adresse").value.trim(), code_postal:F("code_postal").value.trim(),
     ville:F("ville").value.trim(),
-    tel:F("tel").value.trim(), portable:F("portable").value.trim(),
-    email:F("email").value.trim(), niveau:F("niveau").value.trim(),
+    portable:F("portable").value.trim(),
+    email:F("email").value.trim(),
+    // niveau = ce que l'adherent a ecrit ; niveau_club = la lettre du club
+    niveau:F("niveau").value.trim(),
+    ...(hasNiveauClub ? {niveau_club: F("niveau_club").value || null} : {}),
     reglement:F("reglement").value, obs:F("obs").value.trim(),
     annotations:F("annotations").value.trim(),
     hors_champ:F("hors_champ").value.trim(),
-    soiree_eval:F("soiree_eval").value.trim(), nouveau:F("nouveau").value==="1",
+    nouveau:F("nouveau").value==="1",
     avail:sel.map(c=>c.slice())
   };
 }
 function clearForm(){
-  ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
-   "email","obs","annotations","hors_champ","soiree_eval","niveau"].forEach(id=>F(id).value="");
-  F("reglement").value=""; F("nouveau").value="";
+  TEXT_IDS.forEach(id=>F(id).value="");
+  F("reglement").value=""; F("nouveau").value=""; F("niveau_club").value="";
+  autoGrowAll();
   clearFlags();
   sel=DAYS.map(()=>new Array(NSLOT).fill(false));
   curPhoto=null; editPhotoUrl=null;
@@ -588,14 +849,31 @@ function clearForm(){
   editId=null; F("editmode").textContent=""; F("editmode").style.color="";
   refreshGrid(); F("nom").focus();
 }
-F("clear").onclick=clearForm;
+// « Vider » efface une fiche en cours de correction : on demande confirmation.
+F("clear").onclick=()=>{
+  const rempli = TEXT_IDS.some(id=>F(id).value.trim()) || sel.some(c=>c.some(Boolean));
+  if(rempli && !confirm("Effacer tout ce qui est à l'écran ?\n\nLes fiches déjà enregistrées ne sont pas touchées.")) return;
+  clearForm();
+};
+
+/* les zones de texte grandissent avec leur contenu : rien n'est jamais tronque */
+function autoGrow(el){
+  if(!el) return;
+  el.style.height="0px";                    // repart du plancher CSS (min-height)
+  el.style.height=(el.scrollHeight+2)+"px"; // puis exactement ce qu'il faut
+}
+function autoGrowAll(){ ["obs","annotations","hors_champ"].forEach(id=>{
+  const e=F(id); if(e){ e.style.height=""; autoGrow(e); } }); }
+["obs","annotations","hors_champ"].forEach(id=>{
+  const e=F(id); if(e) e.addEventListener("input",()=>autoGrow(e));
+});
 
 const saveBtn=F("save");
 saveBtn.onclick=async ()=>{
   const p=readForm();
   if(!p.nom && !p.prenom){ alert("Renseigne au moins un nom."); return; }
   const name=(p.prenom+" "+p.nom).trim();
-  p.saisi_par=(saisiInput.value||"").trim()||null;
+  p.saisi_par = saisiPar || null;
   saveBtn.disabled=true;
   try{
     // photo : nouvelle => upload ; sinon on garde celle déjà en base (édition)
@@ -623,7 +901,15 @@ document.addEventListener("keydown",e=>{
 /* ---------- liste ---------- */
 function updateCount(){
   const n=players.length;
-  document.getElementById("count").textContent = n+" fiche"+(n>1?"s":"");
+  const rev=players.filter(p=>p.statut==="a_verifier").length;
+  const set=(id,v)=>{ const e=F(id); if(e) e.textContent=v; };
+  set("tListeN", n ? "Voir les "+n+" fiche"+(n>1?"s":"") : "Voir les fiches");
+  set("tExportN", "Télécharger l'Excel");
+  set("tRelireN", rev ? rev+" fiche"+(rev>1?"s":"")+" à relire" : "Rien à relire 🎉");
+  set("helloSub", n
+    ? n+" fiche"+(n>1?"s":"")+" enregistrée"+(n>1?"s":"")+", "+(rev||"aucune")+" en attente de relecture."
+    : "Aucune fiche pour l'instant. Commencez par en importer.");
+  const t=F("tRelire"); if(t) t.disabled = !rev;
 }
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function renderList(){
@@ -640,7 +926,7 @@ function renderList(){
       <td>${esc(p.prenom)}</td>
       <td>${esc(p.niveau||"")}</td>
       <td>${chips}</td>
-      <td>${esc(p.tel||"")}<br><span style="color:#889">${esc(p.email||"")}</span></td>
+      <td>${esc(p.portable||p.tel||"")}<br><span style="color:#889">${esc(p.email||"")}</span></td>
       <td>${esc(p.reglement||"")}</td>
       <td style="max-width:220px;color:#556">${esc(p.obs||"")}</td>
       <td>${p.photo_url?`<button class="mini" data-photo="${esc(p.photo_url)}" title="Ouvrir la photo">📷</button>`:""}</td>
@@ -663,12 +949,13 @@ function edit(id){
   F("nom").value=p.nom||"";F("prenom").value=p.prenom||"";F("ddn").value=p.ddn||"";
   F("adresse").value=p.adresse||"";F("code_postal").value=p.code_postal||"";
   F("ville").value=p.ville||"";
-  F("tel").value=p.tel||"";F("portable").value=p.portable||"";
+  F("portable").value=p.portable||p.tel||"";
   F("email").value=p.email||"";F("niveau").value=p.niveau||"";
+  F("niveau_club").value=p.niveau_club||"";
   F("reglement").value=p.reglement||"";F("obs").value=p.obs||"";
   F("annotations").value=p.annotations||"";F("hors_champ").value=p.hors_champ||"";
-  F("soiree_eval").value=p.soiree_eval||"";
   F("nouveau").value=p.nouveau?"1":"";
+  autoGrowAll();
   flagDoubtful(p.confiance);
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
   curPhoto=null; editPhotoUrl=p.photo_url||null;
@@ -706,7 +993,6 @@ async function del(id){
 // modale
 function openModal(){ document.getElementById("modalBg").classList.add("open"); renderList(); F("search").focus(); }
 function closeModal(){ document.getElementById("modalBg").classList.remove("open"); }
-document.getElementById("openList").onclick=openModal;
 document.getElementById("closeList").onclick=closeModal;
 document.getElementById("modalBg").onclick=e=>{ if(e.target.id==="modalBg") closeModal(); };
 F("search").oninput=renderList;
@@ -720,19 +1006,24 @@ function flashSaved(name){
 }
 
 /* ---------- export ---------- */
-document.getElementById("expXlsx").onclick=()=>{
-  const header=["Nom","Prénom","Date naissance","Portable","E-mail","Niveau","Règlement","Nb créneaux","Disponibilités","Observations","Saisi par","Photo"];
+function exportXlsx(){
+  // La colonne « Portable » tirait de p.tel (le fixe) : les numeros exportes
+  // n'etaient pas ceux affiches. On lit portable, avec tel en dernier recours
+  // pour les fiches anciennes.
+  const header=["Nom","Prénom","Date naissance","Portable","E-mail","Niveau (joueur)","Niveau (club)","Règlement","Nb créneaux","Disponibilités","Observations","Annotations","Hors champ","Saisi par","Photo"];
   const data=[header];
   players.forEach(p=>{
     const iv=intervalsText(p.avail||[]);
-    data.push([p.nom,p.prenom,p.ddn||"",p.tel||"",p.email||"",p.niveau||"",p.reglement||"",iv.length,iv.join(" ; "),p.obs||"",p.saisi_par||"",p.photo_url||""]);
+    data.push([p.nom,p.prenom,p.ddn||"",p.portable||p.tel||"",p.email||"",p.niveau||"",
+               p.niveau_club||"",p.reglement||"",iv.length,iv.join(" ; "),p.obs||"",
+               p.annotations||"",p.hors_champ||"",p.saisi_par||"",p.photo_url||""]);
   });
   const ws=XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"]=[{wch:16},{wch:14},{wch:14},{wch:16},{wch:26},{wch:14},{wch:12},{wch:10},{wch:60},{wch:24},{wch:14},{wch:40}];
+  ws["!cols"]=[{wch:16},{wch:14},{wch:14},{wch:16},{wch:26},{wch:16},{wch:12},{wch:12},{wch:10},{wch:60},{wch:30},{wch:24},{wch:24},{wch:14},{wch:40}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Fiches CCA");
   XLSX.writeFile(wb,"Recap_fiches_CCA_2027.xlsx");
-};
+}
 function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();}
 
 /* ---------- init ---------- */
@@ -966,7 +1257,7 @@ async function saveFiche(it, fiche, meta){
     nom: fiche.nom||"", prenom: fiche.prenom||"", ddn: fiche.ddn||"",
     adresse: fiche.adresse||"", code_postal: fiche.code_postal||"", ville: fiche.ville||"",
     tel: fiche.tel||"", portable: fiche.portable||"", email: fiche.email||"",
-    niveau: fiche.niveau||"", nouveau: !!fiche.nouveau, soiree_eval: fiche.soiree_eval||"",
+    niveau: fiche.niveau||"", nouveau: !!fiche.nouveau,
     obs: [fiche.obs||"", pl].filter(Boolean).join(" — "),
     annotations: fiche.annotations||"",
     hors_champ: fiche.hors_champ||"",
@@ -1058,7 +1349,6 @@ async function refreshQueue(){
 }
 
 /* ---------- cablage import ---------- */
-F("openImport").onclick = async () => { F("impBg").classList.add("open"); await refreshQueue(); };
 F("impClose").onclick  = () => F("impBg").classList.remove("open");
 F("impBg").onclick = e => { if(e.target.id === "impBg") F("impBg").classList.remove("open"); };
 F("impDrop").onclick = () => F("impFile").click();
@@ -1173,22 +1463,41 @@ F("impBackfill").onclick = async () => {
 
 /* ---------- relecture ---------- */
 let reviewing = false;
-const DOUBT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
-                   "email","niveau","obs","annotations","hors_champ","soiree_eval"];
+let nDoubt = 0;   // nombre de choses a verifier sur la fiche affichee
+const DOUBT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","portable",
+                   "email","niveau","obs","annotations","hors_champ"];
+// Le marqueur se pose sur le bloc .f, pas sur l'input : la barre ambre et
+// l'etiquette « A verifier » apparaissent SANS deplacer le champ, pour que les
+// positions restent identiques d'une fiche a l'autre.
+function blockOf(id){ const e = F(id); return e ? e.closest(".f") : null; }
 function clearFlags(){
-  DOUBT_IDS.forEach(id => { const e = F(id); if(e) e.classList.remove("doubt"); });
+  DOUBT_IDS.forEach(id => { const b = blockOf(id); if(b) b.classList.remove("doubt"); });
   const card = F("availCard"); if(card) card.classList.remove("doubt");
   const warn = F("gridwarn"); if(warn) warn.textContent = "";
+  nDoubt = 0; paintDoubtCount();
+}
+function paintDoubtCount(){
+  const b = F("ficheBadge");
+  if(!b) return;
+  if(!reviewing){ b.classList.remove("on"); return; }
+  b.classList.add("on");
+  b.classList.toggle("ok", nDoubt === 0);
+  b.textContent = nDoubt
+    ? nDoubt + (nDoubt > 1 ? " choses à vérifier" : " chose à vérifier")
+    : "Rien à vérifier — lue sans hésitation";
 }
 function flagDoubtful(conf){
   clearFlags();
   const list = (conf && conf.champs_douteux) || [];
   const gridNotes = [];
-  list.forEach(n => {
-    const raw = String(n).trim();
+  let n = 0;
+  list.forEach(x => {
+    const raw = String(x).trim();
     const id = raw.toLowerCase();
-    const e = F(id);
-    if(e){ e.classList.add("doubt"); return; }
+    // le fixe et la soiree d'evaluation ne sont plus a l'ecran
+    if(id === "tel" || id === "soiree_eval") return;
+    const b = blockOf(id === "tel" ? "portable" : id);
+    if(b){ if(!b.classList.contains("doubt")) n++; b.classList.add("doubt"); return; }
     // La grille n'est pas un <input> : le modele la designe par "dispos",
     // "dispos Mercredi"... Sans ce cas, l'alerte la plus utile etait perdue.
     if(id.startsWith("dispo") || id.startsWith("creneau") || id.startsWith("créneau")){
@@ -1196,17 +1505,16 @@ function flagDoubtful(conf){
     }
   });
   const g = conf && typeof conf.grille === "number" ? conf.grille : null;
-  if(g !== null && g < 0.75) gridNotes.push("confiance grille " + Math.round(g*100) + " %");
+  if(g !== null && g < 0.75) gridNotes.push("lecture peu sûre");
   const card = F("availCard"), warn = F("gridwarn");
   if(gridNotes.length){
     card.classList.add("doubt");
     warn.textContent = "⚠️ Grille à vérifier de près — " + gridNotes.join(", ");
+    n++;
   }
+  nDoubt = n; paintDoubtCount();
 }
-function updateReviewCount(){
-  const n = players.filter(p => p.statut === "a_verifier").length;
-  const e = F("nrev"); if(e) e.textContent = n;
-}
+function updateReviewCount(){ updateCount(); }
 const skipped = new Set();
 // Les fiches les moins sures d'abord : c'est la que la relecture rapporte le plus.
 function reviewList(){
@@ -1217,45 +1525,128 @@ function reviewList(){
     return (typeof ga === "number" ? ga : 1) - (typeof gb === "number" ? gb : 1);
   });
 }
+/* ---------- routeur d'ecrans ---------- */
+let revTotal = 0, revDone = 0;
+function showScreen(name){
+  document.querySelectorAll(".screen").forEach(e=>e.classList.remove("on"));
+  const e = F(name === "accueil" ? "scAccueil" : "scFiche");
+  if(e) e.classList.add("on");
+  if(name === "accueil") updateCount();
+}
+function setMode(mode){                       // "saisie" | "relecture"
+  reviewing = (mode === "relecture");
+  F("save").style.display    = reviewing ? "none" : "";
+  F("revOk").style.display   = reviewing ? "" : "none";
+  F("revSkip").style.display = reviewing ? "" : "none";
+  F("clear").style.display   = reviewing ? "none" : "";   // pas d'effacement pendant la relecture
+  F("ficheProg").classList.toggle("on", reviewing);
+  paintDoubtCount();
+}
+
 function reviewNext(){
   const list = reviewList();
   if(!list.length){
-    F("revbar").classList.remove("on"); reviewing = false;
-    clearForm();
-    alert("Plus rien à relire. 🎉");
+    reviewing = false; clearForm(); showScreen("accueil");
     return;
   }
-  reviewing = true;
-  F("revbar").classList.add("on");
+  setMode("relecture");
   const p = list[0];
   edit(p.id);
-  const c = p.confiance || {};
-  const pct = v => v == null ? "—" : Math.round(v*100) + " %";
-  F("revinfo").innerHTML =
-    `<b>${esc(p.prenom||"")} ${esc(p.nom||"")}</b> — reste <b>${list.length}</b> à relire`
-    + ` · confiance identité ${pct(c.identite)}, grille ${pct(c.grille)}`
-    + (p.source_fichier ? ` · <span style="color:var(--muted)">${esc(p.source_fichier)} p.${p.source_page}</span>` : "");
+  revDone = Math.max(0, revTotal - list.length);
+  F("ficheStep").textContent = "Fiche " + (revDone + 1) + " sur " + revTotal;
+  F("ficheProg").firstElementChild.style.width =
+    revTotal ? Math.round(revDone / revTotal * 100) + "%" : "0%";
+  F("editmode").textContent = p.source_fichier
+    ? p.source_fichier + ", page " + p.source_page : "";
+  F("editmode").style.color = "var(--muted)";
 }
-F("openReview").onclick = reviewNext;
-F("revQuit").onclick = () => {
-  reviewing = false; F("revbar").classList.remove("on"); clearForm();
-};
+function startReview(){
+  askWho();
+  revTotal = reviewList().length;
+  if(!revTotal){ alert("Plus rien à relire. 🎉"); return; }
+  showScreen("fiche");
+  reviewNext();
+}
+function startSaisie(){
+  askWho();
+  setMode("saisie");
+  clearForm();
+  F("ficheStep").textContent = "Nouvelle fiche";
+  showScreen("fiche");
+}
+F("btnHome").onclick = () => { reviewing = false; clearForm(); showScreen("accueil"); };
 F("revSkip").onclick = () => {
   const list = reviewList();
   if(list.length) skipped.add(list[0].id);
   reviewNext();
 };
+
+/* ---------- validation, avec six secondes pour revenir en arriere ---------- */
+let undoId = null, undoTimer = null, undoTick = null;
+function hideToast(){
+  F("toast").classList.remove("on");
+  clearTimeout(undoTimer); clearInterval(undoTick);
+  undoId = null;
+}
+function offerUndo(id, name){
+  undoId = id;
+  F("toastMsg").textContent = "Fiche de " + name + " validée";
+  F("toast").classList.add("on");
+  let left = 6;
+  F("toastSecs").textContent = left + " s";
+  clearInterval(undoTick);
+  undoTick = setInterval(()=>{ left--; F("toastSecs").textContent = Math.max(0,left) + " s"; }, 1000);
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(hideToast, 6000);
+}
+F("toastUndo").onclick = async () => {
+  const id = undoId; hideToast();
+  if(!id) return;
+  const { error } = await sb.from("fiches").update({statut:"a_verifier"}).eq("id", id);
+  if(error){ alert("Annulation impossible : " + error.message); return; }
+  await loadPlayers();
+  revTotal = reviewList().length;
+  reviewNext();
+};
+
 F("revOk").onclick = async () => {
   if(!editId) return;
   const p = readForm();
+  const name = ((p.prenom||"") + " " + (p.nom||"")).trim() || "cette fiche";
+  const id = editId;
   p.statut = "valide";
   p.updated_at = new Date().toISOString();
-  p.saisi_par = (F("saisiPar").value||"").trim() || null;
-  const { error } = await sb.from("fiches").update(p).eq("id", editId);
-  if(error){ alert("Enregistrement impossible : " + error.message); return; }
-  await loadPlayers();
-  reviewNext();
+  p.saisi_par = saisiPar || null;
+  const btn = F("revOk"); btn.disabled = true;
+  try{
+    const { error } = await sb.from("fiches").update(p).eq("id", id);
+    if(error) throw error;
+    await loadPlayers();
+    offerUndo(id, name);
+    reviewNext();
+  }catch(e){
+    setConn(false);
+    alert("Enregistrement impossible : " + (e.message||e) + "\nLa fiche reste à l'écran.");
+  }finally{ btn.disabled = false; }
 };
+
+/* ---------- cablage de l'accueil ---------- */
+F("tRelire").onclick = startReview;
+F("tSaisie").onclick = startSaisie;
+F("tImport").onclick = async () => { F("impBg").classList.add("open"); await refreshQueue(); };
+F("tListe").onclick  = openModal;
+F("tExport").onclick = exportXlsx;
+F("whoBtn").onclick  = () => askWho(true);
+F("whoChip2").onclick = () => askWho(true);
+NIVEAUX_CLUB.forEach(l=>{
+  const o=document.createElement("option"); o.value=l; o.textContent=l;
+  F("niveau_club").appendChild(o);
+});
+F("niveau_club").insertBefore(
+  Object.assign(document.createElement("option"),{value:"",textContent:"— pas encore classé"}),
+  F("niveau_club").firstChild);
+paintWho();
+setMode("saisie");
 
 /* garde le compteur a jour apres chaque rechargement de la liste */
 const _loadPlayers = loadPlayers;
@@ -1299,6 +1690,8 @@ function lock(){
 async function unlock(){
   F("authBg").classList.remove("on");
   document.body.classList.remove("locked");
+  showScreen("accueil");
+  await checkNiveauClub();
   await loadPlayers();
   refreshQueue();
 }
@@ -1329,6 +1722,7 @@ F("logout").onclick = async () => {
   players = [];
   renderList();
   clearForm();
+  showScreen("accueil");
   lock();
 };
 
