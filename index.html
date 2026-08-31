@@ -2629,7 +2629,11 @@ function lireResultat(wb){
       pal: String(r[ic["palier"]]||"").trim(),
       sexe: String(r[ic["sexe"]]||"").trim().toUpperCase(),
       min: +r[ic["min"]] || 3, max: +r[ic["max"]] || 4,
-      membres: [], epingles: [], lock: 0, manuel: false, diff: null
+      membres: [], epingles: [], manuel: false, diff: null,
+      // `figeage` est ce que la relance precedente a recu et respecte. Le relire
+      // rend ses cadenas a l'ecran : sans lui, chaque calcul renverrait un
+      // planning ou plus rien n'est fige, et il faudrait tout refigier a la main.
+      lock: ({creneau:1, tout:2})[String(r[ic["figeage"]]||"").trim().toLowerCase()] || 0
     };
     c.cle = cleDe(c);
     par[String(r[ic["groupe"]]||"").trim()] = c;
