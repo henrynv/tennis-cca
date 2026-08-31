@@ -785,6 +785,7 @@
       <div class="grsres" id="grSres"></div>
     </span>
     <span class="grpills" id="grPills"></span>
+    <button class="mini" id="grNouveau" style="display:none">← Nouveau calcul</button>
     <button class="mini" id="grExport" disabled>⬇︎ Excel</button>
   </div>
 
@@ -809,6 +810,8 @@
       <p class="grerr" id="grErr"></p>
       <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
         puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
+      <p style="margin-top:12px"><button class="mini" id="grRetour"
+        style="display:none">← Revenir aux groupes</button></p>
     </div>
   </div>
 
@@ -3005,13 +3008,16 @@ function memoriser(nom){       // apres une retouche : on garde une trace nommee
 function rend(){
   if(enCalcul) return;                 // pendant un calcul, l'ecran de progression tient l'affichage
   const ok = cours.length > 0;
+  const vue = ok && !ecranLance;       // affiche-t-on les groupes, ou l'ecran de lancement ?
   F("grProg").style.display  = "none";
-  F("grEmpty").style.display = ok ? "none" : "flex";
-  F("grView").style.display  = ok ? "grid" : "none";
-  F("grSearch").style.display = ok ? "block" : "none";
+  F("grEmpty").style.display = vue ? "none" : "flex";
+  F("grView").style.display  = vue ? "grid" : "none";
+  F("grSearch").style.display = vue ? "block" : "none";
   F("grExport").disabled = !ok;
+  F("grNouveau").style.display = vue ? "block" : "none";
+  F("grRetour").style.display = (ok && ecranLance) ? "inline-block" : "none";
   rendFichiers(); rendPills();
-  if(!ok){ F("grBadge").className = "badge"; return; }
+  if(!vue){ majLance(); if(!ok) F("grBadge").className = "badge"; return; }
   rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendProfs(); rendBar();
   F("grRelance").style.display = agent ? "block" : "none";
   majTuile();
@@ -3518,6 +3524,9 @@ function exportFigeages(){
    et personne ne voit un bouton qui ne marcherait pas. */
 const AGENT = location.port === "8787" ? "" : "http://127.0.0.1:8787";
 let agent = null, enCalcul = false, suivi = null;
+// « Nouveau calcul » rouvre l'ecran de lancement SANS jeter le resultat courant :
+// sans ce drapeau, rend() ne regarde que cours.length et le masque aussitot.
+let ecranLance = false;
 
 async function jsonAgent(chemin, corps){
   const o = corps ? {method:"POST", headers:{"content-type":"application/json"},
@@ -3556,8 +3565,12 @@ function majLance(){
     : `Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
        puis déposez <b>resultat-cca.xlsx</b> ci-dessus. Ou lancez
        <code>python agent.py</code> pour calculer depuis cette page.`;
-  F("grEmptyT").textContent = agent ? "Constituer les groupes" : "Le résultat du calcul";
-  F("grEmptyS").textContent = agent
+  const dejaLa = cours.length > 0;
+  F("grEmptyT").textContent = dejaLa ? "Nouveau calcul"
+    : agent ? "Constituer les groupes" : "Le résultat du calcul";
+  F("grEmptyS").textContent = dejaLa
+    ? "Les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti, et les cours figés repartent avec."
+    : agent
     ? "Le calcul crée les créneaux et y place les joueurs. Vous corrigez ensuite, autant de fois qu'il faut."
     : "Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.";
   if(!agent){ b.style.display = "none"; rendFichiers(); return; }
@@ -3648,7 +3661,7 @@ async function terminer(d){
       {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
     instantane("Calcul");
     sel = null; selAtt = null; moving = null;
-    enCalcul = false; sauver(); rend();
+    enCalcul = false; ecranLance = false; sauver(); rend();
   }catch(e){
     enCalcul = false;
     F("grErr").textContent = (d && d.code) ? "Le solveur s'est arrêté : "
@@ -3673,6 +3686,8 @@ document.addEventListener("keydown", e=>{
 });
 F("grGo").onclick = lancer;
 F("grRelance").onclick = lancer;
+F("grNouveau").onclick = ()=>{ ecranLance = true; rend(); };
+F("grRetour").onclick  = ()=>{ ecranLance = false; rend(); };
 F("grStop").onclick = async ()=>{
   F("grStop").disabled = true;
   F("grProgH").textContent = "Arrêt demandé — le solveur termine la solution en cours…";
