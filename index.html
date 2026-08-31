@@ -214,6 +214,8 @@
       <input id="obs">
       <label>Annotations du club (marges)</label>
       <input id="annotations" placeholder="paiement, n° adhérent…">
+      <label>Hors champ (écriture du joueur hors des cases)</label>
+      <input id="hors_champ" placeholder="marges de la grille, flèches, entre deux blocs…">
     </div>
 
     <!-- RIGHT : availability -->
@@ -284,6 +286,14 @@
         <button id="impPurge" class="ghost mini danger">Vider la file</button>
         <span class="hint" style="margin-left:auto">Reprend automatiquement après fermeture de l'onglet.</span>
       </div>
+
+      <!-- Reprise : les fiches importées avant l'ajout de « hors champ » ont ce
+           champ à NULL. On relit leur photo et on n'écrit QUE cette colonne. -->
+      <div class="actions" style="margin:0 0 10px;border-top:1px solid var(--line);padding-top:10px">
+        <button id="impBackfill" class="mini">⟳ Reprise « hors champ »</button>
+        <span class="hint" id="bfInfo" style="margin-left:auto">Relit la photo des fiches importées avant l'ajout du champ. Seule la colonne « hors champ » est écrite : aucune correction manuelle n'est touchée.</span>
+      </div>
+
       <table class="q"><tbody id="qbody"></tbody></table>
     </div>
   </div>
@@ -492,6 +502,7 @@ function applyFiche(f){
   const set=(id,v)=>{ if(v && String(v).trim()) F(id).value=String(v).trim(); };
   set("nom",f.nom); set("prenom",f.prenom); set("ddn",f.ddn); set("tel",f.tel);
   set("email",f.email); set("niveau",f.niveau); set("obs",f.obs);
+  set("hors_champ",f.hors_champ);
   if(Array.isArray(f.dispos)) fillDispos(f.dispos);
 }
 async function extractFiche(){
@@ -560,13 +571,14 @@ function readForm(){
     email:F("email").value.trim(), niveau:F("niveau").value.trim(),
     reglement:F("reglement").value, obs:F("obs").value.trim(),
     annotations:F("annotations").value.trim(),
+    hors_champ:F("hors_champ").value.trim(),
     soiree_eval:F("soiree_eval").value.trim(), nouveau:F("nouveau").value==="1",
     avail:sel.map(c=>c.slice())
   };
 }
 function clearForm(){
   ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
-   "email","obs","annotations","soiree_eval","niveau"].forEach(id=>F(id).value="");
+   "email","obs","annotations","hors_champ","soiree_eval","niveau"].forEach(id=>F(id).value="");
   F("reglement").value=""; F("nouveau").value="";
   clearFlags();
   sel=DAYS.map(()=>new Array(NSLOT).fill(false));
@@ -654,7 +666,8 @@ function edit(id){
   F("tel").value=p.tel||"";F("portable").value=p.portable||"";
   F("email").value=p.email||"";F("niveau").value=p.niveau||"";
   F("reglement").value=p.reglement||"";F("obs").value=p.obs||"";
-  F("annotations").value=p.annotations||"";F("soiree_eval").value=p.soiree_eval||"";
+  F("annotations").value=p.annotations||"";F("hors_champ").value=p.hors_champ||"";
+  F("soiree_eval").value=p.soiree_eval||"";
   F("nouveau").value=p.nouveau?"1":"";
   flagDoubtful(p.confiance);
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
@@ -956,6 +969,7 @@ async function saveFiche(it, fiche, meta){
     niveau: fiche.niveau||"", nouveau: !!fiche.nouveau, soiree_eval: fiche.soiree_eval||"",
     obs: [fiche.obs||"", pl].filter(Boolean).join(" — "),
     annotations: fiche.annotations||"",
+    hors_champ: fiche.hors_champ||"",
     avail: availFromDispos(fiche.dispos),
     dispos: fiche.dispos||[],
     confiance: fiche.confiance||null,
@@ -1071,10 +1085,96 @@ F("impPurge").onclick = async () => {
   await refreshQueue(); paint();
 };
 
+/* ---------- reprise « hors champ » ----------
+   Les fiches importees avant l'ajout de la rubrique ont hors_champ a NULL.
+   On relit leur photo avec le prompt courant et on ecrit UNIQUEMENT cette
+   colonne : ni les identites corrigees a la main, ni la grille relue, ni le
+   statut ne sont touches. NULL = jamais extrait, "" = extrait et rien a dire,
+   donc relancer la reprise ne repasse pas sur les fiches deja traitees. */
+let bfRunning = false, bfStop = false;
+
+async function backfillOne(f){
+  const url = await signedPhoto(f.photo_url);
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error("photo inaccessible (" + resp.status + ")");
+  let blob = await resp.blob();
+
+  let res = await extract(blob);
+  if(!res.ok) throw new Error(res.message || res.error || "reponse invalide");
+  // Les photos de l'import sont deja redressees, pas celles saisies a la main.
+  if(res.fiche && res.fiche.rotation){
+    blob = await rotateBlob(blob, res.fiche.rotation);
+    const res2 = await extract(blob);
+    if(res2.ok) res = res2;
+  }
+  // Une page relue comme vide signale un probleme de photo : on la laisse a NULL
+  // pour qu'elle ressorte a la prochaine reprise, plutot que de la marquer traitee.
+  if(!res.fiche || res.fiche.page_vide) return "vide";
+
+  const { error } = await sb.from("fiches")
+    .update({ hors_champ: res.fiche.hors_champ || "" }).eq("id", f.id);
+  if(error) throw error;
+  return (res.fiche.hors_champ || "").trim() ? "rempli" : "vide_ok";
+}
+
+F("impBackfill").onclick = async () => {
+  const btn = F("impBackfill"), info = F("bfInfo");
+  if(bfRunning){ bfStop = true; btn.textContent = "⏹ Arrêt…"; return; }
+
+  const { data, error } = await sb.from("fiches")
+    .select("id,nom,prenom,photo_url").is("hors_champ", null).order("created_at");
+  if(error){ alert("Lecture impossible : " + error.message); return; }
+
+  const avec = (data||[]).filter(f => f.photo_url);
+  const sans = (data||[]).length - avec.length;
+  if(!avec.length){
+    info.textContent = sans
+      ? "Rien à reprendre : " + sans + " fiche(s) sans photo, impossible à relire."
+      : "Rien à reprendre : toutes les fiches ont déjà été passées au crible.";
+    return;
+  }
+  if(!confirm("Relire " + avec.length + " fiche(s) pour en extraire le hors champ ?\n\n"
+            + "Seule la colonne « hors champ » sera écrite ; tout le reste (identité, "
+            + "grille, statut, corrections manuelles) est laissé intact.\n\n"
+            + "Cela consomme " + avec.length + " appel(s) au modèle.")) return;
+
+  bfRunning = true; bfStop = false;
+  btn.textContent = "⏹ Arrêter la reprise";
+  const n = { fait:0, rempli:0, err:0 };
+  let idx = 0;
+  const maj = () => {
+    info.textContent = n.fait + "/" + avec.length + " relues · "
+                     + n.rempli + " avec du hors champ · " + n.err + " erreur(s)";
+  };
+  maj();
+
+  const worker = async () => {
+    while(idx < avec.length && !bfStop){
+      const f = avec[idx++];
+      try{
+        const out = await backfillOne(f);
+        if(out === "rempli") n.rempli++;
+      }catch(e){
+        console.error("reprise", f.id, e);
+        n.err++;
+      }
+      n.fait++; maj();
+    }
+  };
+  await Promise.all(Array.from({length: Math.min(IMP.conc, avec.length)}, worker));
+
+  bfRunning = false; bfStop = false;
+  btn.textContent = "⟳ Reprise « hors champ »";
+  info.textContent = "Reprise terminée : " + n.fait + " fiche(s) relues, "
+                   + n.rempli + " avec du hors champ, " + n.err + " erreur(s)"
+                   + (sans ? " · " + sans + " sans photo, non reprises." : ".");
+  await loadPlayers();
+};
+
 /* ---------- relecture ---------- */
 let reviewing = false;
 const DOUBT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","tel","portable",
-                   "email","niveau","obs","annotations","soiree_eval"];
+                   "email","niveau","obs","annotations","hors_champ","soiree_eval"];
 function clearFlags(){
   DOUBT_IDS.forEach(id => { const e = F(id); if(e) e.classList.remove("doubt"); });
   const card = F("availCard"); if(card) card.classList.remove("doubt");
