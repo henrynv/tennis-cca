@@ -43,8 +43,8 @@
   .photo-drop:hover{border-color:var(--accent);color:var(--accent)}
   .photo-view{margin-top:8px;position:relative}
   .protools{display:flex;gap:6px;align-items:center;margin-bottom:6px}
-  .photo-view img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;display:block;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;transition:transform .15s}
-  .photo-view img.zoom{transform:scale(2.8);cursor:zoom-out}
+  .photo-view img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;display:block;
+    border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
   /* availability grid */
   table.avail{border-collapse:collapse;width:100%;user-select:none}
   table.avail th{font-size:11px;color:var(--muted);font-weight:600;padding:4px 2px;text-align:center;position:sticky;top:0;background:var(--panel)}
@@ -116,9 +116,6 @@
   .auth-err{color:var(--warn);font-size:12px;min-height:16px;margin-top:10px}
   body.locked header,body.locked .wrap{visibility:hidden}
   .card.doubt h2{color:#a06800}
-  .gridwarn{display:none;background:#fff8e6;border:1px solid #f0d79a;border-radius:7px;
-    padding:6px 9px;font-size:12px;color:#7a5200;margin:0 0 8px}
-  .card.doubt .gridwarn{display:block}
 
   /* =====================================================================
      Ecrans : accueil et fiche. Un seul jeu de champs sert la saisie et la
@@ -215,7 +212,7 @@
   .pill{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
     background:#f7e6bd;color:#5c4200;padding:3px 8px;border-radius:4px;white-space:nowrap;
     display:none}
-  .f.doubt .pill{display:inline-block}
+  .f.doubt .pill,#availCard.doubt .gridhead .pill{display:inline-block}
   .src{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     background:#e7ebe6;color:#4a544c;padding:2px 7px;border-radius:3px;white-space:nowrap}
   .src.club{background:#dbe9f6;color:#1a4568}
@@ -240,11 +237,31 @@
   .gridhead{display:flex;align-items:center;gap:9px;margin:0 0 5px;flex:none}
   .gridhead b{font-size:15px}
   .gridhead .legend{margin:0 0 0 auto;gap:12px}
-  #gridwarn{padding:4px 8px;font-size:11.5px;margin:0 0 5px}
   .gridwrap{flex:1;min-height:0;overflow:auto}
   /* la case s'ajuste a la fenetre : la grille entiere tient sans defiler des
      que la fenetre fait au moins 768 px de haut */
-  table.avail td.cell{height:clamp(9px,calc((100vh - 181px) / 50),22px)}
+  table.avail td.cell{height:clamp(9px,calc((100vh - 152px) / 50),22px)}
+
+  /* ---------- la fiche papier en plein ecran ----------
+     L'ancien zoom (scale 2.8 suivant la souris) demandait de viser avant de
+     grossir et se perdait des qu'on relachait. Ici la fiche remplit l'ecran, on
+     l'agrandit par paliers, et on la parcourt avec les barres de defilement du
+     navigateur : aucun geste a apprendre. */
+  .bigbg{position:fixed;inset:0;background:#12160f;z-index:150;display:none;flex-direction:column}
+  .bigbg.on{display:flex}
+  .bigtools{display:flex;align-items:center;gap:10px;padding:10px 16px;flex:none;
+    background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.12)}
+  .bigtools button{height:44px;padding:0 18px;font-size:17px;background:#fff;border-color:#fff}
+  .bigtools .zoombtn{width:52px;padding:0;font-size:24px;line-height:1}
+  .bigtools .pct{color:#fff;font-size:17px;font-variant-numeric:tabular-nums;min-width:76px;
+    text-align:center}
+  .bigtools .name{color:#e8ece6;font-size:17px;margin-left:6px}
+  .bigtools .spacer{flex:1}
+  .bigwrap{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;
+    justify-content:center;padding:14px}
+  .bigwrap img{display:block;max-width:none;border-radius:6px;background:#fff}
+  .bigwrap.zoomable img{cursor:zoom-in}
+  .bigwrap.maxed img{cursor:zoom-out}
 
   /* ---------- filet de securite apres validation ---------- */
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:-100px;z-index:120;
@@ -345,7 +362,8 @@
             <button type="button" class="mini" id="rotL">↺</button>
             <button type="button" class="mini" id="rotR">↻</button>
             <button type="button" class="mini" id="chg">Changer</button>
-            <span class="hint" style="margin:0 0 0 auto">Clic = zoom.</span>
+            <button type="button" class="mini primary" id="bigOpen"
+                    style="margin:0 0 0 auto">⤢ Voir en grand</button>
           </div>
           <img id="pimg" alt="fiche">
         </div>
@@ -431,12 +449,25 @@
             <span><i class="sw" style="background:repeating-linear-gradient(45deg,#c9ced6,#c9ced6 3px,#e2e6ec 3px,#e2e6ec 6px)"></i> Club fermé</span>
           </span>
         </div>
-        <div class="gridwarn" id="gridwarn"></div>
         <div class="gridwrap"><table class="avail" id="avail"></table></div>
         <p class="hint" id="selsum" hidden></p>
       </div>
     </div>
   </div>
+</div>
+
+<!-- la fiche papier en plein ecran -->
+<div class="bigbg" id="bigBg">
+  <div class="bigtools">
+    <button class="zoombtn" id="bigOut" title="Réduire">−</button>
+    <span class="pct" id="bigPct">100 %</span>
+    <button class="zoombtn" id="bigIn" title="Agrandir">+</button>
+    <button id="bigFitBtn">Ajuster à l'écran</button>
+    <span class="name" id="bigName"></span>
+    <span class="spacer"></span>
+    <button id="bigClose">✕ Fermer</button>
+  </div>
+  <div class="bigwrap" id="bigWrap"><img id="bigImg" alt="fiche en grand"></div>
 </div>
 
 <!-- filet de securite : six secondes pour revenir en arriere -->
@@ -789,14 +820,6 @@ async function extractFiche(){
 }
 document.getElementById("readAI").onclick=extractFiche;
 const pimg=document.getElementById("pimg");
-pimg.onclick=()=>pimg.classList.toggle("zoom");
-pimg.addEventListener("mousemove",e=>{
-  if(!pimg.classList.contains("zoom"))return;
-  const r=pimg.getBoundingClientRect();
-  const x=Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100));
-  const y=Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100));
-  pimg.style.transformOrigin=x+"% "+y+"%";
-});
 function rotatePhoto(dir){                 // dir: -1 = anti-horaire, +1 = horaire
   if(!curPhoto)return;
   const img=new Image();
@@ -898,6 +921,70 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter" && (e.metaKey||e.ctrlKey)){ F("save").click(); }
 });
 
+/* ---------- la fiche papier en plein ecran ----------
+   Un seul reglage : le facteur d'agrandissement. « Ajuster » ramene la fiche
+   entiere dans la fenetre ; + et − la font grossir par paliers de 25 %, et le
+   defilement du navigateur fait le reste. Un clic sur l'image alterne entre
+   « toute la fiche » et « lisible » (200 %) en se centrant sur l'endroit
+   clique : c'est le geste attendu d'une visionneuse de photos.
+   Ce bloc doit rester APRES la declaration de F(). */
+const bigBg=F("bigBg"), bigImg=F("bigImg"), bigWrap=F("bigWrap");
+let bigZoom=1, bigBaseH=0;
+
+function bigApply(){
+  bigImg.style.height=Math.round(bigBaseH*bigZoom)+"px";
+  bigImg.style.width="auto";
+  F("bigPct").textContent=Math.round(bigZoom*100)+" %";
+  bigWrap.classList.toggle("maxed", bigZoom>1.05);
+  bigWrap.classList.toggle("zoomable", bigZoom<=1.05);
+}
+function bigFit(){
+  const w=bigWrap.clientWidth-28, h=bigWrap.clientHeight-28;
+  const nw=bigImg.naturalWidth||1, nh=bigImg.naturalHeight||1;
+  bigBaseH=Math.max(120, Math.min(h, w*nh/nw));   // la fiche entiere, sans deborder
+  bigZoom=1; bigApply();
+  bigWrap.scrollTop=0; bigWrap.scrollLeft=0;
+}
+function bigSet(z){
+  const cx=bigWrap.scrollLeft+bigWrap.clientWidth/2;
+  const cy=bigWrap.scrollTop +bigWrap.clientHeight/2;
+  const old=bigZoom;
+  bigZoom=Math.min(6, Math.max(1, z));
+  bigApply();
+  const k=bigZoom/old;                            // rester sur la meme zone
+  bigWrap.scrollLeft=cx*k-bigWrap.clientWidth/2;
+  bigWrap.scrollTop =cy*k-bigWrap.clientHeight/2;
+}
+function openBig(){
+  const src=pimg.getAttribute("src");
+  if(!src) return;
+  const p=players.find(x=>x.id===editId);
+  F("bigName").textContent=p?((p.prenom||"")+" "+(p.nom||"")).trim():"";
+  bigImg.src=src;
+  bigBg.classList.add("on");
+  if(bigImg.complete && bigImg.naturalWidth) bigFit(); else bigImg.onload=bigFit;
+}
+function closeBig(){ bigBg.classList.remove("on"); }
+
+F("bigOpen").onclick=openBig;
+pimg.onclick=openBig;
+F("bigClose").onclick=closeBig;
+F("bigFitBtn").onclick=bigFit;
+F("bigIn").onclick =()=>bigSet(bigZoom+0.25);
+F("bigOut").onclick=()=>bigSet(bigZoom-0.25);
+bigImg.onclick=e=>{
+  if(bigZoom>1.05){ bigFit(); return; }
+  const r=bigImg.getBoundingClientRect();
+  const px=e.clientX-r.left, py=e.clientY-r.top;
+  bigZoom=2; bigApply();
+  bigWrap.scrollLeft=px*2-bigWrap.clientWidth/2;
+  bigWrap.scrollTop =py*2-bigWrap.clientHeight/2;
+};
+bigBg.onclick=e=>{ if(e.target===bigBg||e.target===bigWrap) closeBig(); };
+window.addEventListener("resize",()=>{
+  if(bigBg.classList.contains("on") && bigZoom===1) bigFit();
+});
+
 /* ---------- liste ---------- */
 function updateCount(){
   const n=players.length;
@@ -996,7 +1083,11 @@ function closeModal(){ document.getElementById("modalBg").classList.remove("open
 document.getElementById("closeList").onclick=closeModal;
 document.getElementById("modalBg").onclick=e=>{ if(e.target.id==="modalBg") closeModal(); };
 F("search").oninput=renderList;
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(F("bigBg").classList.contains("on")){ closeBig(); return; }
+  closeModal();
+});
 // petit récap flash après enregistrement
 function flashSaved(name){
   const el=F("editmode");
@@ -1473,7 +1564,6 @@ function blockOf(id){ const e = F(id); return e ? e.closest(".f") : null; }
 function clearFlags(){
   DOUBT_IDS.forEach(id => { const b = blockOf(id); if(b) b.classList.remove("doubt"); });
   const card = F("availCard"); if(card) card.classList.remove("doubt");
-  const warn = F("gridwarn"); if(warn) warn.textContent = "";
   nDoubt = 0; paintDoubtCount();
 }
 function paintDoubtCount(){
@@ -1506,12 +1596,7 @@ function flagDoubtful(conf){
   });
   const g = conf && typeof conf.grille === "number" ? conf.grille : null;
   if(g !== null && g < 0.75) gridNotes.push("lecture peu sûre");
-  const card = F("availCard"), warn = F("gridwarn");
-  if(gridNotes.length){
-    card.classList.add("doubt");
-    warn.textContent = "⚠️ Grille à vérifier de près — " + gridNotes.join(", ");
-    n++;
-  }
+  if(gridNotes.length){ F("availCard").classList.add("doubt"); n++; }
   nDoubt = n; paintDoubtCount();
 }
 function updateReviewCount(){ updateCount(); }
