@@ -95,6 +95,17 @@
     display:none;gap:10px;align-items:center;margin:0 0 12px}
   .revbar.on{display:flex}
   .card.doubt{border-color:#e0a000;box-shadow:0 0 0 3px #fdeec4}
+  /* --- ecran de connexion --- */
+  .auth-bg{position:fixed;inset:0;background:var(--bg);z-index:200;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .auth-bg.on{display:flex}
+  .auth-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:28px 30px;width:min(380px,100%);box-shadow:0 18px 50px rgba(0,0,0,.10)}
+  .auth-box h1{font-size:18px;margin:0 0 4px}
+  .auth-box p{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .auth-box button{width:100%;margin-top:16px;padding:10px}
+  .auth-err{color:var(--warn);font-size:12px;min-height:16px;margin-top:10px}
+  body.locked header,body.locked .wrap{visibility:hidden}
   .card.doubt h2{color:#a06800}
   .gridwarn{display:none;background:#fff8e6;border:1px solid #f0d79a;border-radius:7px;
     padding:6px 9px;font-size:12px;color:#7a5200;margin:0 0 8px}
@@ -102,7 +113,21 @@
   .revbar .grow{flex:1;font-size:13px}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div class="auth-bg on" id="authBg">
+  <form class="auth-box" id="authForm">
+    <h1>🎾 Saisie fiches CCA</h1>
+    <p>Accès réservé au club.</p>
+    <label for="authMail">E-mail</label>
+    <input type="email" id="authMail" autocomplete="username" required>
+    <label for="authPwd">Mot de passe</label>
+    <input type="password" id="authPwd" autocomplete="current-password" required>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="primary" id="authBtn">Se connecter</button>
+  </form>
+</div>
+
 <header>
   <h1>🎾 Saisie fiches CCA</h1>
   <input id="saisiPar" class="mini" placeholder="Ton prénom" style="width:120px;padding:5px 8px">
@@ -115,6 +140,7 @@
   <button id="openReview" class="mini">🔍 Relire <span id="nrev">0</span></button>
   <button id="openList" class="mini">📋 Fiches</button>
   <button id="expXlsx" class="mini">⬇︎ Export Excel</button>
+  <button id="logout" class="ghost mini" title="Se déconnecter">⏻</button>
 </header>
 
 <div class="wrap">
@@ -471,9 +497,9 @@ async function extractFiche(){
   try{
     const blob=await compressPhoto(curPhoto);
     const b64=await blobToBase64(blob);
-    const res=await fetch(SB_URL+"/functions/v1/extract-fiche",{
+    const res=await fetch(SB_URL+"/functions/v1/extract-fiche-v4",{
       method:"POST",
-      headers:{"content-type":"application/json","authorization":"Bearer "+SB_KEY,"apikey":SB_KEY},
+      headers:await authHeaders(),
       body:JSON.stringify({image_base64:b64,media_type:"image/jpeg"})
     });
     const data=await res.json();
@@ -601,7 +627,7 @@ function renderList(){
       <td>${esc(p.tel||"")}<br><span style="color:#889">${esc(p.email||"")}</span></td>
       <td>${esc(p.reglement||"")}</td>
       <td style="max-width:220px;color:#556">${esc(p.obs||"")}</td>
-      <td>${p.photo_url?`<a href="${esc(p.photo_url)}" target="_blank" title="Ouvrir la photo">📷</a>`:""}</td>
+      <td>${p.photo_url?`<button class="mini" data-photo="${esc(p.photo_url)}" title="Ouvrir la photo">📷</button>`:""}</td>
       <td style="white-space:nowrap">
         <button class="mini" data-edit="${p.id}">✎</button>
         <button class="mini danger" data-del="${p.id}">🗑</button>
@@ -609,6 +635,12 @@ function renderList(){
   }).join("");
   tb.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));
   tb.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del));
+  // le bucket est prive : on ouvre l'onglet tout de suite (sinon le navigateur
+  // bloque la popup) et on y injecte l'URL signee des qu'elle arrive
+  tb.querySelectorAll("[data-photo]").forEach(b=>b.onclick=()=>{
+    const w=window.open("","_blank");
+    signedPhoto(b.dataset.photo).then(u=>{ if(w) w.location=u; });
+  });
 }
 function edit(id){
   const p=players.find(x=>x.id===id); if(!p)return;
@@ -624,7 +656,7 @@ function edit(id){
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
   curPhoto=null; editPhotoUrl=p.photo_url||null;
   if(editPhotoUrl){
-    document.getElementById("pimg").src=editPhotoUrl;
+    signedPhoto(editPhotoUrl).then(u=>{ document.getElementById("pimg").src=u; });
     document.getElementById("pv").style.display="block";
     document.getElementById("drop").style.display="none";
   } else {
@@ -688,7 +720,8 @@ function dl(blob,name){const a=document.createElement("a");a.href=URL.createObje
 
 /* ---------- init ---------- */
 refreshGrid();
-loadPlayers();
+// loadPlayers() est declenche par l'authentification (voir le bloc suivant) :
+// sans session, les politiques d'acces renvoient de toute facon une liste vide.
 // resynchronise quand on rouvre l'onglet (autre assistante a saisi entre-temps)
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) loadPlayers(); });
 </script>
@@ -854,7 +887,7 @@ async function extract(blob, tries = 4){
     try{
       r = await fetch(SB_URL + "/functions/v1/" + IMP.fn, {
         method: "POST",
-        headers: {"content-type":"application/json", authorization:"Bearer "+SB_KEY, apikey:SB_KEY},
+        headers: await authHeaders(),
         body: JSON.stringify({image_base64: b64, media_type: "image/jpeg"}),
       });
       out = await r.json();
@@ -1126,6 +1159,83 @@ loadPlayers = async function(){ await _loadPlayers(); updateReviewCount(); };
 
 refreshQueue();
 loadPlayers();   // recharge via le wrapper pour initialiser le compteur de relecture
+</script>
+
+<script>
+/* =====================================================================
+   Authentification
+   Le verrou reel n'est pas cet ecran mais les politiques d'acces Postgres :
+   sans session valide, l'API repond vide meme avec la cle publique.
+   ===================================================================== */
+
+// En-tetes des appels a l'edge function : le jeton de session remplace la cle
+// publique, ce qui permet a la fonction d'exiger verify_jwt.
+async function authHeaders(){
+  const { data:{ session } } = await sb.auth.getSession();
+  return {
+    "content-type": "application/json",
+    apikey: SB_KEY,
+    authorization: "Bearer " + (session ? session.access_token : SB_KEY),
+  };
+}
+
+// Le bucket photos est prive : les URL publiques stockees en base sont
+// converties en URL signees valables 1 h au moment de l'affichage.
+async function signedPhoto(u){
+  const path = photoPath(u);
+  if(!path) return u;
+  const { data, error } = await sb.storage.from("photos").createSignedUrl(path, 3600);
+  return (!error && data) ? data.signedUrl : u;
+}
+
+function lock(){
+  document.body.classList.add("locked");
+  F("authBg").classList.add("on");
+}
+async function unlock(){
+  F("authBg").classList.remove("on");
+  document.body.classList.remove("locked");
+  await loadPlayers();
+  refreshQueue();
+}
+
+F("authForm").onsubmit = async e => {
+  e.preventDefault();
+  const btn = F("authBtn"), err = F("authErr");
+  err.textContent = ""; btn.disabled = true; btn.textContent = "Connexion…";
+  const { error } = await sb.auth.signInWithPassword({
+    email: F("authMail").value.trim(),
+    password: F("authPwd").value,
+  });
+  btn.disabled = false; btn.textContent = "Se connecter";
+  if(error){
+    err.textContent = /invalid/i.test(error.message)
+      ? "E-mail ou mot de passe incorrect."
+      : error.message;
+    F("authPwd").select();
+    return;
+  }
+  F("authPwd").value = "";
+  await unlock();
+};
+
+F("logout").onclick = async () => {
+  if(!confirm("Se déconnecter ?")) return;
+  await sb.auth.signOut();
+  players = [];
+  renderList();
+  clearForm();
+  lock();
+};
+
+// Session restauree au chargement, et suivi des expirations de jeton.
+sb.auth.onAuthStateChange((evt, session) => {
+  if(evt === "SIGNED_OUT" || !session) lock();
+});
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) await unlock(); else lock();
+})();
 </script>
 </body>
 </html>
