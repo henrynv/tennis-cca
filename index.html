@@ -508,6 +508,19 @@
   .grfile .acts{flex:none;margin-left:auto}
   .grfile .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
   .grok{color:var(--accent);font-size:12px;font-weight:600;margin-right:8px}
+  .grlance{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid #b7d6c5;
+    background:linear-gradient(180deg,#fbfdfc,#f4faf6);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+  .grlance .tx{flex:1;min-width:200px;font-size:13.5px;line-height:1.35}
+  .grlance .tx b{display:block;font-size:15px;margin-bottom:2px}
+  .grlance .tx span{color:var(--muted);font-size:12.5px}
+  .grlance select{width:auto;font-size:13px;padding:7px 9px}
+  .grlance button.primary{height:42px;padding:0 18px;font-size:15px;border-radius:9px}
+  .grbarre{height:9px;background:#eef1f4;border-radius:5px;overflow:hidden;margin:16px 0 10px}
+  .grbarre>i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s linear}
+  .grlog{font-size:13px;color:var(--muted);line-height:1.6;max-height:190px;overflow:auto;
+    font-variant-numeric:tabular-nums}
+  .grlog b{color:var(--ink)}
+  .grlog .cmd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#8a948d}
   .grerr{color:var(--warn);font-size:12.5px;margin:8px 0 0}
   @media(max-width:900px){
     .grbody{grid-template-columns:1fr}
@@ -767,10 +780,35 @@
       <h2>Le résultat du calcul</h2>
       <p class="sub">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
         qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.</p>
+      <div class="grlance" id="grLance" style="display:none">
+        <span class="tx"><b id="grLanceT">Lancer le calcul sur cette machine</b>
+          <span id="grLanceS"></span></span>
+        <select id="grTemps">
+          <option value="60">1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300" selected>5 minutes</option>
+          <option value="900">15 minutes</option>
+        </select>
+        <button class="primary" id="grGo">Lancer le calcul</button>
+      </div>
       <div class="grfile" id="grFiles"></div>
       <p class="grerr" id="grErr"></p>
       <p class="hint">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
         puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
+    </div>
+  </div>
+
+  <!-- calcul en cours -->
+  <div class="grempty" id="grProg" style="display:none">
+    <div class="grcard">
+      <h2 id="grProgT">Calcul en cours…</h2>
+      <p class="sub" id="grProgS">Le solveur essaie des milliers de combinaisons et garde la meilleure.</p>
+      <div class="grbarre"><i id="grProgB"></i></div>
+      <div class="grlog" id="grProgL"></div>
+      <div class="runrow" style="display:flex;gap:12px;align-items:center;margin-top:16px">
+        <button class="primary" id="grStop">Arrêter et garder cette solution</button>
+        <span class="hint" id="grProgH">La meilleure solution trouvée est conservée.</span>
+      </div>
     </div>
   </div>
 
@@ -786,7 +824,8 @@
       <div class="grbar">
         <div class="tx" id="grBarTx"></div>
         <button class="mini" id="grAll">Tout figer</button>
-        <button class="primary big" id="grFig">⬇︎ Figeages</button>
+        <button class="mini" id="grFig">⬇︎ Figeages</button>
+        <button class="primary big" id="grRelance" style="display:none">Relancer</button>
       </div>
     </div>
     <div class="grside">
@@ -2793,7 +2832,9 @@ function memoriser(nom){       // apres une retouche : on garde une trace nommee
 
 /* ---------------- rendu ---------------- */
 function rend(){
+  if(enCalcul) return;                 // pendant un calcul, l'ecran de progression tient l'affichage
   const ok = cours.length > 0;
+  F("grProg").style.display  = "none";
   F("grEmpty").style.display = ok ? "none" : "flex";
   F("grView").style.display  = ok ? "grid" : "none";
   F("grSearch").style.display = ok ? "block" : "none";
@@ -2801,6 +2842,7 @@ function rend(){
   rendFichiers(); rendPills();
   if(!ok){ F("grBadge").className = "badge"; return; }
   rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendProfs(); rendBar();
+  F("grRelance").style.display = agent ? "block" : "none";
   majTuile();
 }
 function majTuile(){
@@ -3298,6 +3340,131 @@ function exportFigeages(){
   XLSX.writeFile(wb, "figeages-cca.xlsx");
 }
 
+/* ---------------- l'agent local ----------------
+   Le solveur est du CP-SAT : il ne tourne pas dans un navigateur. Quand
+   `agent.py` ecoute sur la machine, le bouton « Lancer le calcul » apparait et
+   pilote le vrai solveur ; sinon on retombe sur le depot de fichier a la main,
+   et personne ne voit un bouton qui ne marcherait pas. */
+const AGENT = location.port === "8787" ? "" : "http://127.0.0.1:8787";
+let agent = null, enCalcul = false, suivi = null;
+
+async function jsonAgent(chemin, corps){
+  const o = corps ? {method:"POST", headers:{"content-type":"application/json"},
+                     body:JSON.stringify(corps)} : {};
+  const r = await fetch(AGENT + chemin, o);
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.erreur || ("agent : " + r.status));
+  return d;
+}
+async function pingAgent(){
+  try{
+    const ctl = new AbortController();
+    const t = setTimeout(()=>ctl.abort(), 1500);
+    const r = await fetch(AGENT + "/etat", {signal:ctl.signal});
+    clearTimeout(t);
+    agent = r.ok ? await r.json() : null;
+  }catch(e){ agent = null; }
+  majLance();
+  if(agent && agent.run && agent.run.en_cours) reprendreSuivi();
+}
+function majLance(){
+  const b = F("grLance");
+  if(!agent){ b.style.display = "none"; return; }
+  b.style.display = "flex";
+  const j = agent.joueurs, c = agent.contraintes;
+  F("grLanceS").textContent = j.present
+    ? `joueurs.xlsx du ${j.date}` + (c.present ? ` · contraintes du ${c.date}` : " · pas de contraintes")
+    : "joueurs.xlsx introuvable à côté du solveur";
+  F("grGo").disabled = !j.present;
+  F("grRelance").style.display = cours.length ? "block" : "none";
+}
+
+async function lancer(){
+  try{
+    if(cours.length){                       // les figeages partent avant le calcul
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
+      await jsonAgent("/figeages", {contenu: XLSX.write(wb, {bookType:"xlsx", type:"base64"})});
+    }
+    const t = +F("grTemps").value || 300;
+    await jsonAgent("/lancer", {temps:t});
+    ecranCalcul(t);
+    reprendreSuivi();
+  }catch(e){
+    F("grErr").textContent = "Impossible de lancer : " + e.message;
+  }
+}
+function ecranCalcul(t){
+  enCalcul = true;
+  F("grEmpty").style.display = "none";
+  F("grView").style.display = "none";
+  F("grProg").style.display = "flex";
+  F("grProgT").textContent = cours.length ? "Nouveau calcul en cours…" : "Calcul en cours…";
+  const n = cours.filter(x=>x.lock>0).length;
+  F("grProgS").textContent = n
+    ? n + " cours figés sont reposés tels quels ; le solveur cherche autour."
+    : "Le solveur essaie des milliers de combinaisons et garde la meilleure.";
+  F("grProgB").style.width = "0%";
+  F("grProgL").innerHTML = "";
+  F("grStop").disabled = true;
+}
+function reprendreSuivi(){
+  enCalcul = true;
+  F("grProg").style.display = "flex";
+  clearInterval(suivi);
+  suivi = setInterval(async ()=>{
+    let d;
+    try{ d = await jsonAgent("/progres"); }
+    catch(e){ clearInterval(suivi); enCalcul = false; F("grErr").textContent =
+      "Agent injoignable pendant le calcul."; rend(); return; }
+    const t = d.temps || 300;
+    F("grProgB").style.width = Math.min(100, (d.ecoule||0)/t*100).toFixed(0) + "%";
+    // CP-SAT ameliore son objectif des dizaines de fois pour un meme nombre de
+    // joueurs places : on ne montre que les paliers qui changent quelque chose
+    // pour le club, plus le dernier point atteint.
+    const P = d.progres || [], util = [];
+    P.forEach((p,i)=>{
+      const av = util[util.length-1];
+      if(!av || av.places !== p.places || av.cours !== p.cours || i === P.length-1) util.push(p);
+    });
+    F("grProgL").innerHTML = util.slice(-8).map((p,i,t)=>
+      `<div>${i===t.length-1 ? "Meilleure solution" : "Solution"} :
+       <b>${p.places}</b>/${p.joueurs} joueurs placés, <b>${p.cours}</b> cours
+       <span class="cmd">(${p.t}s${P.length>util.length ? ", "+P.length+" essais" : ""})</span></div>`).join("")
+      || `<div class="cmd">${(d.lignes||[]).slice(-6).join("<br>")}</div>`;
+    F("grProgL").scrollTop = 9999;
+    F("grStop").disabled = !(d.progres && d.progres.length);
+    if(!d.en_cours){
+      clearInterval(suivi);
+      terminer(d);
+    }
+  }, 800);
+}
+async function terminer(d){
+  try{
+    if(!ctr){
+      const c = await jsonAgent("/contraintes").catch(()=>null);
+      if(c && c.contenu){
+        lireContraintes(XLSX.read(Uint8Array.from(atob(c.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
+        ctr.fichier = c.nom; ctr.date = "lu sur la machine";
+      }
+    }
+    const r = await jsonAgent("/resultat");
+    lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
+    resFic = {fichier:r.nom, date:new Date().toLocaleString("fr-FR",
+      {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
+    instantane("Calcul");
+    sel = null; selAtt = null; moving = null;
+    enCalcul = false; sauver(); rend();
+  }catch(e){
+    enCalcul = false;
+    F("grErr").textContent = (d && d.code) ? "Le solveur s'est arrêté : "
+      + ((d.lignes||[]).slice(-3).join(" ") || "code " + d.code)
+      : "Résultat illisible : " + e.message;
+    rend();
+  }
+}
+
 /* ---------------- cablage ---------------- */
 F("grHome").onclick = ()=>showScreen("accueil");
 F("grExport").onclick = exportResultat;
@@ -3306,14 +3473,22 @@ F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
+F("grGo").onclick = lancer;
+F("grRelance").onclick = lancer;
+F("grStop").onclick = async ()=>{
+  F("grStop").disabled = true;
+  F("grProgH").textContent = "Arrêt demandé — le solveur termine la solution en cours…";
+  try{ await jsonAgent("/arreter", {}); }catch(e){}
+};
 F("grQ").oninput = e=>chercher(e.target.value);
 F("grQ").onkeydown = e=>{ if(e.key==="Escape"){ e.target.value=""; F("grSres").classList.remove("on"); } };
 document.addEventListener("click", e=>{ if(!F("grSearch").contains(e.target)) F("grSres").classList.remove("on"); });
 const tuile = F("tGroupes");
-if(tuile) tuile.onclick = ()=>{ showScreen("groupes"); rend(); };
+if(tuile) tuile.onclick = ()=>{ showScreen("groupes"); rend(); pingAgent(); };
 
 relire();
 rend();
+pingAgent();
 })();
 </script>
 </body>
