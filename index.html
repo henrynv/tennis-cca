@@ -508,6 +508,20 @@
   .grfile .acts{flex:none;margin-left:auto}
   .grfile .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
   .grok{color:var(--accent);font-size:12px;font-weight:600;margin-right:8px}
+  .grtabs{display:flex;gap:4px;flex-wrap:wrap}
+  .grtab{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 10px;
+    font-size:12.5px;color:var(--muted);cursor:pointer;height:auto}
+  .grtab.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .grtable{border-collapse:collapse;font-size:12.5px;width:100%}
+  .grtable th{position:sticky;top:0;background:#f4f6f8;border:1px solid var(--line);padding:5px 8px;
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    white-space:nowrap;z-index:2}
+  .grtable td{border:1px solid var(--line);padding:4px 8px;vertical-align:top;
+    max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grtable td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .grtable tr:nth-child(even) td{background:#fafbfc}
+  .grtscroll{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:8px}
+  .grtinfo{font-size:12px;color:var(--muted);margin:8px 0 0}
   .grlance{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid #b7d6c5;
     background:linear-gradient(180deg,#fbfdfc,#f4faf6);border-radius:10px;padding:14px 16px;margin-bottom:16px}
   .grlance .tx{flex:1;min-width:200px;font-size:13.5px;line-height:1.35}
@@ -795,6 +809,23 @@
       <p class="grerr" id="grErr"></p>
       <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
         puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
+    </div>
+  </div>
+
+  <!-- consultation d'un classeur -->
+  <div class="modal-bg" id="grVoirBg">
+    <div class="modal">
+      <div class="modal-head">
+        <b id="grVoirT"></b>
+        <span class="grtabs" id="grVoirOnglets"></span>
+        <span style="flex:1"></span>
+        <button class="mini" id="grVoirDl">⬇︎ Télécharger</button>
+        <button class="mini" id="grVoirX">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="grtscroll"><table class="grtable" id="grVoirT2"></table></div>
+        <p class="grtinfo" id="grVoirI"></p>
+      </div>
     </div>
   </div>
 
@@ -2739,48 +2770,153 @@ function lireContraintes(wb){
 }
 
 /* ---------------- ecran d'import ---------------- */
+/* ---------------- les classeurs ----------------
+   Une ligne par chose que le club regle, comme sur la maquette — meme quand
+   trois d'entre elles sont trois onglets du meme fichier. Regrouper « profs,
+   courts, niveaux » sur une seule ligne faisait gagner une ligne et perdre la
+   correspondance avec ce que Loic edite. Chaque ligne se consulte a l'ecran et
+   se telecharge : sans ca, verifier une valeur oblige a ouvrir Excel. */
+const CACHE = {};                       // nom de fichier -> {b64, wb, etat}
+
+async function classeur(nom){
+  if(CACHE[nom]) return CACHE[nom];
+  if(!agent) throw new Error("fichier non chargé — déposez-le, ou lancez l'agent");
+  const d = await jsonAgent("/fichier?nom=" + encodeURIComponent(nom));
+  CACHE[nom] = {b64:d.contenu, etat:d.etat,
+    wb: XLSX.read(Uint8Array.from(atob(d.contenu), c=>c.charCodeAt(0)), {type:"array"})};
+  return CACHE[nom];
+}
+function feuille(nom, onglet){
+  const c = CACHE[nom];
+  if(!c) return null;
+  const vrai = c.wb.SheetNames.find(n=>n.toLowerCase() === onglet.toLowerCase());
+  return vrai ? XLSX.utils.sheet_to_json(c.wb.Sheets[vrai], {header:1, blankrows:false}) : null;
+}
+function lignes(nom, onglet){
+  const a = feuille(nom, onglet);
+  return a ? Math.max(0, a.length - 1) : null;
+}
+
+const LIGNES = [
+  {k:"jou", lab:"Joueurs", fic:"joueurs.xlsx", onglets:["Joueurs"], remplacable:true,
+   val(){
+     const a = feuille("joueurs.xlsx", "Joueurs");
+     if(!a) return "Les fiches et leurs disponibilités, exportées de la base.";
+     const e = a[0].map(v=>String(v||"").toLowerCase());
+     const kn = e.indexOf("niveau"), kd = e.indexOf("dispos");
+     const n = a.length - 1;
+     const avec = kn < 0 ? null : a.slice(1).filter(r=>String(r[kn]||"").trim()).length;
+     const dis = kd < 0 ? null : a.slice(1).filter(r=>String(r[kd]||"").trim()).length;
+     return `<b>${n} fiches</b>` + (avec!==null ? ` — ${avec} avec un niveau` : "")
+          + (dis!==null ? `, ${dis} avec des disponibilités` : "");
+   }},
+  {k:"profs", lab:"Profs", fic:"contraintes-tennis.xlsx", onglets:["Profs","Fenetres profs"],
+   remplacable:true,
+   val(){
+     if(!ctr || !Object.keys(ctr.budget).length) return "Heures de cours par prof et par jour.";
+     const noms = Object.keys(ctr.budget);
+     const h = noms.reduce((t,p)=>t + JOURS_CTR().reduce((u,j)=>u + (ctr.budget[p][j]||0), 0), 0);
+     return `${noms.map(esc).join(", ")} — <b>${hh(h)}</b> par semaine`;
+   }},
+  {k:"courts", lab:"Courts et ouverture", fic:"contraintes-tennis.xlsx",
+   onglets:["General","Fermetures","Types de cours"], remplacable:true,
+   val(){
+     if(!ctr) return "Nombre de courts, jours ouverts, amplitude, fermetures.";
+     const j = ctr.jours && ctr.jours.length ? ctr.jours : jours();
+     return `${ctr.courts} courts en simultané, ${j[0].toLowerCase()} au ${j[j.length-1].toLowerCase()}, `
+          + `${gtx(ctr.debut)} → ${gtx(ctr.fin)} · <b>${ctr.fermetures.length} fermetures</b>`;
+   }},
+  {k:"niv", lab:"Niveaux et poids", fic:"contraintes-tennis.xlsx",
+   onglets:["Bareme","Paliers","Poids"], remplacable:true,
+   val(){
+     const b = lignes("contraintes-tennis.xlsx","Bareme"),
+           p = lignes("contraintes-tennis.xlsx","Paliers"),
+           w = lignes("contraintes-tennis.xlsx","Poids");
+     return b===null ? "Barème des classements, paliers de niveau, poids de l'objectif."
+       : `<b>${b} lignes de barème</b> · ${p} paliers · ${w} poids d'arbitrage`;
+   }},
+  {k:"res", lab:"Dernier résultat", fic:"resultat-cca.xlsx",
+   onglets:["Cours","Groupes","Non places","Synthese"], remplacable:false,
+   val(){
+     return cours.length
+       ? `<b>${vivants().length} cours</b>, ${vivants().reduce((t,c)=>t+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
+       : "Produit par le calcul. Rien à déposer : il arrive tout seul.";
+   }}
+];
+function JOURS_CTR(){ return (ctr && ctr.jours && ctr.jours.length) ? ctr.jours : DAYS; }
+
 function rendFichiers(){
-  // Deux mondes. Avec l'agent, ces lignes decrivent les fichiers que le
-  // solveur va VRAIMENT lire sur la machine, dates du disque comprises.
-  // Sans agent, elles decrivent ce qui a ete depose dans ce navigateur.
-  // Melanger les deux donnait un ecran qui se contredisait : le bandeau vert
-  // annoncait un fichier de contraintes que la ligne d'en dessous disait absent.
-  const surDisque = d => d && d.present ? `sur la machine, ${d.date}` : "introuvable à côté du solveur";
-  const li = agent ? [
-    {k:"jou", lab:"Joueurs", fic:"joueurs.xlsx", disque:true,
-     val:agent.joueurs.present
-       ? `Les fiches et leurs disponibilités, exportées de la base. <b>${Math.round(agent.joueurs.taille/1024)} Ko</b>`
-       : "Introuvable — lancez <code>export_fiches.py</code> avant de calculer.",
-     etat:surDisque(agent.joueurs)},
-    {k:"ctr", lab:"Profs, courts, niveaux", fic:"contraintes-tennis.xlsx", disque:true,
-     val:ctr ? `${Object.keys(ctr.budget).length} profs · ${ctr.courts} courts · ${ctr.fermetures.length} fermetures · ouverture ${gtx(ctr.debut)} → ${gtx(ctr.fin)}`
-             : "Heures des profs, courts, fermetures, barème et paliers.",
-     etat:surDisque(agent.contraintes)},
-    {k:"res", lab:"Dernier résultat", fic:"resultat-cca.xlsx", lecture:true,
-     val:resFic ? `<b>${vivants().length} cours</b>, ${vivants().reduce((s,c)=>s+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
-                : "Produit par le calcul. Rien à déposer : il arrive tout seul.",
-     etat:surDisque(agent.resultat)}
-  ] : [
-    {k:"res", lab:"Résultat du calcul", fic:"resultat-cca.xlsx",
-     val:resFic ? `<b>${vivants().length} cours</b>, ${vivants().reduce((s,c)=>s+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
-                : "Les groupes et l'emploi du temps produits par le solveur.",
-     etat:resFic ? `${esc(resFic.fichier)} — déposé ${resFic.date}` : "aucun fichier déposé"},
-    {k:"ctr", lab:"Contraintes", fic:"contraintes-tennis.xlsx",
-     val:ctr ? `${Object.keys(ctr.budget).length} profs, ${ctr.courts} courts, ${ctr.fermetures.length} fermetures`
-             : "Facultatif — sans lui, ni heures des profs ni fermetures affichées.",
-     etat:ctr ? `${esc(ctr.fichier)} — déposé ${ctr.date}` : "aucun fichier déposé"}
-  ];
-  F("grFiles").innerHTML = li.map(f=>
+  // consultable des qu'on peut mettre la main dessus : deja en cache, ou
+  // present sur la machine et l'agent capable de le servir
+  const surMachine = n => agent && ((n === "joueurs.xlsx" ? agent.joueurs
+      : n === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes) || {}).present;
+  const dispo = n => !!CACHE[n] || !!surMachine(n);
+  const etat = f => {
+    const c = CACHE[f.fic];
+    if(c && c.etat && c.etat.present) return `${f.fic} — sur la machine, ${c.etat.date}`;
+    if(agent){
+      const a = f.fic === "joueurs.xlsx" ? agent.joueurs
+              : f.fic === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes;
+      return `${f.fic} — ` + (a && a.present ? `sur la machine, ${a.date}` : "introuvable à côté du solveur");
+    }
+    if(f.fic === "resultat-cca.xlsx") return resFic ? `${esc(resFic.fichier)} — déposé ${resFic.date}` : `${f.fic} — aucun fichier déposé`;
+    return `${f.fic} — ` + (ctr ? `déposé ${ctr.date}` : "aucun fichier déposé");
+  };
+  F("grFiles").innerHTML = LIGNES.map(f=>
     `<div data-k="${f.k}">
        <span class="lab">${f.lab}</span>
-       <span class="val">${f.val}<span class="fic">${f.fic} — ${f.etat}</span></span>
-       <span class="acts">${f.lecture ? "" : `<button class="mini">Remplacer…</button>`}</span>
+       <span class="val">${f.val()}<span class="fic">${etat(f)}</span></span>
+       <span class="acts">
+         <button class="mini" data-a="voir" ${dispo(f.fic)?"":"disabled"}>Voir</button>
+         <button class="mini" data-a="dl" ${dispo(f.fic)?"":"disabled"}>⬇︎</button>
+         ${f.remplacable ? `<button class="mini" data-a="up">Remplacer…</button>` : ""}
+       </span>
      </div>`).join("");
-  F("grFiles").querySelectorAll("[data-k] button").forEach(b=>{
-    const k = b.closest("[data-k]").dataset.k;
-    b.onclick = ()=>choisir(k, (li.find(f=>f.k===k)||{}).disque);
+  F("grFiles").querySelectorAll("[data-a]").forEach(b=>{
+    const f = LIGNES.find(x=>x.k === b.closest("[data-k]").dataset.k);
+    b.onclick = ()=>{
+      if(b.dataset.a === "voir") return voir(f, 0);
+      if(b.dataset.a === "dl")   return telecharger(f.fic);
+      choisir(f.k, !!agent && f.remplacable);
+    };
   });
 }
+
+async function telecharger(nom){
+  try{
+    const c = await classeur(nom);
+    dl(new Blob([Uint8Array.from(atob(c.b64), ch=>ch.charCodeAt(0))],
+      {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), nom);
+  }catch(e){ F("grErr").textContent = "Téléchargement impossible : " + e.message; }
+}
+
+/* -------- consultation : le contenu du fichier, a l'ecran -------- */
+async function voir(f, k){
+  try{ await classeur(f.fic); }
+  catch(e){ F("grErr").textContent = "Lecture impossible : " + e.message; return; }
+  const dispos = f.onglets.filter(o=>feuille(f.fic, o));
+  if(!dispos.length){ F("grErr").textContent = "Aucun onglet lisible dans " + f.fic; return; }
+  const onglet = dispos[Math.min(k, dispos.length-1)];
+  F("grVoirT").textContent = f.lab + " · " + f.fic;
+  F("grVoirOnglets").innerHTML = dispos.map((o,i)=>
+    `<button class="grtab ${o===onglet?"on":""}" data-o="${i}">${esc(o)}</button>`).join("");
+  F("grVoirOnglets").querySelectorAll("[data-o]").forEach(b=>
+    b.onclick = ()=>voir(f, +b.dataset.o));
+  const a = feuille(f.fic, onglet), max = 300;
+  const corps = a.slice(1, max+1);
+  F("grVoirT2").innerHTML =
+    `<thead><tr>${a[0].map(v=>`<th>${esc(v)}</th>`).join("")}</tr></thead>` +
+    `<tbody>${corps.map(r=>`<tr>${a[0].map((_,i)=>{
+      const v = r[i];
+      return `<td class="${typeof v === "number" ? "n" : ""}" title="${esc(v)}">${esc(v)}</td>`;
+    }).join("")}</tr>`).join("")}</tbody>`;
+  F("grVoirI").textContent = `${a.length-1} ligne${a.length>2?"s":""}`
+    + (a.length-1 > max ? ` — les ${max} premières sont affichées. Téléchargez le fichier pour tout voir.` : "")
+    + " · Ce tableau est en lecture seule : les modifications se font dans Excel, puis « Remplacer ».";
+  F("grVoirDl").onclick = ()=>telecharger(f.fic);
+  F("grVoirBg").classList.add("open");
+}
+
 function choisir(quoi, surDisque){
   const i = document.createElement("input");
   i.type = "file"; i.accept = ".xlsx,.xls";
@@ -2791,14 +2927,16 @@ function choisir(quoi, surDisque){
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, {type:"array"});
       const quand = new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+      const nom = quoi === "jou" ? "joueurs.xlsx"
+                : quoi === "res" ? "resultat-cca.xlsx" : "contraintes-tennis.xlsx";
+      let b = "", u = new Uint8Array(buf);
+      for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
+      CACHE[nom] = {b64: btoa(b), wb, etat:{present:true, date:quand}};
       // Avec l'agent, deposer un fichier d'entree doit l'ecrire sur la machine :
-      // sinon le prochain calcul lirait toujours l'ancienne version du disque.
+      // sinon le prochain calcul relirait l'ancienne version du disque.
       if(surDisque){
-        const nom = quoi === "jou" ? "joueurs.xlsx" : "contraintes-tennis.xlsx";
-        let b = "", u = new Uint8Array(buf);
-        for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
-        await jsonAgent("/fichier", {nom, contenu: btoa(b)});
-        if(quoi === "ctr"){ lireContraintes(wb); ctr.fichier = nom; ctr.date = quand; }
+        await jsonAgent("/fichier", {nom, contenu: CACHE[nom].b64});
+        if(nom === "contraintes-tennis.xlsx"){ lireContraintes(wb); ctr.fichier = nom; ctr.date = quand; }
         await pingAgent();
         sauver(); rend();
         return;
@@ -3397,6 +3535,16 @@ async function pingAgent(){
     clearTimeout(t);
     agent = r.ok ? await r.json() : null;
   }catch(e){ agent = null; }
+  if(agent){
+    for(const n of ["joueurs.xlsx", "contraintes-tennis.xlsx"]){
+      try{
+        const c = await classeur(n);
+        if(n === "contraintes-tennis.xlsx" && !ctr){
+          lireContraintes(c.wb); ctr.fichier = n; ctr.date = c.etat.date;
+        }
+      }catch(e){ /* fichier absent : la ligne le dira */ }
+    }
+  }
   majLance();
   if(agent && agent.run && agent.run.en_cours) reprendreSuivi();
 }
@@ -3493,6 +3641,7 @@ async function terminer(d){
         ctr.fichier = c.nom; ctr.date = "lu sur la machine";
       }
     }
+    delete CACHE["resultat-cca.xlsx"]; delete CACHE["figeages-cca.xlsx"];
     const r = await jsonAgent("/resultat");
     lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
     resFic = {fichier:r.nom, date:new Date().toLocaleString("fr-FR",
@@ -3517,6 +3666,11 @@ F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
+F("grVoirX").onclick = ()=>F("grVoirBg").classList.remove("open");
+F("grVoirBg").onclick = e=>{ if(e.target === F("grVoirBg")) F("grVoirBg").classList.remove("open"); };
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape") F("grVoirBg").classList.remove("open");
+});
 F("grGo").onclick = lancer;
 F("grRelance").onclick = lancer;
 F("grStop").onclick = async ()=>{
