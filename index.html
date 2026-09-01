@@ -3091,6 +3091,8 @@ function rendFichiers(){
        <span class="lab">${f.lab}</span>
        <span class="val">${f.val()}<span class="fic">${etat(f)}</span></span>
        <span class="acts">
+         ${f.fic==="resultat-cca.xlsx" && dispo(f.fic)
+           ? `<button class="mini" data-a="reprendre">Reprendre ce résultat</button>` : ""}
          <button class="mini" data-a="voir" ${dispo(f.fic)?"":"disabled"}>Voir</button>
          <button class="mini" data-a="dl" ${dispo(f.fic)?"":"disabled"}>⬇︎</button>
          ${f.remplacable ? `<button class="mini" data-a="up">Remplacer…</button>` : ""}
@@ -3101,9 +3103,27 @@ function rendFichiers(){
     b.onclick = ()=>{
       if(b.dataset.a === "voir") return voir(f, 0);
       if(b.dataset.a === "dl")   return telecharger(f.fic);
+      if(b.dataset.a === "reprendre") return reprendreResultat(b);
       choisir(f.k, !!agent && f.remplacable);
     };
   });
+}
+
+async function reprendreResultat(b){
+  if(b){ b.disabled = true; b.textContent = "Lecture…"; }
+  try{
+    delete CACHE["resultat-cca.xlsx"];
+    const r = await jsonAgent("/resultat");
+    lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
+    resFic = {fichier:r.nom,
+              date:(agent && agent.resultat && agent.resultat.date) || "lu sur la machine"};
+    instantane("Calcul");
+    sel = null; selAtt = null; moving = null; forcing = null;
+    ecranLance = false; sauver(); rend();
+  }catch(e){
+    F("grErr").textContent = "Résultat illisible : " + e.message;
+    rend();
+  }
 }
 
 async function telecharger(nom){
