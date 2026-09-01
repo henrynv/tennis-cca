@@ -359,7 +359,7 @@
   .grk span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
   .grk .up{color:var(--accent);font-size:12px;font-weight:600}
   .grk.ok b{color:var(--accent)}
-  .grk.att b{color:#b8721c}
+  .grk.att b{color:#96600d}
   .grk.fig b{color:#2f5597}
   .grk.man b{color:#7a4fb5}
   .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
@@ -400,12 +400,12 @@
      leurs propres marques (fond bleu, etiquette violette) pour ne pas se
      disputer le meme canal. */
   .grc{position:absolute;border:1px solid var(--line);background:var(--pcbg,#fff);
-    border-radius:6px;padding:3px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;
+    border-radius:6px;padding:3px 4px;overflow:hidden;cursor:pointer;font-size:11px;
     line-height:1.25;border-left:3px solid var(--pc,#cfd6dd)}
   .grc:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(31,42,55,.13);z-index:4}
   .grc.grab{cursor:grab}
   .grc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);z-index:6}
-  .grc b{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grc b{display:block;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .grc .l2{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .grc .lk{position:absolute;top:2px;right:3px;font-size:11px;opacity:0;line-height:1}
   .grc:hover .lk{opacity:.4}
@@ -429,8 +429,8 @@
     background:rgba(31,122,77,.09);border:1px dashed #9ed3b7}
   .grdisp em{position:absolute;top:2px;left:6px;font-size:9.5px;font-style:normal;
     color:#1f7a4d;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-  .grc .tg{position:absolute;bottom:2px;right:3px;font-size:9px;font-weight:700;letter-spacing:.05em;
-    text-transform:uppercase;color:var(--muted)}
+  .grc .tg{position:absolute;bottom:2px;right:3px;font-size:9.5px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;color:#5c3a8c}
 
   .grghost{position:fixed;z-index:200;pointer-events:none;border-radius:6px;padding:3px 5px;
     font-size:10.5px;line-height:1.25;background:#fff;border:2px solid var(--accent);
@@ -499,12 +499,13 @@
   .grsh b{font-size:14px}
   .grsh .sub{font-size:11.5px;color:var(--muted)}
   .grsb{flex:1;min-height:0;overflow:auto;padding:8px 12px 14px}
-  .grp{padding:7px 8px;border-radius:7px;border:1px solid transparent;cursor:pointer;
+  .grp{width:100%;font:inherit;background:none;text-align:left;
+    padding:7px 8px;border-radius:7px;border:1px solid transparent;cursor:pointer;
     display:flex;gap:8px;align-items:flex-start}
   .grp:hover{background:#f7f9fa;border-color:var(--line)}
   .grp.on{background:var(--accent-soft);border-color:#b7d6c5}
-  .grp .niv{flex:none;min-width:19px;text-align:center;background:#eef1f4;border-radius:4px;
-    font-size:10.5px;font-weight:700;padding:2px 4px;color:#495260;margin-top:1px}
+  .grp .niv{flex:none;min-width:20px;text-align:center;background:#eef1f4;border-radius:5px;
+    font-size:10.5px;font-weight:700;padding:2px 4px;color:#4a545f;margin-top:1px}
   .grp .tx{min-width:0;flex:1}
   .grp b{font-size:13px;font-weight:600;display:block}
   .grp .why{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;line-height:1.35}
@@ -529,22 +530,38 @@
   .grd{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;
     border-bottom:1px solid #f0f2f5}
   .grd:last-child{border-bottom:none}
-  .grd .rg{flex:none;font-size:10px;font-weight:700;color:#14512f;background:var(--accent-soft);
-    border-radius:4px;padding:1px 5px}
+  /* Un seul jeu d'etiquettes pour tout l'ecran : meme hauteur, meme rayon,
+     meme graisse. « choix 1 », « hors dispos » et le niveau etaient trois
+     objets differents pour la meme fonction. Chaque couple fond/texte tient
+     le 4.5:1 du contraste AA. */
+  .tag{display:inline-flex;align-items:center;flex:none;font-size:10.5px;font-weight:700;
+    letter-spacing:.03em;line-height:1.6;padding:1px 6px;border-radius:5px;white-space:nowrap}
+  .tag.vert{background:var(--accent-soft);color:#14512f}
+  .tag.ambre{background:#fbeccb;color:#7a5600}
+  .tag.bleu{background:#e8eef8;color:#2a4a85}
+  .tag.violet{background:#efe7f8;color:#5c3a8c}
+  .tag.gris{background:#eef1f4;color:#4a545f}
+
   .grd .hs{font-variant-numeric:tabular-nums}
   .grd .dl{flex:none;min-width:92px;color:var(--muted);font-size:11.5px;
     text-transform:uppercase;letter-spacing:.04em}
   .grd .dv{min-width:0;overflow:hidden;text-overflow:ellipsis}
   .grd .dv.dur{color:var(--warn);font-weight:600}
   /* Ce que l'adherent a ecrit de sa main : cite, pas reformule. */
+  .grct{display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:2px}
+  .grct a{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);
+    text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:4px 9px;
+    max-width:100%;min-width:0;background:#fff}
+  .grct a:hover{border-color:var(--accent);color:var(--accent)}
+  .grct a span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grobs{font-size:12.5px;line-height:1.5;color:var(--ink);margin:0 0 8px;
     background:#fbfcfa;border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
     padding:8px 10px}
   /* Les jours declares, dans l'ordre de la semaine : la meme forme que la
      grille de la fiche papier, en une ligne lisible d'un coup d'oeil. */
   .grjrs{display:inline-flex;gap:2px;margin-right:5px;vertical-align:-1px}
-  .grjrs i{font-style:normal;font-size:10px;font-weight:700;width:13px;height:13px;
-    line-height:13px;text-align:center;border-radius:3px;background:#eef1f4;color:#aab2bb}
+  .grjrs i{font-style:normal;font-size:10.5px;font-weight:700;width:14px;height:14px;
+    line-height:14px;text-align:center;border-radius:3px;background:#eef1f4;color:#78838f}
   .grjrs i.y{background:var(--accent-soft);color:#14512f}
   /* Un intertitre par nature de probleme : la liste dit desormais quel travail
      elle demande, pas seulement qui elle concerne. */
@@ -561,8 +578,9 @@
     display:flex;align-items:center;justify-content:center;background:var(--fcs)}
   .grfamh .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
   .grfamh b{font-size:13.5px;font-weight:650;line-height:1.25}
-  .grfamh .tx span{font-size:11.5px;color:var(--muted);line-height:1.35}
-  .grfamh .n{font-size:14px;font-weight:700;color:var(--fc);font-variant-numeric:tabular-nums}
+  .grfamh .n{font-size:14px;font-weight:700;color:var(--fct);font-variant-numeric:tabular-nums;
+    background:var(--fcs);border-radius:6px;padding:1px 7px;min-width:26px;text-align:center}
+  .grfama{font-size:11.5px;color:var(--muted);line-height:1.4;margin:2px 0 7px;padding:0 5px}
   .grfamh .chev{font-size:10px;color:var(--muted);transition:transform .15s;width:10px}
   .grfam.plie .chev{transform:rotate(-90deg)}
   .grfam.plie .grfamb{display:none}
@@ -575,9 +593,6 @@
   .grm.go{flex-wrap:wrap;row-gap:2px}
   .grm.go .act{opacity:1;margin-left:auto}
   .grm.go .nm{flex:none;font-weight:600}
-  .grd .hors,
-  .grm .hors{flex:none;font-size:10px;color:#8a6b00;background:#fdf0d2;border-radius:4px;
-    padding:1px 5px;white-space:nowrap}
   .grm .qd{flex:none;font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px}
 
   .grempty{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
@@ -2793,19 +2808,27 @@ function dansDispo(c, t){
    repare le papier en main, un cours complet se repare en en ouvrant un autre.
    Les regrouper, c'est trier le travail avant de le faire. */
 const FAMILLES = [
-  {cle:"fiche",    ic:"✎", c:"#b8721c", cs:"#fdf0d2", titre:"À compléter sur la fiche",
+  {cle:"fiche",    ic:"✎", c:"#b8721c", cs:"#fbeccb", ct:"#7a5600",
+   titre:"À compléter sur la fiche",
    aide:"une case manque ou n'a pas été relue : ça se répare le papier en main"},
-  {cle:"capacite", ic:"🗓", c:"#2f5597", cs:"#e8eef8", titre:"Il faudrait ouvrir un cours",
+  {cle:"capacite", ic:"🗓", c:"#2f5597", cs:"#e8eef8", ct:"#2a4a85",
+   titre:"Il faudrait ouvrir un cours",
    aide:"des créneaux existent à leur niveau, ils sont pleins"},
-  {cle:"dispos",   ic:"⛔", c:"#5b6570", cs:"#eef1f4", titre:"Disponibilités inconciliables",
-   aide:"rien ne tient dans les plages cochées — fermetures, ou plages trop courtes"},
-  {cle:"refus",    ic:"🚫", c:"#9a3f6b", cs:"#f7e8ef", titre:"Refuse le seul prof possible",
+  {cle:"dispos",   ic:"⛔", c:"#5b6570", cs:"#eef1f4", ct:"#4a545f",
+   titre:"Disponibilités inconciliables",
+   aide:"rien ne tient dans les plages cochées — fermetures des courts, ou plages trop courtes"},
+  {cle:"refus",    ic:"🚫", c:"#9a3f6b", cs:"#f7e8ef", ct:"#7d3357",
+   titre:"Refuse le seul prof possible",
    aide:"un refus de prof ferme tous leurs créneaux"},
-  {cle:"main",     ic:"↩", c:"#1f7a4d", cs:"#e3f3ea", titre:"Retirés à la main",
+  {cle:"main",     ic:"↩", c:"#1f7a4d", cs:"#e3f3ea", ct:"#14512f",
+   titre:"Retirés à la main",
    aide:"sortis d'un cours pendant cette relecture, à reposer ou à laisser au calcul"},
-  {cle:"autre",    ic:"•", c:"#5b6570", cs:"#eef1f4", titre:"Autre", aide:""}
+  {cle:"autre",    ic:"•", c:"#5b6570", cs:"#eef1f4", ct:"#4a545f", titre:"Autre",
+   aide:"motif non reconnu — la phrase entière est sur la fiche du joueur"}
 ];
-const plie = {};       // familles repliees, le temps de la session
+// Ferme au chargement : la premiere chose a lire, c'est COMBIEN de joueurs
+// pose chaque type de probleme. Les noms viennent apres, un cas a la fois.
+const ouv = {};
 function familleDe(r){
   const t = String(r||"").toLowerCase();
   if(!t) return "autre";
@@ -2898,7 +2921,7 @@ function idx(entete){ const m={}; entete.forEach((v,i)=>{ if(v) m[String(v).trim
 // Les cinq colonnes « ce que l'adherent a ecrit », presentes a l'identique dans
 // Groupes et dans Non places. Absentes des classeurs d'avant septembre : on
 // retombe sur "" et l'ecran dit « rien d'ecrit ».
-const CH_FICHE = ["obs","demande_avec","demande_sans","demande_prof","refus_prof"];
+const CH_FICHE = ["portable","obs","demande_avec","demande_sans","demande_prof","refus_prof"];
 function lireFiche(r, ix){
   const o = {};
   CH_FICHE.forEach(k=>{ o[k] = ix[k]!==undefined ? String(r[ix[k]]||"").trim() : ""; });
@@ -2959,6 +2982,7 @@ function lireResultat(wb){
     attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>Object.assign({
       nom: String(r[inp["nom"]]).trim(), sexe: String(r[inp["sexe"]]||"").toUpperCase(),
       niveau: String(r[inp["niveau"]]||"").trim(),
+      email: inp["email"]!==undefined ? String(r[inp["email"]]||"").trim() : "",
       dispos: r[inp["dispos"]]||"", raison: r[inp["raison"]]||""
     }, lireFiche(r, inp)));
   }
@@ -3561,7 +3585,12 @@ function rendWeek(){
       el.style.left = (c._v*(100/n))+"%";
       el.style.width = "calc("+(100/n)+"% - 3px)";
       el.innerHTML = `<b>${esc(c.prof)}</b><div class="l2">${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`
-        + `<span class="lk">${c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span>`
+        + `<span class="lk" role="img" aria-label="${
+             c.lock===2?"tout figé":c.lock===1?"créneau figé":"libre"}" title="${
+             c.lock===2?"Tout figé — cliquer pour libérer"
+             :c.lock===1?"Créneau figé — cliquer pour tout figer"
+             :"Libre — cliquer pour figer le créneau"}">${
+             c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span>`
         + (c.manuel ? `<span class="tg" style="color:#7a4fb5">à la main</span>` : "");
       el.title = `${c.prof} · ${c.jour} ${gtx(c.d)}–${gtx(c.f)} · palier ${c.pal} · ${c.membres.length} joueurs`;
       if(!t){ el.classList.add("grab"); el.onpointerdown = ev=>debutDrag(ev, c, el); }
@@ -3691,7 +3720,9 @@ function rendSide(){
          return `<div class="grm ${ep?"ep":""}">
            <button class="nm lien" data-fi="${i}" title="Ouvrir sa fiche">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
            <span class="act"><button data-rm="${i}">Retirer</button></span>
-           <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}>📌</button></div>`;
+           <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}
+             aria-pressed="${ep}" title="${ep?"Épinglé : le calcul le laissera ici"
+             :"Épingler dans ce cours"}"><span aria-hidden="true">📌</span></button></div>`;
        }).join("")}
        ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
        </div>
@@ -3742,29 +3773,35 @@ function rendSide(){
   const ligne = ([p,i])=>{
     const dp = lireDispos(p.dispos);
     const js = DAYS.map(j=>`<i class="${dp.some(d=>d.jour===j)?"y":""}">${j[0]}</i>`).join("");
-    return `<div class="grp ${selAtt===i?"on":""}" data-i="${i}">
-       <span class="niv">${esc(p.niveau||"?")}</span>
+    return `<button class="grp ${selAtt===i?"on":""}" data-i="${i}">
+       <span class="niv" title="niveau ${esc(p.niveau||"inconnu")}">${esc(p.niveau||"?")}</span>
        <span class="tx"><b>${esc(p.nom)}</b>
-         <span class="why"><span class="grjrs">${js}</span>${esc(motifCourt(p.raison))}</span></span>
-     </div>`;
+         <span class="why"><span class="grjrs" aria-label="jours déclarés">${js}</span>${
+           esc(motifCourt(p.raison))}</span></span>
+     </button>`;
   };
   body.innerHTML = FAMILLES
     .map(f=>({f, gens: vus.filter(([p])=>familleDe(p.raison)===f.cle)}))
     .filter(g=>g.gens.length)
-    .map(g=>`<div class="grfam ${plie[g.f.cle]?"plie":""}"
-        style="--fc:${g.f.c};--fcs:${g.f.cs}">
-        <button class="grfamh" data-f="${g.f.cle}">
-          <span class="ic">${g.f.ic}</span>
-          <span class="tx"><b>${esc(g.f.titre)}</b><span>${esc(g.f.aide)}</span></span>
-          <span class="n">${g.gens.length}</span><span class="chev">▾</span>
+    .map(g=>`<div class="grfam ${ouv[g.f.cle]?"":"plie"}"
+        style="--fc:${g.f.c};--fcs:${g.f.cs};--fct:${g.f.ct}">
+        <button class="grfamh" data-f="${g.f.cle}" aria-expanded="${!!ouv[g.f.cle]}"
+          aria-controls="fam-${g.f.cle}">
+          <span class="ic" aria-hidden="true">${g.f.ic}</span>
+          <span class="tx"><b>${esc(g.f.titre)}</b></span>
+          <span class="n">${g.gens.length}</span>
+          <span class="chev" aria-hidden="true">▾</span>
         </button>
-        <div class="grfamb">${g.gens.map(ligne).join("")}</div>
+        <div class="grfamb" id="fam-${g.f.cle}">
+          <p class="grfama">${esc(g.f.aide)}</p>
+          ${g.gens.map(ligne).join("")}</div>
       </div>`).join("")
     || `<p class="grnote">Personne ici.</p>`;
   body.querySelectorAll("[data-f]").forEach(b=>b.onclick = ()=>{
-    plie[b.dataset.f] = !plie[b.dataset.f]; rendSide(); });
+    ouv[b.dataset.f] = !ouv[b.dataset.f]; rendSide(); });
   body.querySelectorAll(".grp").forEach(el=>el.onclick = ()=>{
     const i = +el.dataset.i;
+    ouv[familleDe(attente[i].raison)] = true;   // au retour, la famille est encore la
     selAtt = selAtt===i?null:i; sel = null; moving = null; forcing = null; trouve = null; rend(); });
 }
 
@@ -3792,6 +3829,16 @@ function rendJoueur(head, body, p, src){
     .sort((a,b)=> (b.dedans-a.dedans) || (b.libre-a.libre)
                 || jours().indexOf(a.c.jour)-jours().indexOf(b.c.jour) || a.c.d-b.c.d);
 
+  const tel = String(p.portable||"").trim(), mel = String(p.email||"").trim();
+  const contact = (tel||mel)
+    ? `<div class="grct">
+         ${tel?`<a href="tel:${esc(tel.replace(/[^+\d]/g,""))}"><span aria-hidden="true">📞</span>
+            <span>${esc(tel)}</span></a>`:""}
+         ${mel?`<a href="mailto:${esc(mel)}" title="${esc(mel)}"><span aria-hidden="true">✉</span>
+            <span>${esc(mel)}</span></a>`:""}
+       </div>`
+    : `<p class="grnote" style="margin-top:0">Ni téléphone ni e-mail sur la fiche.</p>`;
+
   const dem = [["demande_avec","avec"],["demande_sans","sans"],
                ["demande_prof","prof souhaité"],["refus_prof","prof refusé"]]
     .filter(([k])=>p[k]).map(([k,lb])=>
@@ -3799,11 +3846,14 @@ function rendJoueur(head, body, p, src){
         k==="demande_sans"||k==="refus_prof"?"dur":""}">${esc(p[k])}</span></div>`).join("");
 
   body.innerHTML =
-    `<div class="grh4">Disponibilités déclarées</div>
+    `<div class="grh4">Contact</div>
+     ${contact}
+
+     <div class="grh4">Disponibilités déclarées</div>
      ${dp.length ? dp.map(d=>`<div class="grd">
          <span class="hs">${esc(d.jour)} ${gtx(d.de)}–${gtx(d.a)}</span>
-         ${d.rang?`<span class="rg">choix ${d.rang}</span>`:""}
-         ${jours().indexOf(d.jour)<0?`<span class="hors">hors jours CCA</span>`:""}</div>`).join("")
+         ${d.rang?`<span class="tag vert">choix ${d.rang}</span>`:""}
+         ${jours().indexOf(d.jour)<0?`<span class="tag ambre">hors jours CCA</span>`:""}</div>`).join("")
        : `<p class="grnote">Aucune plage lisible dans le classeur${
            p.dispos?` — texte reçu : « ${esc(p.dispos)} »`:" (colonne vide)"}.</p>`}
      ${dp.length?`<p class="grnote">Ces plages sont peintes sur la grille, à gauche.</p>`:""}
@@ -3820,7 +3870,7 @@ function rendJoueur(head, body, p, src){
      ${poss.length ? poss.map((o,k)=>`<div class="grm go">
          <span class="nm">${esc(o.c.jour)} ${gtx(o.c.d)} · ${esc(o.c.prof)}</span>
          <span class="qd">${esc(o.c.pal)} · ${o.c.membres.length}/${o.c.max}</span>
-         ${o.dedans?"":`<span class="hors">hors dispos</span>`}
+         ${o.dedans?"":`<span class="tag ambre">hors dispos</span>`}
          <span class="act"><button data-go="${k}">${o.libre?"Placer":"Forcer"}</button></span>
        </div>`).join("")
        : `<p class="grnote">Aucun ${src?"autre ":""}cours ouvert de son sexe et de son palier. Il faudrait
@@ -3896,7 +3946,9 @@ function chercher(q){
     `<button data-k="${k}"><span class="n">${esc(h.nom)}</span><span class="w">${esc(h.ou)}</span></button>`).join("");
   box.querySelectorAll("button").forEach(b=>b.onclick = ()=>{
     const h = hits[+b.dataset.k];
-    if(h.cle){ sel = h.cle; trouve = h.cle; selAtt = null; } else { sel = null; selAtt = h.att; trouve = null; }
+    if(h.cle){ sel = h.cle; trouve = h.cle; selAtt = null; }
+    else { sel = null; selAtt = h.att; trouve = null;
+           ouv[familleDe(attente[h.att].raison)] = true; }
     box.classList.remove("on"); F("grQ").value = ""; rend();
     const el = F("grWeek").querySelector(".grc.trouve");
     if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
@@ -3915,7 +3967,9 @@ function exportResultat(){
     m.nom,m.email||"",m.niveau||"",m.dispos||"",c.sexe,c.membres.length,
     (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":""].concat(CH_FICHE.map(k=>m[k]||"")))));
   const gws = XLSX.utils.aoa_to_sheet(g);
-  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},{wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
+  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},
+                {wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},
+                {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, gws, "Groupes");
 
   const co = [["groupe","jour","debut","fin","prof","type","palier","effectif","max","sexe","figeage","a_la_main","joueurs"]];
@@ -3925,11 +3979,12 @@ function exportResultat(){
   cws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:6},{wch:6},{wch:9},{wch:10},{wch:70}];
   XLSX.utils.book_append_sheet(wb, cws, "Cours");
 
-  const np = [["nom","sexe","niveau","dispos","raison"].concat(CH_FICHE)];
-  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.dispos||"",p.raison||""]
+  const np = [["nom","sexe","niveau","email","dispos","raison"].concat(CH_FICHE)];
+  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.email||"",p.dispos||"",p.raison||""]
     .concat(CH_FICHE.map(k=>p[k]||""))));
   const nws = XLSX.utils.aoa_to_sheet(np);
-  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:46},{wch:60},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
+  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:30},{wch:46},{wch:60},
+                {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, nws, "Non places");
 
   XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
