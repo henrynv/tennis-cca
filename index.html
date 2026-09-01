@@ -353,18 +353,22 @@
     border:1px solid var(--accent);border-radius:20px}
 
   .grsum{flex:none;background:var(--panel);border-bottom:1px solid var(--line);
-    padding:9px 16px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+    padding:5px 16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
   .grk{display:flex;flex-direction:column;line-height:1.15}
-  .grk b{font-size:19px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+  .grk b{font-size:17px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
   .grk span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
   .grk .up{color:var(--accent);font-size:12px;font-weight:600}
+  .grk.ok b{color:var(--accent)}
+  .grk.att b{color:#b8721c}
+  .grk.fig b{color:#2f5597}
+  .grk.man b{color:#7a4fb5}
   .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
   .grkeys span{display:flex;align-items:center;gap:5px}
   .grkeys i{width:9px;height:9px;border-radius:2px;flex:none}
 
-  .grfil{flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 14px;
+  .grfil{flex:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:5px 14px;
     background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px}
-  .grfil .g{display:flex;gap:4px;align-items:center}
+  .grfil .g{display:flex;gap:4px;align-items:center;flex-wrap:wrap;min-width:0}
   .grfil .lb{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .grchip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 10px;
     font-size:12px;cursor:pointer;color:var(--muted);height:auto}
@@ -374,7 +378,7 @@
   .grfil .cnt{margin-left:auto;color:var(--muted);font-size:12px}
 
   .grwrap{flex:1;min-height:0;overflow:auto;padding:0 12px 12px}
-  .grweek{display:grid;min-width:1080px}
+  .grweek{display:grid}
   .grhead{position:sticky;top:0;z-index:5;background:var(--bg);padding:7px 4px 5px;text-align:center;
     border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
   .grhead b{font-size:13px;display:block}
@@ -390,9 +394,14 @@
   .grclosed em{position:absolute;top:3px;left:5px;font-size:10px;font-style:normal;color:#5a6470;
     background:rgba(255,255,255,.8);padding:0 4px;border-radius:3px}
 
-  .grc{position:absolute;border:1px solid var(--line);background:#fff;border-radius:6px;
-    padding:3px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;line-height:1.25;
-    border-left:3px solid #cfd6dd}
+  /* La couleur du trait de gauche et du fond dit QUI donne le cours. Les six
+     profs sont la premiere chose qu'on cherche dans la semaine, et les
+     pastilles du haut servent de legende. Le figeage et la retouche gardent
+     leurs propres marques (fond bleu, etiquette violette) pour ne pas se
+     disputer le meme canal. */
+  .grc{position:absolute;border:1px solid var(--line);background:var(--pcbg,#fff);
+    border-radius:6px;padding:3px 4px;overflow:hidden;cursor:pointer;font-size:10.5px;
+    line-height:1.25;border-left:3px solid var(--pc,#cfd6dd)}
   .grc:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(31,42,55,.13);z-index:4}
   .grc.grab{cursor:grab}
   .grc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);z-index:6}
@@ -400,15 +409,26 @@
   .grc .l2{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .grc .lk{position:absolute;top:2px;right:3px;font-size:11px;opacity:0;line-height:1}
   .grc:hover .lk{opacity:.4}
-  .grc.f1,.grc.f2{background:#e8eef8;border-color:#b9c9e3;border-left-color:#2f5597}
+  .grc.f1,.grc.f2{background:#e8eef8;border-color:#b9c9e3}
   .grc.f1 .lk,.grc.f2 .lk{opacity:1}
   .grc.f2{box-shadow:inset 0 0 0 1px #b9c9e3}
-  .grc.manuel{border-left-color:#7a4fb5}
   .grc.dim{opacity:.22}
   .grc.cible{border-color:var(--accent);box-shadow:0 0 0 2px #9ed3b7;background:var(--accent-soft)}
   .grc.plein{border-color:#e0a000;box-shadow:0 0 0 2px #f2ddaa}
   .grc.trouve{border-color:var(--ink);box-shadow:0 0 0 3px #ffd66e}
   .grc.ghosted{opacity:.25}
+  /* Compatible sexe/palier mais hors des plages declarees sur la fiche :
+     posable a la main, mais ce n'est pas la meme chose qu'un creneau ou le
+     joueur a dit pouvoir venir. Le trait discontinu le dit sans l'interdire. */
+  .grc.cible.hors{background:#fff;border-style:dashed;box-shadow:none;border-color:#9ed3b7}
+  .grc.plein.hors{border-style:dashed}
+
+  /* La fiche du joueur se lit sur la grille, pas seulement en texte : ses
+     plages sont peintes dans les colonnes, comme sur la fiche papier. */
+  .grdisp{position:absolute;left:0;right:3px;border-radius:6px;pointer-events:none;z-index:1;
+    background:rgba(31,122,77,.09);border:1px dashed #9ed3b7}
+  .grdisp em{position:absolute;top:2px;left:6px;font-size:9.5px;font-style:normal;
+    color:#1f7a4d;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
   .grc .tg{position:absolute;bottom:2px;right:3px;font-size:9px;font-weight:700;letter-spacing:.05em;
     text-transform:uppercase;color:var(--muted)}
 
@@ -429,38 +449,50 @@
   .grmove.ko{background:#fdeaea;border-color:#e6c2c2;color:#7a2020}
   .grmove .sp{flex:1}
 
-  .grprofs{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:6px 12px;
-    display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-  .grprofs .lb{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-  .grpb{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;
-    padding:4px 9px;background:#fff;font-size:12px;line-height:1.3;cursor:pointer;height:auto}
+  /* Une pastille de prof = un filtre ET sa jauge d'heures. Les deux etaient
+     deux bandeaux distincts qui listaient les memes six noms : la moitie de la
+     hauteur perdue sous la grille servait a repeter « Loic, Lucas, Max… ». */
+  .grpb{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;
+    padding:3px 9px;background:#fff;font-size:12px;line-height:1.3;cursor:pointer;height:auto}
   .grpb:hover{border-color:var(--accent)}
-  .grpb.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
-  .grpb b{font-size:12.5px}
-  .grpb .g{width:46px;height:6px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
-  .grpb .g s{display:block;height:100%;background:var(--accent);text-decoration:none}
-  .grpb .v{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
-  .grpb.plein .g s{background:#c79014}
+  .grpb.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);background:#f2f5f8}
+  .grpb b{font-size:12.5px;font-weight:600}
+  .grpb .pt{width:8px;height:8px;border-radius:50%;flex:none}
+  .grpb .gg{width:34px;height:5px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
+  .grpb .gg s{display:block;height:100%;background:var(--accent);text-decoration:none}
+  .grpb .v{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;font-size:11.5px}
+  .grpb.plein .gg s{background:#c79014}
   .grpb.over{border-color:var(--warn);background:#fdeaea}
-  .grpb.over .g s{background:var(--warn)}
+  .grpb.over .gg s{background:var(--warn)}
   .grpb.over .v{color:var(--warn);font-weight:700}
-  .grpd{flex:none;background:#fbfcfd;border-top:1px solid var(--line);padding:7px 14px;
-    display:flex;gap:16px;flex-wrap:wrap;font-size:12px;align-items:center}
-  .grpd .d{display:flex;align-items:center;gap:6px}
+  /* Le detail par jour ne merite pas un bandeau permanent : il se lit au survol. */
+  .grpd{position:fixed;z-index:60;display:none;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 12px 32px rgba(31,42,55,.18);padding:9px 12px;
+    font-size:12px;min-width:220px;max-width:265px}
+  .grpd.on{display:block}
+  .grpd > b{display:block;font-size:12.5px;margin-bottom:5px}
+  .grpd .d{display:flex;align-items:center;gap:7px;padding:2px 0}
   .grpd .d em{font-style:normal;color:var(--muted);min-width:62px}
-  .grpd .d .g{width:54px;height:6px;border-radius:3px;background:#e7ebf0;overflow:hidden}
-  .grpd .d .g s{display:block;height:100%;background:var(--accent);text-decoration:none}
-  .grpd .d.plein .g s{background:#c79014}
-  .grpd .d.over .g s{background:var(--warn)}
+  .grpd .d .gg{width:52px;height:6px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
+  .grpd .d .gg s{display:block;height:100%;background:var(--accent);text-decoration:none}
+  .grpd .d.plein .gg s{background:#c79014}
+  .grpd .d.over .gg s{background:var(--warn)}
   .grpd .d.over span{color:var(--warn);font-weight:700}
   .grpd .d.off{opacity:.45}
+  .grpd .note{color:var(--muted);margin-top:7px;line-height:1.35;font-size:11.5px;
+    border-top:1px solid var(--line);padding-top:6px}
 
-  .grbar{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px;
+  .grbar{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:7px 16px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .grbar .tx{flex:1;min-width:200px;font-size:13.5px;line-height:1.35}
-  .grbar .tx em{font-style:normal;color:var(--muted);display:block;font-size:12px;margin-top:1px}
-  .grbar .big{height:44px;padding:0 20px;font-size:15px;border-radius:9px}
+  .grbar .tx{flex:1;min-width:200px;font-size:13px;line-height:1.3}
+  .grbar .tx em{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px}
+  .grbar .big{height:38px;padding:0 18px;font-size:15px;border-radius:9px}
   .grbar .nb{font-weight:700;color:#2f5597}
+  .grbar .lien{border:none;background:none;color:var(--muted);text-decoration:underline;
+    padding:0 4px;font-size:12.5px;height:auto}
+  .grbar .lien:hover{color:var(--accent)}
+  .grko{color:var(--warn);font-weight:600;font-size:12.5px;line-height:1.35;margin-bottom:3px}
+  .grko code{background:#fdeaea;border-radius:4px;padding:0 4px;font-size:11.5px}
 
   .grsh{flex:none;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;
     align-items:center;gap:8px}
@@ -491,6 +523,62 @@
     padding:2px 7px;font-size:11.5px;color:var(--muted);height:auto;line-height:1.5}
   .grm .pin.on{background:#e8eef8;border-color:#2f5597;color:#2f5597}
   .grnote{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 0}
+  .grh4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    font-weight:700;margin:14px 0 5px}
+  .grh4:first-child{margin-top:2px}
+  .grd{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;
+    border-bottom:1px solid #f0f2f5}
+  .grd:last-child{border-bottom:none}
+  .grd .rg{flex:none;font-size:10px;font-weight:700;color:#14512f;background:var(--accent-soft);
+    border-radius:4px;padding:1px 5px}
+  .grd .hs{font-variant-numeric:tabular-nums}
+  .grd .dl{flex:none;min-width:92px;color:var(--muted);font-size:11.5px;
+    text-transform:uppercase;letter-spacing:.04em}
+  .grd .dv{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .grd .dv.dur{color:var(--warn);font-weight:600}
+  /* Ce que l'adherent a ecrit de sa main : cite, pas reformule. */
+  .grobs{font-size:12.5px;line-height:1.5;color:var(--ink);margin:0 0 8px;
+    background:#fbfcfa;border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+    padding:8px 10px}
+  /* Les jours declares, dans l'ordre de la semaine : la meme forme que la
+     grille de la fiche papier, en une ligne lisible d'un coup d'oeil. */
+  .grjrs{display:inline-flex;gap:2px;margin-right:5px;vertical-align:-1px}
+  .grjrs i{font-style:normal;font-size:10px;font-weight:700;width:13px;height:13px;
+    line-height:13px;text-align:center;border-radius:3px;background:#eef1f4;color:#aab2bb}
+  .grjrs i.y{background:var(--accent-soft);color:#14512f}
+  /* Un intertitre par nature de probleme : la liste dit desormais quel travail
+     elle demande, pas seulement qui elle concerne. */
+  /* Une tuile par nature de probleme, repliable : meme langage que les tuiles
+     de l'accueil (coin arrondi, icone, titre gras, sous-titre gris), a l'echelle
+     d'un panneau de 330 px. */
+  .grfam{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:9px;overflow:hidden}
+  .grfam:hover{border-color:var(--fc)}
+  .grfamh{display:flex;width:100%;gap:10px;align-items:center;padding:9px 11px;
+    background:none;border:none;border-radius:0;text-align:left;cursor:pointer;height:auto}
+  .grfamh:hover{background:#f7f9fa}
+  .grfamh .ic{font-size:15px;width:28px;height:28px;border-radius:9px;flex:none;
+    display:flex;align-items:center;justify-content:center;background:var(--fcs)}
+  .grfamh .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .grfamh b{font-size:13.5px;font-weight:650;line-height:1.25}
+  .grfamh .tx span{font-size:11.5px;color:var(--muted);line-height:1.35}
+  .grfamh .n{font-size:14px;font-weight:700;color:var(--fc);font-variant-numeric:tabular-nums}
+  .grfamh .chev{font-size:10px;color:var(--muted);transition:transform .15s;width:10px}
+  .grfam.plie .chev{transform:rotate(-90deg)}
+  .grfam.plie .grfamb{display:none}
+  .grfamb{padding:0 7px 7px}
+  @media(prefers-reduced-motion:reduce){.grfamh .chev{transition:none}}
+  .grm .nm.lien{border:none;background:none;padding:0;height:auto;text-align:left;
+    font:inherit;font-size:13px;color:var(--ink);cursor:pointer;border-radius:4px}
+  .grm .nm.lien:hover{color:var(--accent);text-decoration:underline}
+  /* 330 px de large : le bouton passe a la ligne plutot que de deborder */
+  .grm.go{flex-wrap:wrap;row-gap:2px}
+  .grm.go .act{opacity:1;margin-left:auto}
+  .grm.go .nm{flex:none;font-weight:600}
+  .grd .hors,
+  .grm .hors{flex:none;font-size:10px;color:#8a6b00;background:#fdf0d2;border-radius:4px;
+    padding:1px 5px;white-space:nowrap}
+  .grm .qd{flex:none;font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px}
 
   .grempty{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
   .grcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 32px;
@@ -536,6 +624,18 @@
   .grlog b{color:var(--ink)}
   .grlog .cmd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#8a948d}
   .grerr{color:var(--warn);font-size:12.5px;margin:8px 0 0}
+  /* Sous cette largeur, la rangee des profs passait sur deux lignes et volait
+     30 px a la grille. Le point de couleur et les heures suffisent ; la jauge
+     reste dans la carte au survol. */
+  @media(max-width:1240px){ .grpb .gg{display:none} }
+  @media(max-height:720px){
+    .grsum{padding:3px 16px;gap:15px}
+    .grk{flex-direction:row;align-items:baseline;gap:5px}
+    .grk b{font-size:14px}
+    .grk span{font-size:10.5px}
+    .grbar{padding:5px 16px}
+    .grbar .big{height:34px}
+  }
   @media(max-width:900px){
     .grbody{grid-template-columns:1fr}
     .grside{border-left:none;border-top:1px solid var(--line);max-height:260px}
@@ -778,7 +878,6 @@
   <div class="topbar">
     <button class="mini" id="grHome">← Accueil</button>
     <span class="brand">Groupes et EDT</span>
-    <span class="badge" id="grBadge"></span>
     <span class="spacer"></span>
     <span class="grsearch" id="grSearch" style="display:none">
       <input id="grQ" type="search" placeholder="Chercher un joueur…" autocomplete="off">
@@ -852,11 +951,11 @@
       <div class="grsum" id="grSum"></div>
       <div class="grfil" id="grFil"></div>
       <div class="grmove" id="grMove" style="display:none"></div>
-      <div class="grwrap"><div class="grweek" id="grWeek"></div></div>
-      <div class="grpd" id="grPd" style="display:none"></div>
-      <div class="grprofs" id="grProfs"></div>
+      <div class="grwrap" id="grWrap"><div class="grweek" id="grWeek"></div></div>
+      <div class="grpd" id="grPd"></div>
       <div class="grbar">
         <div class="tx" id="grBarTx"></div>
+        <button class="mini" id="grUndo" style="display:none">↶ Annuler</button>
         <button class="mini" id="grAll">Tout figer</button>
         <button class="mini" id="grFig">⬇︎ Figeages</button>
         <button class="primary big" id="grRelance" style="display:none">Relancer</button>
@@ -2649,10 +2748,91 @@ let ctr = null;         // {fichier,date,jours,debut,fin,courts,fermetures[],bud
 let resFic = null;      // {fichier,date}
 let scen = [];          // scenarios : {n,nom,valide,cours,attente}
 let vu = 0, sel = null, selAtt = null, moving = null, forcing = null, trouve = null;
-let profVu = null, filtre = {profs:[], pal:"", etat:""};
+let filtre = {profs:[], pal:"", etat:""};
 
-const PXH = 46;
+// Hauteur d'une heure, en pixels. Recalculee a chaque rendu pour que la
+// semaine entiere tienne dans la fenetre : sur cet ecran, un planning qu'il
+// faut faire defiler pour voir le vendredi soir n'est plus un planning.
+let PXH = 46;
+const PXH_MAX = 46, PXH_MIN = 24;
 const gmn = t => { const m = String(t).match(/(\d+)\s*h\s*(\d*)/i); return m ? (+m[1])*60 + (m[2]?+m[2]:0) : null; };
+
+/* -------- disponibilites d'un joueur sans groupe --------
+   L'onglet « Non places » porte les plages en clair, telles que le solveur les
+   a lues : « Lundi 12h30-14h15 (1) ; Mardi 18h-20h ». On les reparse pour les
+   redessiner sur la grille — comparer une grille a une grille, comme sur la
+   fiche papier, plutot que lire des heures ecrites. */
+const RE_DISPO = /^([A-Za-zÀ-ÿ]+)\s+([\dh:]+)\s*[-–]\s*([\dh:]+)(?:\s*\((\d+)\))?$/;
+function hmn(t){
+  const m = String(t).match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})$/i);
+  return m ? (+m[1])*60 + (m[2]?+m[2]:0) : null;
+}
+function lireDispos(txt){
+  const out = [];
+  String(txt||"").replace(/\n/g,";").split(";").forEach(bout=>{
+    const m = bout.trim().match(RE_DISPO); if(!m) return;
+    const de = hmn(m[2]), a = hmn(m[3]);
+    if(de===null || a===null || a<=de) return;
+    const j = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+    if(DAYS.indexOf(j)<0) return;
+    out.push({jour:j, de, a, rang:m[4]?+m[4]:null});
+  });
+  return out.sort((x,y)=>DAYS.indexOf(x.jour)-DAYS.indexOf(y.jour) || x.de-y.de);
+}
+// true / false / null quand on ne sait pas (un joueur deja dans un cours
+// n'apporte pas ses dispos : le classeur ne les donne que pour les non places).
+function disposDe(txt){ const d = lireDispos(txt); return d.length ? d : null; }
+// ne recopie que les cinq champs de fiche, pour ne pas trainer tout l'objet
+function pick(o){ const r = {}; CH_FICHE.forEach(k=>{ if(o && o[k]) r[k] = o[k]; }); return r; }
+function dansDispo(c, t){
+  if(!t || !t.dispos) return null;
+  if(!t.dispos.length) return false;
+  return t.dispos.some(d => d.jour===c.jour && d.de<=c.d && c.f<=d.a);
+}
+/* Les motifs ne demandent pas le meme travail : une fiche a completer se
+   repare le papier en main, un cours complet se repare en en ouvrant un autre.
+   Les regrouper, c'est trier le travail avant de le faire. */
+const FAMILLES = [
+  {cle:"fiche",    ic:"✎", c:"#b8721c", cs:"#fdf0d2", titre:"À compléter sur la fiche",
+   aide:"une case manque ou n'a pas été relue : ça se répare le papier en main"},
+  {cle:"capacite", ic:"🗓", c:"#2f5597", cs:"#e8eef8", titre:"Il faudrait ouvrir un cours",
+   aide:"des créneaux existent à leur niveau, ils sont pleins"},
+  {cle:"dispos",   ic:"⛔", c:"#5b6570", cs:"#eef1f4", titre:"Disponibilités inconciliables",
+   aide:"rien ne tient dans les plages cochées — fermetures, ou plages trop courtes"},
+  {cle:"refus",    ic:"🚫", c:"#9a3f6b", cs:"#f7e8ef", titre:"Refuse le seul prof possible",
+   aide:"un refus de prof ferme tous leurs créneaux"},
+  {cle:"main",     ic:"↩", c:"#1f7a4d", cs:"#e3f3ea", titre:"Retirés à la main",
+   aide:"sortis d'un cours pendant cette relecture, à reposer ou à laisser au calcul"},
+  {cle:"autre",    ic:"•", c:"#5b6570", cs:"#eef1f4", titre:"Autre", aide:""}
+];
+const plie = {};       // familles repliees, le temps de la session
+function familleDe(r){
+  const t = String(r||"").toLowerCase();
+  if(!t) return "autre";
+  if(t.indexOf("aucune disponibilite")>=0 || t.indexOf("aucune disponibilité")>=0
+     || t.indexOf("vide")>=0 || t.indexOf("absent de tous les paliers")>=0) return "fiche";
+  if(t.indexOf("à la main")>=0) return "main";
+  if(t.indexOf("qu'il refuse")>=0) return "refus";
+  if(t.indexOf("hors jours")>=0 || t.indexOf("ne tient")>=0) return "dispos";
+  if(/dont\s+\d+\s+ouvert/.test(t)) return "capacite";
+  return "autre";
+}
+
+// La raison ecrite par le solveur fait deux lignes et demie : dans la liste on
+// n'en garde que le motif, la phrase entiere reste sur la fiche du joueur.
+function motifCourt(r){
+  const t = String(r||"").toLowerCase();
+  if(!t) return "sans motif";
+  if(t.indexOf("aucune disponibilite")>=0 || t.indexOf("aucune disponibilité")>=0) return "aucune dispo saisie";
+  if(t.indexOf("hors jours")>=0) return "hors jours d'ouverture";
+  if(t.indexOf("aucun creneau ne tient")>=0 || t.indexOf("aucun créneau ne tient")>=0) return "aucun créneau dans ses dispos";
+  if(t.indexOf("qu'il refuse")>=0) return "prof refusé sur tous ses créneaux";
+  if(t.indexOf("« niveau » vide")>=0 || t.indexOf("niveau » vide")>=0) return "niveau à renseigner";
+  if(t.indexOf("absent de tous les paliers")>=0) return "niveau hors paliers";
+  const m = t.match(/dont\s+(\d+)\s+ouvert/);
+  if(m) return +m[1] ? m[1]+" cours à son niveau, tous complets" : "aucun cours ouvert à son niveau";
+  return String(r).length>60 ? String(r).slice(0,57)+"…" : String(r);
+}
 const gtx = m => { const h = Math.floor(m/60), q = m%60; return q ? h+"h"+String(q).padStart(2,"0") : h+"h"; };
 const hh  = h => { const m = Math.round(h*60); return m%60 ? Math.floor(m/60)+"h"+String(m%60).padStart(2,"0") : (m/60)+"h"; };
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -2665,18 +2845,47 @@ const utilise = (p,j,sauf) => vivants().filter(c=>c.prof===p && c.jour===j && c.
                                        .reduce((s,c)=>s+(c.f-c.d)/60, 0);
 const courts  = () => (ctr && ctr.courts) || 4;
 
-/* ---------------- persistance ---------------- */
+/* ---------------- persistance ----------------
+   Deux copies, jamais une seule : le navigateur pour aller vite et travailler
+   meme sans agent, et — des que l'agent tourne — un fichier `etat-ecran.json`
+   a cote des classeurs. C'est ce fichier qui est la reference : il survit a un
+   cache vide, se sauvegarde avec le reste du dossier, et se lit a l'oeil nu. */
+let majEtat = 0;          // date de la derniere ecriture reussie
+let stockKo = false;      // le navigateur a refuse d'ecrire
+let tPousse = 0, aPousser = null;
+
+function paquet(){ return {cours, attente, ctr, resFic, scen, vu, maj: Date.now()}; }
 function sauver(){
+  const o = paquet();
+  majEtat = o.maj;
   try{
-    localStorage.setItem(CLE, JSON.stringify({cours, attente, ctr, resFic, scen, vu}));
-  }catch(e){ /* quota : on continue sans persister plutot que de bloquer l'ecran */ }
+    localStorage.setItem(CLE, JSON.stringify(o));
+    if(stockKo){ stockKo = false; rendBar(); }
+  }catch(e){
+    // Avant, l'erreur etait avalee : l'ecran continuait, plus rien n'etait
+    // enregistre, et le travail disparaissait au rechargement suivant sans un
+    // mot. Desormais la barre du bas le dit.
+    if(!stockKo){ stockKo = true; rendBar(); }
+  }
+  pousserEcran(o);
+}
+function pousserEcran(o){
+  if(!agent) return;
+  aPousser = o;
+  clearTimeout(tPousse);
+  tPousse = setTimeout(async ()=>{
+    try{ await jsonAgent("/ecran", {etat: aPousser}); }
+    catch(e){ /* agent arrete en cours de route : le navigateur garde la copie */ }
+  }, 800);
+}
+function adopter(o){
+  cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
+  resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0; majEtat = o.maj||0;
 }
 function relire(){
   try{
     const o = JSON.parse(localStorage.getItem(CLE) || "null");
-    if(!o) return;
-    cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
-    resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0;
+    if(o) adopter(o);
   }catch(e){ /* donnees illisibles : on repart a vide */ }
 }
 
@@ -2686,6 +2895,15 @@ function aoa(wb, nom){
   return ws ? XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false}) : null;
 }
 function idx(entete){ const m={}; entete.forEach((v,i)=>{ if(v) m[String(v).trim().toLowerCase()]=i; }); return m; }
+// Les cinq colonnes « ce que l'adherent a ecrit », presentes a l'identique dans
+// Groupes et dans Non places. Absentes des classeurs d'avant septembre : on
+// retombe sur "" et l'ecran dit « rien d'ecrit ».
+const CH_FICHE = ["obs","demande_avec","demande_sans","demande_prof","refus_prof"];
+function lireFiche(r, ix){
+  const o = {};
+  CH_FICHE.forEach(k=>{ o[k] = ix[k]!==undefined ? String(r[ix[k]]||"").trim() : ""; });
+  return o;
+}
 const cleDe = c => [c.jour, gtx(c.d), c.prof, c.type].join("|");
 
 function lireResultat(wb){
@@ -2718,10 +2936,13 @@ function lireResultat(wb){
     gr.slice(1).forEach(r=>{
       const c = par[String(r[ig["groupe"]]||"").trim()];
       if(!c) return;
-      c.membres.push({
+      c.membres.push(Object.assign({
         nom: [r[ig["nom"]], r[ig["prenom"]]].filter(Boolean).join(" ").trim(),
-        email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim()
-      });
+        email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim(),
+        // absente des classeurs d'avant septembre : on garde "" et l'ecran
+        // dira « on ne sait pas » plutot que « hors dispos »
+        dispos: r[ig["dispos"]]||""
+      }, lireFiche(r, ig)));
     });
   } else {
     // pas d'onglet Groupes : on retombe sur la colonne « joueurs » de Cours
@@ -2735,11 +2956,11 @@ function lireResultat(wb){
   attente = [];
   if(np){
     const inp = idx(np[0]);
-    attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>({
+    attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>Object.assign({
       nom: String(r[inp["nom"]]).trim(), sexe: String(r[inp["sexe"]]||"").toUpperCase(),
       niveau: String(r[inp["niveau"]]||"").trim(),
       dispos: r[inp["dispos"]]||"", raison: r[inp["raison"]]||""
-    }));
+    }, lireFiche(r, inp)));
   }
   cours.sort((a,b)=>DAYS.indexOf(a.jour)-DAYS.indexOf(b.jour) || a.d-b.d);
 }
@@ -2998,6 +3219,44 @@ function rendPills(){
   val.onclick = ()=>{ const v = !cur.valide; scen.forEach(e=>e.valide=false); cur.valide = v; sauver(); rend(); };
   w.appendChild(val);
 }
+/* -------- annuler --------
+   Chaque geste destructeur pose d'abord une copie de l'etat. C'est du brutal
+   (on duplique tout le planning), mais a 26 cours et 113 joueurs ca se compte
+   en dixiemes de milliseconde, et ca rend l'annulation exacte : pas de geste
+   inverse a ecrire pour chacun des huit gestes possibles. */
+/* Une teinte par prof, stable d'un rendu a l'autre (index dans la liste triee).
+   Le rouge de --warn n'y est pas : il reste reserve aux depassements. */
+const TEINTES = ["#1f7a4d","#2f5597","#b8721c","#0e7490","#7a4fb5","#9a3f6b","#4d7c1f","#5b6570"];
+let _teintes = null;
+function teinte(p){
+  if(!_teintes){
+    _teintes = {};
+    [...new Set(vivants().map(c=>c.prof).concat(ctr ? Object.keys(ctr.budget) : []))]
+      .filter(Boolean).sort().forEach((q,i)=>{ _teintes[q] = TEINTES[i % TEINTES.length]; });
+  }
+  return _teintes[p] || "#5b6570";
+}
+function teinteFond(p){
+  const h = teinte(p);
+  return "rgba(" + parseInt(h.slice(1,3),16) + "," + parseInt(h.slice(3,5),16)
+       + "," + parseInt(h.slice(5,7),16) + ",.07)";
+}
+
+const HIST_MAX = 40;
+let hist = [];
+function avant(nom){
+  hist.push({nom, cours:JSON.parse(JSON.stringify(cours)),
+                  attente:JSON.parse(JSON.stringify(attente))});
+  if(hist.length > HIST_MAX) hist.shift();
+}
+function annuler(){
+  const h = hist.pop(); if(!h) return;
+  cours = h.cours; attente = h.attente;
+  moving = null; forcing = null; trouve = null; selAtt = null;
+  if(sel && !cours.some(x=>x.cle===sel)) sel = null;   // le cours a pu changer de cle
+  memoriser(); rend();
+}
+
 function memoriser(nom){       // apres une retouche : on garde une trace nommee
   const cur = scen.find(e=>e.n===vu);
   if(cur){ cur.cours = JSON.parse(JSON.stringify(cours)); cur.attente = JSON.parse(JSON.stringify(attente)); }
@@ -3007,6 +3266,7 @@ function memoriser(nom){       // apres une retouche : on garde une trace nommee
 /* ---------------- rendu ---------------- */
 function rend(){
   if(enCalcul) return;                 // pendant un calcul, l'ecran de progression tient l'affichage
+  _teintes = null;                     // la liste des profs a pu changer
   const ok = cours.length > 0;
   const vue = ok && !ecranLance;       // affiche-t-on les groupes, ou l'ecran de lancement ?
   F("grProg").style.display  = "none";
@@ -3017,8 +3277,8 @@ function rend(){
   F("grNouveau").style.display = vue ? "block" : "none";
   F("grRetour").style.display = (ok && ecranLance) ? "inline-block" : "none";
   rendFichiers(); rendPills();
-  if(!vue){ majLance(); if(!ok) F("grBadge").className = "badge"; return; }
-  rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendProfs(); rendBar();
+  if(!vue){ majLance(); return; }
+  rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendBar();
   F("grRelance").style.display = agent ? "block" : "none";
   majTuile();
 }
@@ -3032,19 +3292,17 @@ function majTuile(){
     + (cur ? ` · « ${cur.nom} »` : "");
   g.textContent = "Reprendre →";
 }
-function kpi(v,l,up){ return `<div class="grk"><b>${v}${up?`<span class="up">${up}</span>`:""}</b><span>${l}</span></div>`; }
+function kpi(v,l,cl){ return `<div class="grk ${cl||""}"><b>${v}</b><span>${l}</span></div>`; }
 function rendSum(){
   const pl = vivants().reduce((s,c)=>s+c.membres.length,0), tot = pl + attente.length;
   const nMan = cours.filter(c=>c.manuel).length;
-  const cur = scen.find(e=>e.n===vu);
-  F("grBadge").className = "badge on ok";
-  F("grBadge").textContent = (cur ? (cur.valide?"★ ":"")+cur.nom+" · " : "") + pl + "/" + tot + " placés";
   F("grSum").innerHTML =
-    kpi(pl+"/"+tot, "joueurs placés","") +
-    kpi(vivants().length, "cours ouverts","") +
-    kpi(attente.length, "sans groupe","") +
-    kpi(cours.filter(c=>c.lock>0).length, "cours figés","") +
-    (nMan ? kpi(nMan, "cours retouchés","") : "") +
+    kpi(pl+"/"+tot, "joueurs placés", pl===tot ? "ok" : "") +
+    kpi(vivants().length, "cours ouverts", "") +
+    kpi(attente.length, "sans groupe", attente.length ? "att" : "") +
+    kpi(cours.filter(c=>c.lock>0).length, "cours figés",
+        cours.filter(c=>c.lock>0).length ? "fig" : "") +
+    (nMan ? kpi(nMan, "cours retouchés", "man") : "") +
     `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni fermetures ni heures des profs."}</div>`;
 }
 function actif(){ return filtre.profs.length || filtre.pal || filtre.etat; }
@@ -3057,11 +3315,23 @@ function passe(c){
   return true;
 }
 function rendFil(){
-  const profs = [...new Set(vivants().map(c=>c.prof))].sort();
+  const J = jours();
+  const profs = [...new Set(vivants().map(c=>c.prof)
+                   .concat(ctr ? Object.keys(ctr.budget) : []))].filter(Boolean).sort();
   const pals  = [...new Set(vivants().map(c=>c.pal))].sort();
   F("grFil").innerHTML =
-    `<span class="g"><span class="lb">Prof</span>${profs.map(p=>
-      `<button class="grchip ${filtre.profs.indexOf(p)>=0?"on":""}" data-p="${esc(p)}">${esc(p)}</button>`).join("")}</span>
+    `<span class="g"><span class="lb">Prof</span>${profs.map(p=>{
+       const sem = J.reduce((t,j)=>t+(budget(p,j)||0), 0);
+       const use = J.reduce((t,j)=>t+utilise(p,j), 0);
+       const dep = J.filter(j=>budget(p,j)!==null && utilise(p,j) > (budget(p,j)||0)+1e-9);
+       const pl  = J.filter(j=>budget(p,j)>0 && Math.abs(utilise(p,j)-budget(p,j))<1e-9);
+       return `<button class="grpb ${dep.length?"over":pl.length?"plein":""} ${
+         filtre.profs.indexOf(p)>=0?"on":""}" data-p="${esc(p)}"
+         title="Cliquer : ne montrer que ${esc(p)}. Survoler : ses heures jour par jour.">
+         <i class="pt" style="background:${teinte(p)}"></i>
+         <b>${esc(p)}</b>${sem?`<i class="gg"><s style="width:${Math.min(100,use/sem*100)}%"></s></i>`:""}
+         <span class="v">${hh(use)}${sem?" / "+hh(sem):""}${dep.length?" ⚠":pl.length?" ●":""}</span></button>`;
+     }).join("")}</span>
      <span class="g"><span class="lb">Niveau</span><select id="grPal">
        <option value="">tous les paliers</option>
        ${pals.map(p=>`<option ${filtre.pal===p?"selected":""}>${esc(p)}</option>`).join("")}</select></span>
@@ -3071,7 +3341,12 @@ function rendFil(){
        <button class="grchip ${filtre.etat==="chg"?"on":""}" data-e="chg">retouchés</button></span>
      <span class="cnt">${actif()
        ? `<b>${vivants().filter(passe).length}</b> cours sur ${vivants().length} · <button class="grchip" id="grClr">effacer</button>`
-       : `${vivants().length} cours · ${attente.length} sans groupe`}</span>`;
+       : ctr ? "" : "contraintes non déposées : plafonds inconnus"}</span>`;
+  F("grFil").querySelectorAll(".grpb").forEach(b=>{
+    const p = b.dataset.p;
+    b.onmouseenter = b.onfocus = ()=>popProf(p, b);
+    b.onmouseleave = b.onblur  = ()=>F("grPd").classList.remove("on");
+  });
   F("grFil").querySelectorAll("[data-p]").forEach(b=>b.onclick = ()=>{
     const p = b.dataset.p, i = filtre.profs.indexOf(p);
     i>=0 ? filtre.profs.splice(i,1) : filtre.profs.push(p);
@@ -3089,7 +3364,8 @@ function cible(){
   if(moving) return moving;
   if(selAtt!==null && attente[selAtt]){
     const p = attente[selAtt];
-    return {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null};
+    return {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null,
+            dispos:disposDe(p.dispos), raison:p.raison||""};
   }
   return null;
 }
@@ -3099,7 +3375,8 @@ function compat(c,t){
 }
 function poser(c){
   const t = cible(); if(!t) return;
-  let m = {nom:t.nom, email:"", niveau:t.niveau};
+  avant("placement de " + t.nom + " chez " + c.prof + " " + c.jour.toLowerCase());
+  let m = {nom:t.nom, email:"", niveau:t.niveau, dispos:""};
   if(t.from){
     const src = cours.find(x=>x.cle===t.from);
     const k = src.membres.findIndex(x=>x.nom===t.nom);
@@ -3108,7 +3385,9 @@ function poser(c){
     src.manuel = true;
   } else {
     const k = attente.findIndex(a=>a.nom===t.nom);
-    if(k>=0){ const a = attente.splice(k,1)[0]; m = {nom:a.nom, email:a.email||"", niveau:a.niveau}; }
+    if(k>=0){ const a = attente.splice(k,1)[0];
+      m = Object.assign({nom:a.nom, email:a.email||"", niveau:a.niveau, dispos:a.dispos||""},
+                        pick(a)); }
     selAtt = null;
   }
   c.membres.push(m);
@@ -3121,7 +3400,9 @@ function rendMove(){
   if(!t){ bar.style.display = "none"; return; }
   bar.style.display = "flex";
   const poss = vivants().filter(c=>compat(c,t));
-  const libres = poss.filter(c=>c.membres.length < c.max);
+  const dedans = poss.filter(c=>dansDispo(c,t) !== false);
+  const dehors = poss.length - dedans.length;
+  const libres = dedans.filter(c=>c.membres.length < c.max);
   if(forcing){
     const c = cours.find(x=>x.cle===forcing);
     bar.className = "grmove ko";
@@ -3131,9 +3412,11 @@ function rendMove(){
     F("grForce").onclick = ()=>{ const cc = cours.find(x=>x.cle===forcing); cc.force = true; poser(cc); };
   } else {
     bar.className = "grmove";
+    const complets = dedans.length - libres.length;
     bar.innerHTML = `<span>Déplacer <b>${esc(t.nom)}</b>${t.niveau?" (niveau "+esc(t.niveau)+")":""} —
-      cliquez le cours d'arrivée. <b>${libres.length}</b> possible${libres.length>1?"s":""} avec une place libre${
-      poss.length>libres.length ? `, ${poss.length-libres.length} complet${poss.length-libres.length>1?"s":""}` : ""}.</span>
+      cliquez le cours d'arrivée. <b>${libres.length}</b> dans ses disponibilités avec une place libre${
+      complets ? `, ${complets} complet${complets>1?"s":""}` : ""}${
+      dehors ? ` · ${dehors} compatible${dehors>1?"s":""} mais hors de ses disponibilités (trait discontinu)` : ""}.</span>
       <span class="sp"></span><button class="mini" id="grCancel">Annuler</button>`;
   }
   F("grCancel").onclick = ()=>{ moving = null; forcing = null; selAtt = null; rend(); };
@@ -3171,8 +3454,9 @@ function bornes(){
   return [Math.floor(h0/60)*60, Math.ceil(h1/60)*60];
 }
 function rendWeek(){
-  const w = F("grWeek"), J = jours(), [H0,H1] = bornes(), H = (H1-H0)/60*PXH;
+  const w = F("grWeek"), J = jours(), [H0,H1] = bornes();
   w.style.gridTemplateColumns = "46px repeat(" + J.length + ",1fr)";
+  w.style.minWidth = (46 + 120*J.length) + "px";   // plancher de lisibilite, pas une largeur
   w.innerHTML = "";
   const vide = document.createElement("div"); vide.className = "grhead"; vide.style.cursor = "default";
   vide.innerHTML = "<b></b><em></em>"; w.appendChild(vide);
@@ -3183,9 +3467,17 @@ function rendWeek(){
     d.innerHTML = `<b>${esc(j)}</b><em>${lst.length ? lst.length+" cours"+(nl?" · "+nl+" figé"+(nl>1?"s":""):"") : "—"}</em>`;
     d.title = "Figer ou libérer tout le " + j.toLowerCase();
     d.onclick = ()=>{ const tout = lst.length && lst.every(c=>c.lock>0);
+      if(!lst.length) return;
+      avant((tout?"libération":"figeage")+" de tout le "+j.toLowerCase());
       lst.forEach(c=>c.lock = tout?0:2); memoriser(); rend(); };
     w.appendChild(d);
   });
+  // Les entetes sont poses : ce qui reste sous eux fixe la hauteur d'une heure.
+  // Sans ca la semaine depasse et il faut la faire defiler pour voir le soir.
+  const wrap = F("grWrap"), heures = (H1-H0)/60;
+  const reste = wrap.clientHeight - (vide.offsetHeight || 44) - 14;
+  PXH = reste > 0 ? Math.max(PXH_MIN, Math.min(PXH_MAX, reste/heures)) : PXH_MAX;
+  const H = heures*PXH;
   const g = document.createElement("div"); g.className = "grgut"; g.style.height = H+"px";
   for(let h=H0; h<=H1; h+=60){
     const i = document.createElement("i"); i.style.top = ((h-H0)/60*PXH)+"px";
@@ -3204,6 +3496,17 @@ function rendWeek(){
       e.style.top = ((z.de-H0)/60*PXH)+"px"; e.style.height = ((z.a-z.de)/60*PXH)+"px";
       e.innerHTML = `<em>${esc(z.motif)}</em>`; col.appendChild(e);
     });
+    // Le joueur selectionne pose ses plages sur la grille : « ou peut-il aller »
+    // se lit alors dans la meme forme que la fiche papier, pas en heures ecrites.
+    const tv = cible();
+    if(tv && tv.dispos) tv.dispos.filter(z=>z.jour===j).forEach(z=>{
+      const de = Math.max(z.de,H0), a = Math.min(z.a,H1);
+      if(a<=de) return;
+      const b = document.createElement("div"); b.className = "grdisp";
+      b.style.top = ((de-H0)/60*PXH)+"px"; b.style.height = ((a-de)/60*PXH)+"px";
+      b.innerHTML = `<em>${z.rang ? "choix "+z.rang : "dispo"}</em>`;
+      col.appendChild(b);
+    });
     // largeur calculee par grappe de chevauchement : un cours isole du matin
     // ne doit pas etre aussi etroit que les quatre courts de 19h
     const lst = cours.filter(c=>c.jour===j).sort((a,b)=>a.d-b.d || a.prof.localeCompare(b.prof));
@@ -3221,14 +3524,20 @@ function rendWeek(){
     lst.forEach(c=>{
       const n = c._n || 1;
       const el = document.createElement("div");
+      el.style.setProperty("--pc", teinte(c.prof));
+      el.style.setProperty("--pcbg", teinteFond(c.prof));
       el.className = "grc" + (c.lock===1?" f1":c.lock===2?" f2":"") + (c.manuel?" manuel":"")
                    + (sel===c.cle?" sel":"") + (trouve===c.cle?" trouve":"");
       if(t){
         if(!compat(c,t)) el.classList.add("dim");
-        else el.classList.add(c.membres.length < c.max ? "cible" : "plein");
+        else {
+          el.classList.add(c.membres.length < c.max ? "cible" : "plein");
+          // compatible sexe/palier, mais le joueur n'a pas declare ce creneau
+          if(dansDispo(c,t) === false) el.classList.add("hors");
+        }
       } else if(actif() && !passe(c)) el.classList.add("dim");
       el.style.top = ((c.d-H0)/60*PXH)+"px";
-      el.style.height = Math.max(28,(c.f-c.d)/60*PXH-2)+"px";
+      el.style.height = Math.max(Math.min(28,PXH-2),(c.f-c.d)/60*PXH-2)+"px";
       el.style.left = (c._v*(100/n))+"%";
       el.style.width = "calc("+(100/n)+"% - 3px)";
       el.innerHTML = `<b>${esc(c.prof)}</b><div class="l2">${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`
@@ -3238,7 +3547,9 @@ function rendWeek(){
       if(!t){ el.classList.add("grab"); el.onpointerdown = ev=>debutDrag(ev, c, el); }
       el.onclick = ev=>{
         if(Date.now() - dragFini < 250) return;
-        if(ev.target.classList.contains("lk")){ c.lock = (c.lock+1)%3; memoriser(); rend(); return; }
+        if(ev.target.classList.contains("lk")){
+          avant("figeage de " + c.prof + " " + c.jour.toLowerCase() + " " + gtx(c.d));
+          c.lock = (c.lock+1)%3; memoriser(); rend(); return; }
         const tt = cible();
         if(tt){
           if(!compat(c,tt)) return;
@@ -3256,6 +3567,9 @@ function rendWeek(){
 /* -------- glisser un cours vers un autre creneau -------- */
 function debutDrag(ev, c, el){
   if(ev.button !== 0 || ev.target.classList.contains("lk")) return;
+  const copie = {nom:"déplacement de "+c.prof+" "+c.jour.toLowerCase()+" "+gtx(c.d),
+                 cours:JSON.parse(JSON.stringify(cours)),
+                 attente:JSON.parse(JSON.stringify(attente))};
   const J = jours(), [H0,H1] = bornes();
   const x0 = ev.clientX, y0 = ev.clientY, w = el.getBoundingClientRect();
   const gx = x0 - w.left, gy = y0 - w.top;
@@ -3282,7 +3596,7 @@ function debutDrag(ev, c, el){
     c.jour = o.jour; c.d = o.d; c.f = o.f;            // mesurer depuis l'etat d'origine
     const v = valide(c, j, d);
     if(v.ok){ c.jour = j; c.d = d; c.f = d + dur; }   // puis appliquer, pour que les heures profs suivent
-    rendProfs();
+    rendFil();                                        // les jauges des profs vivent maintenant dans les filtres
     cand = v.ok ? {jour:j, d:d} : null;
     gh.style.left = (e.clientX - gx)+"px"; gh.style.top = (e.clientY - gy)+"px";
     gh.classList.toggle("ko", !v.ok);
@@ -3303,6 +3617,7 @@ function debutDrag(ev, c, el){
     gh.remove(); hi.remove(); zo.remove(); el.classList.remove("ghosted");
     dragFini = Date.now();
     if(cand){
+      hist.push(copie); if(hist.length > HIST_MAX) hist.shift();
       c.jour = cand.jour; c.d = cand.d; c.f = cand.d + dur;
       c.manuel = true; if(c.lock === 0) c.lock = 1;
       sel = c.cle; memoriser();
@@ -3316,6 +3631,14 @@ function debutDrag(ev, c, el){
 /* ---------------- panneau de droite ---------------- */
 function rendSide(){
   const head = F("grSh"), body = F("grSb");
+  // un joueur deja place ouvre la meme fiche qu'un sans-groupe
+  if(moving && moving.from){
+    const src = cours.find(x=>x.cle===moving.from);
+    const m = src && src.membres.find(x=>x.nom===moving.nom);
+    if(m){ rendJoueur(head, body, Object.assign({sexe:src.sexe}, m), src); return; }
+    moving = null;
+  }
+  if(selAtt !== null && attente[selAtt]){ rendJoueur(head, body, attente[selAtt], null); return; }
   const c = sel ? cours.find(x=>x.cle===sel) : null;
   if(c){
     const b = budget(c.prof, c.jour), u = utilise(c.prof, c.jour);
@@ -3346,38 +3669,43 @@ function rendSide(){
        <div style="margin-top:12px">${c.membres.map((m,i)=>{
          const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
          return `<div class="grm ${ep?"ep":""}">
-           <span class="nm" title="${esc(m.email||"")}">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</span>
-           <span class="act"><button data-mv="${i}">Déplacer</button><button data-rm="${i}">Retirer</button></span>
+           <button class="nm lien" data-fi="${i}" title="Ouvrir sa fiche">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
+           <span class="act"><button data-rm="${i}">Retirer</button></span>
            <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}>📌</button></div>`;
        }).join("")}
        ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
        </div>
        <p class="grnote">Un joueur déplacé à la main est épinglé d'office : sans ça le calcul suivant déferait le déplacement.</p>`;
     body.querySelectorAll(".grseg button").forEach(b2=>b2.onclick = ()=>{
+      avant("figeage de " + c.prof + " " + c.jour.toLowerCase());
       c.lock = +b2.dataset.l; memoriser(); rend(); });
     F("grProf").onchange = e=>{
       const np = e.target.value, v = valide(c, c.jour, c.d, np);
       if(!v.ok){ e.target.value = c.prof;
         F("grPmsg").innerHTML = `<span style="color:var(--warn)">Impossible : ${esc(v.why)}.</span>`; return; }
+      avant("changement de prof : " + c.prof + " → " + np);
       c.prof = np; c.manuel = true; if(c.lock===0) c.lock = 1;
       c.cle = cleDe(c); sel = c.cle; memoriser(); rend();
       if(v.warn) F("grPmsg").innerHTML = `<span style="color:var(--warn)">⚠ ${esc(v.warn)}. Le cours est gardé ; le dépassement reste visible dans le bandeau des heures.</span>`;
     };
-    body.querySelectorAll("[data-mv]").forEach(b2=>b2.onclick = ()=>{
-      const m = c.membres[+b2.dataset.mv];
-      moving = {nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle};
+    body.querySelectorAll("[data-fi]").forEach(b2=>b2.onclick = ()=>{
+      const m = c.membres[+b2.dataset.fi];
+      moving = {nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle,
+                dispos:disposDe(m.dispos)};
       selAtt = null; rend();
     });
     body.querySelectorAll("[data-rm]").forEach(b2=>b2.onclick = ()=>{
+      avant("retrait de " + c.membres[+b2.dataset.rm].nom);
       const m = c.membres.splice(+b2.dataset.rm,1)[0];
       c.epingles = c.epingles.filter(n=>n!==m.nom);
       c.manuel = true;
-      attente.push({nom:m.nom, sexe:c.sexe, niveau:m.niveau, email:m.email,
-        dispos:"", raison:"retiré à la main du cours de "+c.prof});
+      attente.push(Object.assign({nom:m.nom, sexe:c.sexe, niveau:m.niveau, email:m.email,
+        dispos:m.dispos||"", raison:"retiré à la main du cours de "+c.prof}, pick(m)));
       memoriser(); rend();
     });
     body.querySelectorAll("[data-ep]").forEach(b2=>b2.onclick = ()=>{
       const n = c.membres[+b2.dataset.ep].nom, i = c.epingles.indexOf(n);
+      avant((i>=0?"désépinglage":"épinglage")+" de "+n);
       i>=0 ? c.epingles.splice(i,1) : c.epingles.push(n);
       memoriser(); rend();
     });
@@ -3388,54 +3716,148 @@ function rendSide(){
     <div class="sub">${filtre.pal && vus.length!==attente.length
       ? vus.length+" au palier "+esc(filtre.pal)+" · cliquez un nom pour le placer"
       : "Cliquez un nom : la grille montre où il peut aller."}</div></div>`;
-  body.innerHTML = vus.map(([p,i])=>
-    `<div class="grp ${selAtt===i?"on":""}" data-i="${i}">
+  // Deux lignes par joueur : le nom, puis ses jours et le motif en trois mots.
+  // La phrase entiere du solveur tenait cinq lignes — on n'en voyait que huit
+  // sur vingt sans faire defiler, et la comparaison entre eux etait impossible.
+  const ligne = ([p,i])=>{
+    const dp = lireDispos(p.dispos);
+    const js = DAYS.map(j=>`<i class="${dp.some(d=>d.jour===j)?"y":""}">${j[0]}</i>`).join("");
+    return `<div class="grp ${selAtt===i?"on":""}" data-i="${i}">
        <span class="niv">${esc(p.niveau||"?")}</span>
-       <span class="tx"><b>${esc(p.nom)}</b><span class="why">${esc(p.raison||p.dispos||"")}</span></span>
-     </div>`).join("") || `<p class="grnote">Personne ici.</p>`;
+       <span class="tx"><b>${esc(p.nom)}</b>
+         <span class="why"><span class="grjrs">${js}</span>${esc(motifCourt(p.raison))}</span></span>
+     </div>`;
+  };
+  body.innerHTML = FAMILLES
+    .map(f=>({f, gens: vus.filter(([p])=>familleDe(p.raison)===f.cle)}))
+    .filter(g=>g.gens.length)
+    .map(g=>`<div class="grfam ${plie[g.f.cle]?"plie":""}"
+        style="--fc:${g.f.c};--fcs:${g.f.cs}">
+        <button class="grfamh" data-f="${g.f.cle}">
+          <span class="ic">${g.f.ic}</span>
+          <span class="tx"><b>${esc(g.f.titre)}</b><span>${esc(g.f.aide)}</span></span>
+          <span class="n">${g.gens.length}</span><span class="chev">▾</span>
+        </button>
+        <div class="grfamb">${g.gens.map(ligne).join("")}</div>
+      </div>`).join("")
+    || `<p class="grnote">Personne ici.</p>`;
+  body.querySelectorAll("[data-f]").forEach(b=>b.onclick = ()=>{
+    plie[b.dataset.f] = !plie[b.dataset.f]; rendSide(); });
   body.querySelectorAll(".grp").forEach(el=>el.onclick = ()=>{
-    const i = +el.dataset.i; selAtt = selAtt===i?null:i; moving = null; forcing = null; rend(); });
+    const i = +el.dataset.i;
+    selAtt = selAtt===i?null:i; sel = null; moving = null; forcing = null; trouve = null; rend(); });
 }
 
-/* ---------------- heures des profs ---------------- */
-function rendProfs(){
-  const bar = F("grProfs"), J = jours();
-  const noms = [...new Set(cours.map(c=>c.prof).concat(ctr ? Object.keys(ctr.budget) : []))].filter(Boolean);
-  bar.innerHTML = `<span class="lb">Heures profs</span>` + noms.map(p=>{
-    const sem = J.reduce((s,j)=>s + (budget(p,j)||0), 0);
-    const use = J.reduce((s,j)=>s + utilise(p,j), 0);
-    const dep = J.filter(j=>budget(p,j)!==null && utilise(p,j) > (budget(p,j)||0) + 1e-9);
-    const pl  = J.filter(j=>budget(p,j)>0 && Math.abs(utilise(p,j)-budget(p,j))<1e-9);
-    const cl = dep.length ? "over" : pl.length ? "plein" : "";
-    return `<button class="grpb ${cl} ${profVu===p?"on":""}" data-pr="${esc(p)}">
-      <b>${esc(p)}</b><i class="g"><s style="width:${sem?Math.min(100,use/sem*100):0}%"></s></i>
-      <span class="v">${hh(use)}${sem?" / "+hh(sem):""}</span>
-      ${dep.length?`<span class="v">⚠ ${dep.map(d=>d.toLowerCase()).join(", ")}</span>`
-        : pl.length?`<span class="v">complet ${pl.map(d=>d.toLowerCase()).join(", ")}</span>`:""}</button>`;
-  }).join("") + (ctr ? "" : `<span class="v" style="color:var(--muted);font-size:12px">
-    heures posées seulement — déposez contraintes-tennis.xlsx pour voir les plafonds</span>`);
-  bar.querySelectorAll("[data-pr]").forEach(b=>b.onclick = ()=>{
-    profVu = profVu===b.dataset.pr ? null : b.dataset.pr; rendProfs(); });
+/* -------- la fiche d'un joueur sans groupe --------
+   Les memes rubriques, toujours dans le meme ordre, meme quand elles sont
+   vides : on enchaine vingt joueurs, l'oeil doit retrouver chaque chose a sa
+   place. Les plages sont AUSSI peintes sur la grille (voir rendWeek) — ici
+   elles ne sont qu'un recapitulatif a relire. */
+function rendJoueur(head, body, p, src){
+  const dp = lireDispos(p.dispos);
+  const t  = {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:src?src.cle:null,
+              dispos:dp.length?dp:null};
+  head.innerHTML = `<button class="mini" id="grBack">←</button>
+    <div><b>${esc(p.nom)}</b>
+    <div class="sub">niveau ${esc(p.niveau||"?")} · ${
+      p.sexe==="F"?"groupes féminins":p.sexe==="H"?"groupes masculins":"sexe non renseigné"} · ${
+      src ? esc(src.prof)+", "+esc(src.jour.toLowerCase())+" "+gtx(src.d) : "sans groupe"}</div></div>`;
+  F("grBack").onclick = ()=>{
+    if(src){ moving = null; sel = src.cle; } else { selAtt = null; }
+    forcing = null; rend();
+  };
 
-  const d = F("grPd");
-  if(!profVu || !ctr){ d.style.display = "none"; return; }
-  d.style.display = "flex";
-  d.innerHTML = `<b style="font-size:12.5px">${esc(profVu)}</b>` + J.map(j=>{
-    const b = budget(profVu,j)||0, u = utilise(profVu,j);
-    const cl = b===0 ? "off" : u > b+1e-9 ? "over" : Math.abs(u-b)<1e-9 ? "plein" : "";
-    return `<span class="d ${cl}"><em>${esc(j)}</em>
-      <i class="g"><s style="width:${b?Math.min(100,u/b*100):0}%"></s></i>
-      <span>${b===0?"indisponible":hh(u)+" / "+hh(b)}</span></span>`;
-  }).join("") + `<span style="margin-left:auto;color:var(--muted)">Plafond dur : un dépassement ne peut venir que d'un geste à la main.</span>`;
+  const poss = vivants().filter(c=>compat(c,t))
+    .map(c=>({c, dedans: dansDispo(c,t) !== false, libre: c.membres.length < c.max}))
+    .sort((a,b)=> (b.dedans-a.dedans) || (b.libre-a.libre)
+                || jours().indexOf(a.c.jour)-jours().indexOf(b.c.jour) || a.c.d-b.c.d);
+
+  const dem = [["demande_avec","avec"],["demande_sans","sans"],
+               ["demande_prof","prof souhaité"],["refus_prof","prof refusé"]]
+    .filter(([k])=>p[k]).map(([k,lb])=>
+      `<div class="grd"><span class="dl">${lb}</span><span class="dv ${
+        k==="demande_sans"||k==="refus_prof"?"dur":""}">${esc(p[k])}</span></div>`).join("");
+
+  body.innerHTML =
+    `<div class="grh4">Disponibilités déclarées</div>
+     ${dp.length ? dp.map(d=>`<div class="grd">
+         <span class="hs">${esc(d.jour)} ${gtx(d.de)}–${gtx(d.a)}</span>
+         ${d.rang?`<span class="rg">choix ${d.rang}</span>`:""}
+         ${jours().indexOf(d.jour)<0?`<span class="hors">hors jours CCA</span>`:""}</div>`).join("")
+       : `<p class="grnote">Aucune plage lisible dans le classeur${
+           p.dispos?` — texte reçu : « ${esc(p.dispos)} »`:" (colonne vide)"}.</p>`}
+     ${dp.length?`<p class="grnote">Ces plages sont peintes sur la grille, à gauche.</p>`:""}
+
+     <div class="grh4">Ce qu'il a écrit sur sa fiche</div>
+     ${p.obs ? `<p class="grobs">${esc(p.obs)}</p>` : ""}
+     ${dem}
+     ${!p.obs && !dem ? `<p class="grnote" style="margin-top:0">Rien d'écrit : ni observation, ni demande.</p>` : ""}
+
+     ${src ? "" : `<div class="grh4">Pourquoi le solveur ne l'a pas placé</div>
+     <p class="grnote" style="margin-top:0">${esc(p.raison||"aucun motif écrit par le solveur")}</p>`}
+
+     <div class="grh4">${src ? "Où le déplacer" : "Où le mettre à la main"}</div>
+     ${poss.length ? poss.map((o,k)=>`<div class="grm go">
+         <span class="nm">${esc(o.c.jour)} ${gtx(o.c.d)} · ${esc(o.c.prof)}</span>
+         <span class="qd">${esc(o.c.pal)} · ${o.c.membres.length}/${o.c.max}</span>
+         ${o.dedans?"":`<span class="hors">hors dispos</span>`}
+         <span class="act"><button data-go="${k}">${o.libre?"Placer":"Forcer"}</button></span>
+       </div>`).join("")
+       : `<p class="grnote">Aucun ${src?"autre ":""}cours ouvert de son sexe et de son palier. Il faudrait
+          en ouvrir un — c'est au prochain calcul de le faire, pas à la main.</p>`}
+     <p class="grnote">Un joueur ${src?"déplacé":"placé"} à la main est épinglé d'office : sans ça le
+       calcul suivant déferait le geste.</p>`;
+
+  body.querySelectorAll("[data-go]").forEach(b=>b.onclick = ()=>{
+    const o = poss[+b.dataset.go];
+    if(o.libre){ poser(o.c); } else { forcing = o.c.cle; rend(); }
+  });
+}
+
+/* ---------------- heures d'un prof, jour par jour ----------------
+   Ancien bandeau permanent sous la grille, devenu une carte au survol de la
+   pastille : la meme information, zero hauteur prise en permanence. */
+function popProf(p, chip){
+  const d = F("grPd"), J = jours();
+  if(!ctr){
+    d.innerHTML = `<b>${esc(p)}</b><div class="note">Plafonds inconnus — déposez
+      contraintes-tennis.xlsx pour comparer ses heures à son budget.</div>`;
+  } else {
+    d.innerHTML = `<b>${esc(p)} — heures posées / budget</b>` + J.map(j=>{
+      const b = budget(p,j)||0, u = utilise(p,j);
+      const cl = b===0 ? "off" : u > b+1e-9 ? "over" : Math.abs(u-b)<1e-9 ? "plein" : "";
+      return `<div class="d ${cl}"><em>${esc(j)}</em>
+        <i class="gg"><s style="width:${b?Math.min(100,u/b*100):0}%"></s></i>
+        <span>${b===0?"indisponible":hh(u)+" / "+hh(b)}</span></div>`;
+    }).join("") + `<div class="note">Plafond dur : un dépassement ne peut venir
+      que d'un geste à la main.</div>`;
+  }
+  d.classList.add("on");
+  const r = chip.getBoundingClientRect();
+  d.style.left = Math.min(r.left, window.innerWidth - d.offsetWidth - 10) + "px";
+  d.style.top  = (r.bottom + 6) + "px";
 }
 
 function rendBar(){
   const n = cours.filter(c=>c.lock>0 && c.diff!=="supp").length, l = vivants().length - n;
-  F("grBarTx").innerHTML = n===0
+  const fige = n===0
     ? `Rien n'est figé.<em>Le prochain calcul repartira d'une page blanche : les ${vivants().length} cours peuvent tous changer.</em>`
     : `<span class="nb">${n} cours figé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
        <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.</em>`;
+  F("grBarTx").innerHTML =
+    (stockKo ? `<div class="grko">⚠ La mémoire du navigateur est pleine : plus rien n'est
+       enregistré. ${agent ? "Le fichier <code>etat-ecran.json</code> prend le relais."
+       : "Lancez l'agent (CCA.command) pour écrire sur le disque, ou exportez l'Excel maintenant."}</div>` : "")
+    + fige
+    + (agent ? "" : `<em>Agent non détecté — double-cliquez <code>CCA.command</code>
+       pour calculer d'ici.</em>`);
+  // avec l'agent, relancer d'ici est le chemin normal : l'export des figeages
+  // n'est plus qu'un repli, et se lit comme tel
+  F("grFig").className = agent ? "lien" : "mini";
   F("grAll").textContent = n===vivants().length && n>0 ? "Tout libérer" : "Tout figer";
+  const u = F("grUndo"), d = hist[hist.length-1];
+  u.style.display = d ? "block" : "none";
+  if(d){ u.title = "Annuler : " + d.nom + "  (⌘Z)"; }
 }
 
 /* ---------------- recherche ---------------- */
@@ -3468,12 +3890,12 @@ function ordonne(){ return vivants().slice().sort((a,b)=>
 
 function exportResultat(){
   const L = ordonne(), wb = XLSX.utils.book_new();
-  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","sexe","effectif","epingle","a_la_main"]];
+  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","dispos","sexe","effectif","epingle","a_la_main"].concat(CH_FICHE)];
   L.forEach((c,i)=>c.membres.forEach(m=>g.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,
-    m.nom,m.email||"",m.niveau||"",c.sexe,c.membres.length,
-    (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":""])));
+    m.nom,m.email||"",m.niveau||"",m.dispos||"",c.sexe,c.membres.length,
+    (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":""].concat(CH_FICHE.map(k=>m[k]||"")))));
   const gws = XLSX.utils.aoa_to_sheet(g);
-  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},{wch:8},{wch:6},{wch:9},{wch:9},{wch:10}];
+  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},{wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, gws, "Groupes");
 
   const co = [["groupe","jour","debut","fin","prof","type","palier","effectif","max","sexe","figeage","a_la_main","joueurs"]];
@@ -3483,10 +3905,11 @@ function exportResultat(){
   cws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:6},{wch:6},{wch:9},{wch:10},{wch:70}];
   XLSX.utils.book_append_sheet(wb, cws, "Cours");
 
-  const np = [["nom","sexe","niveau","dispos","raison"]];
-  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.dispos||"",p.raison||""]));
+  const np = [["nom","sexe","niveau","dispos","raison"].concat(CH_FICHE)];
+  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.dispos||"",p.raison||""]
+    .concat(CH_FICHE.map(k=>p[k]||""))));
   const nws = XLSX.utils.aoa_to_sheet(np);
-  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:46},{wch:60}];
+  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:46},{wch:60},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, nws, "Non places");
 
   XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
@@ -3545,6 +3968,15 @@ async function pingAgent(){
     agent = r.ok ? await r.json() : null;
   }catch(e){ agent = null; }
   if(agent){
+    // le fichier du disque prime s'il est plus recent que la copie du navigateur
+    try{
+      const d = await jsonAgent("/ecran");
+      if(d.present && d.etat && (d.etat.maj||0) > majEtat){
+        adopter(d.etat);
+        try{ localStorage.setItem(CLE, JSON.stringify(d.etat)); }catch(e2){}
+        rend();
+      }
+    }catch(e){ /* endpoint absent : agent d'une version anterieure */ }
     for(const n of ["joueurs.xlsx", "contraintes-tennis.xlsx"]){
       try{
         const c = await classeur(n);
@@ -3677,12 +4109,28 @@ F("grExport").onclick = exportResultat;
 F("grFig").onclick = exportFigeages;
 F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
+  if(!v.length) return;
+  avant(tout ? "tout libérer" : "tout figer");
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
+F("grUndo").onclick = annuler;
 F("grVoirX").onclick = ()=>F("grVoirBg").classList.remove("open");
 F("grVoirBg").onclick = e=>{ if(e.target === F("grVoirBg")) F("grVoirBg").classList.remove("open"); };
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape") F("grVoirBg").classList.remove("open");
+  // ⌘Z / Ctrl+Z, sauf quand on est en train de taper dans un champ
+  if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey
+     && F("grView").style.display === "grid"
+     && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName||"")){
+    e.preventDefault(); annuler();
+  }
+});
+// La hauteur d'une heure depend de la fenetre : redessiner la semaine quand
+// elle change, sinon la grille reste calee sur l'ancienne taille.
+let tRedim = 0;
+window.addEventListener("resize", ()=>{
+  clearTimeout(tRedim);
+  tRedim = setTimeout(()=>{ if(F("grView").style.display === "grid") rendWeek(); }, 120);
 });
 F("grGo").onclick = lancer;
 F("grRelance").onclick = lancer;
