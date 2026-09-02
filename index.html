@@ -509,6 +509,51 @@
   .grp .tx{min-width:0;flex:1}
   .grp b{font-size:13px;font-weight:600;display:block}
   .grp .why{font-size:11.5px;color:var(--muted);display:block;margin-top:1px;line-height:1.35}
+  .anc{display:inline-block;background:#fbeccb;color:#7a5600;border-radius:20px;
+    padding:0 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:1px;
+    text-transform:uppercase;letter-spacing:.02em}
+  .grk.anc b{color:#9a3f6b}
+  /* Controle d'avant-calcul : trois champs sans lesquels un calcul ment. */
+  .grctl{display:flex;align-items:center;gap:12px;border:1px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:14px 0 0;text-align:left;background:#fff}
+  .grctl.ko{border-color:#e8b4b4;background:#fdf6f6}
+  .grctl.ok{border-color:#bfe0c4;background:#f6fbf7}
+  .grctl .pastille{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:flex;
+    align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
+  .grctl.ko .pastille{background:#c0392b}
+  .grctl.ok .pastille{background:#2e8b57}
+  .grctl .tx{flex:1;min-width:0}
+  .grctl .tx b{display:block;font-size:13px}
+  .grctl .tx span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+  .ctlrow{border-top:1px solid var(--line);padding:13px 2px}
+  .ctlrow:first-child{border-top:none}
+  .ctlrow.fait{opacity:.55}
+  .ctlhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ctlhead b{font-size:13.5px}
+  .ctlmq{background:#fdecea;color:#8d2b20;border-radius:20px;padding:1px 8px;
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+  .ctlsrc{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.4}
+  .ctlch{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
+  .ctlch>label{font-size:11.5px;color:var(--muted);min-width:74px}
+  .ctlseg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .ctlseg button{border:none;border-radius:0;background:#fff;color:var(--muted);
+    font-size:12px;padding:5px 11px;height:auto;border-right:1px solid var(--line)}
+  .ctlseg button:last-child{border-right:none}
+  .ctlseg button.on{background:var(--accent,#2f5597);color:#fff;font-weight:600}
+  .ctlniv{width:150px;font-size:12.5px;padding:5px 8px;flex:0 0 auto}
+  .ctlnivc{width:auto;min-width:190px;font-size:12.5px;padding:5px 8px;flex:0 0 auto}
+  .ctlaide{font-size:11.5px;color:var(--muted)}
+  .ctlcren{margin-top:8px;padding-left:84px}
+  .ctlpuces{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .ctlpuce{background:#eef2f8;border-radius:16px;padding:2px 6px 2px 10px;font-size:11.5px;
+    display:inline-flex;align-items:center;gap:5px}
+  .ctlpuce i{cursor:pointer;font-style:normal;color:var(--muted);font-weight:700;padding:0 3px}
+  .ctladd{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  /* la page etire les select sur toute la largeur : ici on veut une ligne */
+  .ctladd select{font-size:12px;padding:4px 6px;width:auto;min-width:96px;flex:0 0 auto}
+  .ctladd .fl{color:var(--muted);font-size:12px}
+  .ctladd button{flex:0 0 auto}
+  .ctlvide{padding:30px 4px;text-align:center;color:var(--muted);font-size:13px}
   .grseg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 4px}
   .grseg button{flex:1;border:none;border-radius:0;padding:8px 4px;font-size:12px;background:#fff;
     border-right:1px solid var(--line);color:var(--muted);height:auto}
@@ -917,6 +962,11 @@
       <h2 id="grEmptyT">Le résultat du calcul</h2>
       <p class="sub" id="grEmptyS">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
         qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.</p>
+      <div class="grctl" id="grCtl" style="display:none">
+        <span class="pastille" id="grCtlP"></span>
+        <span class="tx"><b id="grCtlT"></b><span id="grCtlS"></span></span>
+        <button class="mini" id="grCtlB">Contrôler</button>
+      </div>
       <div class="grlance" id="grLance" style="display:none">
         <span class="tx"><b id="grLanceT">Lancer le calcul sur cette machine</b>
           <span id="grLanceS"></span></span>
@@ -950,6 +1000,25 @@
       <div class="modal-body">
         <div class="grtscroll"><table class="grtable" id="grVoirT2"></table></div>
         <p class="grtinfo" id="grVoirI"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- controle d'avant-calcul -->
+  <div class="modal-bg" id="grCtlBg">
+    <div class="modal">
+      <div class="modal-head">
+        <b>Contrôle avant calcul</b>
+        <span class="sub" id="grCtlN" style="font-size:12px;color:var(--muted)"></span>
+        <span style="flex:1"></span>
+        <button class="mini" id="grCtlX">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="grCtlL"></div>
+      </div>
+      <div class="modal-head" style="border-top:1px solid var(--line);border-bottom:none">
+        <span class="hint" id="grCtlH" style="flex:1"></span>
+        <button class="primary" id="grCtlOk" disabled>Enregistrer</button>
       </div>
     </div>
   </div>
@@ -2834,7 +2903,7 @@ sb.auth.onAuthStateChange((evt, session) => {
 const CLE = "cca_groupes_v1";
 let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],epingles[],lock,manuel,force,diff}
 let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
-let ctr = null;         // {fichier,date,jours,debut,fin,courts,fermetures[],budget{}}
+let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
 let scen = [];          // scenarios : {n,nom,valide,cours,attente}
 let vu = 0, sel = null, selAtt = null, moving = null, forcing = null, trouve = null;
@@ -3018,6 +3087,8 @@ function lireResultat(wb){
       pal: String(r[ic["palier"]]||"").trim(),
       sexe: String(r[ic["sexe"]]||"").trim().toUpperCase(),
       min: +r[ic["min"]] || 3, max: +r[ic["max"]] || 4,
+      // un cours ne prend pas forcement UN court : le type B en prend 2, le C 3
+      nc: +r[ic["courts"]] || 1,
       membres: [], epingles: [], manuel: false, diff: null,
       // `figeage` est ce que la relance precedente a recu et respecte. Le relire
       // rend ses cadenas a l'ecran : sans lui, chaque calcul renverrait un
@@ -3037,6 +3108,8 @@ function lireResultat(wb){
       c.membres.push(Object.assign({
         nom: [r[ig["nom"]], r[ig["prenom"]]].filter(Boolean).join(" ").trim(),
         email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim(),
+        // absent des classeurs d'avant ce changement : false par defaut, pas "on ne sait pas"
+        ancien: ig["ancien"]!==undefined && String(r[ig["ancien"]]||"").trim().toLowerCase()==="oui",
         // absente des classeurs d'avant septembre : on garde "" et l'ecran
         // dira « on ne sait pas » plutot que « hors dispos »
         dispos: r[ig["dispos"]]||""
@@ -3057,6 +3130,7 @@ function lireResultat(wb){
     attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>Object.assign({
       nom: String(r[inp["nom"]]).trim(), sexe: String(r[inp["sexe"]]||"").toUpperCase(),
       niveau: String(r[inp["niveau"]]||"").trim(),
+      ancien: inp["ancien"]!==undefined && String(r[inp["ancien"]]||"").trim().toLowerCase()==="oui",
       email: inp["email"]!==undefined ? String(r[inp["email"]]||"").trim() : "",
       dispos: r[inp["dispos"]]||"", raison: r[inp["raison"]]||""
     }, lireFiche(r, inp)));
@@ -3065,19 +3139,22 @@ function lireResultat(wb){
 }
 
 function lireContraintes(wb){
-  const o = {jours:[], debut:9*60, fin:21*60+30, courts:4, fermetures:[], budget:{}};
+  const o = {jours:[], debut:9*60, fin:21*60+30, courts:0, terrains:[], budget:{}};
   const ge = aoa(wb, "General");
   if(ge) ge.slice(1).forEach(r=>{
     const k = String(r[0]||"").trim().toLowerCase(), v = r[1];
     if(k==="jours")           o.jours = String(v).split(";").map(s=>s.trim()).filter(Boolean);
     if(k==="ouverture_debut") o.debut = gmn(v) ?? o.debut;
     if(k==="ouverture_fin")   o.fin   = gmn(v) ?? o.fin;
-    if(k==="courts")          o.courts = +v || o.courts;
   });
-  const fe = aoa(wb, "Fermetures");
-  if(fe) fe.slice(1).forEach(r=>{
-    if(!r[0] || !r[1] || !r[2]) return;
-    o.fermetures.push({jour:String(r[0]).trim(), de:gmn(r[1]), a:gmn(r[2]), motif:String(r[3]||"").trim()});
+  // Le nombre de courts n'est plus un chiffre unique : il varie dans la
+  // journee, et c'est l'onglet Terrains qui le dit. `courts` garde le maximum,
+  // le seul chiffre qui ait un sens en resume.
+  const te = aoa(wb, "Terrains");
+  if(te) te.slice(1).forEach(r=>{
+    if(!r[0] || !r[1] || !r[2] || !r[3]) return;
+    o.terrains.push({jour:String(r[0]).trim(), de:gmn(r[1]), a:gmn(r[2]), courts:+r[3]||0});
+    o.courts = Math.max(o.courts, +r[3]||0);
   });
   const pr = aoa(wb, "Profs");
   if(pr){
@@ -3144,10 +3221,10 @@ const LIGNES = [
   {k:"courts", lab:"Courts et ouverture", fic:"contraintes-tennis.xlsx",
    onglets:["General","Fermetures","Types de cours"], remplacable:true,
    val(){
-     if(!ctr) return "Nombre de courts, jours ouverts, amplitude, fermetures.";
+     if(!ctr) return "Plages de courts, jours ouverts, amplitude, heures des profs.";
      const j = ctr.jours && ctr.jours.length ? ctr.jours : jours();
-     return `${ctr.courts} courts en simultané, ${j[0].toLowerCase()} au ${j[j.length-1].toLowerCase()}, `
-          + `${gtx(ctr.debut)} → ${gtx(ctr.fin)} · <b>${ctr.fermetures.length} fermetures</b>`;
+     return `jusqu'à ${ctr.courts} courts, ${j[0].toLowerCase()} au ${j[j.length-1].toLowerCase()}, `
+          + `${gtx(ctr.debut)} → ${gtx(ctr.fin)} · <b>${ctr.terrains.length} plages de courts</b>`;
    }},
   {k:"niv", lab:"Niveaux et poids", fic:"contraintes-tennis.xlsx",
    onglets:["Bareme","Paliers","Poids"], remplacable:true,
@@ -3415,14 +3492,16 @@ function kpi(v,l,cl){ return `<div class="grk ${cl||""}"><b>${v}</b><span>${l}</
 function rendSum(){
   const pl = vivants().reduce((s,c)=>s+c.membres.length,0), tot = pl + attente.length;
   const nMan = cours.filter(c=>c.manuel).length;
+  const nAncAtt = attente.filter(p=>p.ancien).length;
   F("grSum").innerHTML =
     kpi(pl+"/"+tot, "joueurs placés", pl===tot ? "ok" : "") +
     kpi(vivants().length, "cours ouverts", "") +
     kpi(attente.length, "sans groupe", attente.length ? "att" : "") +
+    (nAncAtt ? kpi(nAncAtt, "dont anciens", "anc") : "") +
     kpi(cours.filter(c=>c.lock>0).length, "cours figés",
         cours.filter(c=>c.lock>0).length ? "fig" : "") +
     (nMan ? kpi(nMan, "cours retouchés", "man") : "") +
-    `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni fermetures ni heures des profs."}</div>`;
+    `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni plages de courts ni heures des profs."}</div>`;
 }
 function actif(){ return filtre.profs.length || filtre.pal || filtre.etat; }
 function passe(c){
@@ -3541,22 +3620,40 @@ function rendMove(){
   F("grCancel").onclick = ()=>{ moving = null; forcing = null; selAtt = null; rend(); };
 }
 
+/* Les courts ne sont plus un chiffre unique : ils varient dans la journee.
+   « Combien en a-t-on a cet instant » remplace l'ancien « combien en tout »,
+   et un creneau hors de toute plage en a zero — c'est ce qui a remplace les
+   fermetures. */
+function courtsA(jour, t){
+  if(!ctr || !ctr.terrains.length) return ctr ? ctr.courts : 4;
+  let n = 0;
+  ctr.terrains.forEach(z=>{ if(z.jour===jour && z.de<=t && t<z.a) n = Math.max(n, z.courts); });
+  return n;
+}
+function courtsSur(jour, d, f){
+  let n = Infinity;
+  for(let t=d; t<f; t+=15) n = Math.min(n, courtsA(jour, t));
+  return n===Infinity ? 0 : n;
+}
+
 /* -------- un creneau est-il posable ? -------- */
 function valide(c, jour, d, prof){
   const pf = prof || c.prof, f = d + (c.f - c.d);
   const h0 = ctr ? ctr.debut : 9*60, h1 = ctr ? ctr.fin : 21*60+30;
   if(d < h0 || f > h1) return {ok:false, why:"hors des heures d'ouverture ("+gtx(h0)+" → "+gtx(h1)+")"};
-  if(ctr) for(const z of ctr.fermetures)
-    if(z.jour===jour && d < z.a && f > z.de)
-      return {ok:false, why:"pendant la fermeture" + (z.motif?" « "+z.motif+" »":"")};
+  if(ctr && ctr.terrains.length && !courtsSur(jour, d, f))
+    return {ok:false, why:"aucun court CCA sur ce créneau (onglet Terrains)"};
   const k = vivants().find(x=>x.cle!==c.cle && x.prof===pf && x.jour===jour && d < x.f && f > x.d);
   if(k) return {ok:false, why:pf+" a déjà un cours à cette heure ("+gtx(k.d)+")"};
-  let pic = 0;
+  // Le pic compte les COURTS mobilises, pas les cours : un type B en prend 2,
+  // un type C 3. Et le nombre disponible depend de l'heure, pas de la semaine.
+  let pic = 0, dispo = courtsSur(jour, d, f);
   for(let t=d; t<f; t+=15){
-    const n = vivants().filter(x=>x.cle!==c.cle && x.jour===jour && x.d<=t && x.f>t).length;
-    if(n+1 > pic) pic = n+1;
+    const n = vivants().filter(x=>x.cle!==c.cle && x.jour===jour && x.d<=t && x.f>t)
+                       .reduce((a,x)=>a+(x.nc||1), 0);
+    if(n+(c.nc||1) > pic) pic = n+(c.nc||1);
   }
-  if(pic > courts()) return {ok:false, why:"il faudrait "+pic+" courts, il y en a "+courts()};
+  if(pic > dispo) return {ok:false, why:"il faudrait "+pic+" courts, il y en a "+dispo+" à cette heure"};
   const b = budget(pf, jour);
   if(b === null) return {ok:true, courts:pic};
   const u = utilise(pf, jour, c.cle) + (f-d)/60;
@@ -3610,11 +3707,22 @@ function rendWeek(){
       const l = document.createElement("div"); l.className = "grline";
       l.style.top = ((h-H0)/60*PXH)+"px"; col.appendChild(l);
     }
-    if(ctr) ctr.fermetures.filter(z=>z.jour===j).forEach(z=>{
-      const e = document.createElement("div"); e.className = "grclosed";
-      e.style.top = ((z.de-H0)/60*PXH)+"px"; e.style.height = ((z.a-z.de)/60*PXH)+"px";
-      e.innerHTML = `<em>${esc(z.motif)}</em>`; col.appendChild(e);
-    });
+    // On ne grise plus les fermetures declarees, on grise tout ce qui n'est PAS
+    // une plage de courts : le fichier decrit desormais ce qu'on a, pas ce qui
+    // manque, et le blanc de la grille est exactement le temps utilisable.
+    if(ctr && ctr.terrains.length){
+      const plages = ctr.terrains.filter(z=>z.jour===j)
+        .map(z=>[Math.max(z.de,H0), Math.min(z.a,H1)])
+        .filter(([a,b])=>b>a).sort((x,y)=>x[0]-y[0]);
+      const trous = []; let t = H0;
+      plages.forEach(([a,b])=>{ if(a>t) trous.push([t,a]); t = Math.max(t,b); });
+      if(t < H1) trous.push([t,H1]);
+      trous.forEach(([a,b])=>{
+        const e = document.createElement("div"); e.className = "grclosed";
+        e.style.top = ((a-H0)/60*PXH)+"px"; e.style.height = ((b-a)/60*PXH)+"px";
+        col.appendChild(e);
+      });
+    }
     // Le joueur selectionne pose ses plages sur la grille : « ou peut-il aller »
     // se lit alors dans la meme forme que la fiche papier, pas en heures ecrites.
     const tv = cible();
@@ -3726,7 +3834,7 @@ function debutDrag(ev, c, el){
     gh.classList.toggle("ko", !v.ok);
     hi.className = "grhint" + (v.ok ? "" : " ko");
     hi.innerHTML = `<b>${esc(j)} ${gtx(d)}–${gtx(d+dur)}</b>` + (v.ok
-      ? `<em>${v.courts}/${courts()} courts${v.warn?" · ⚠ "+esc(v.warn):v.hres?" · "+esc(c.prof)+" "+v.hres:""}</em>`
+      ? `<em>${v.courts}/${courtsSur(c.jour,c.d,c.f)} courts${v.warn?" · ⚠ "+esc(v.warn):v.hres?" · "+esc(c.prof)+" "+v.hres:""}</em>`
       : `<em>impossible : ${esc(v.why)}</em>`);
     hi.style.left = Math.min(e.clientX+16, innerWidth-340)+"px";
     hi.style.top = (e.clientY+18)+"px";
@@ -3826,6 +3934,7 @@ function rendSide(){
       c.epingles = c.epingles.filter(n=>n!==m.nom);
       c.manuel = true;
       attente.push(Object.assign({nom:m.nom, sexe:c.sexe, niveau:m.niveau, email:m.email,
+        ancien:!!m.ancien,
         dispos:m.dispos||"", raison:"retiré à la main du cours de "+c.prof}, pick(m)));
       memoriser(); rend();
     });
@@ -3838,7 +3947,9 @@ function rendSide(){
     return;
   }
   const vus = attente.map((p,i)=>[p,i]).filter(([p])=> !filtre.pal || filtre.pal.indexOf(p.niveau)>=0);
-  head.innerHTML = `<div><b>${attente.length} sans groupe</b>
+  const nAnc = vus.filter(([p])=>p.ancien).length;
+  head.innerHTML = `<div><b>${attente.length} sans groupe</b>${
+      nAnc ? ` <span class="anc" title="deja adherents l'an dernier">${nAnc} ancien${nAnc>1?"s":""}</span>` : ""}
     <div class="sub">${filtre.pal && vus.length!==attente.length
       ? vus.length+" au palier "+esc(filtre.pal)+" · cliquez un nom pour le placer"
       : "Cliquez un nom : la grille montre où il peut aller."}</div></div>`;
@@ -3850,13 +3961,16 @@ function rendSide(){
     const js = DAYS.map(j=>`<i class="${dp.some(d=>d.jour===j)?"y":""}">${j[0]}</i>`).join("");
     return `<button class="grp ${selAtt===i?"on":""}" data-i="${i}">
        <span class="niv" title="niveau ${esc(p.niveau||"inconnu")}">${esc(p.niveau||"?")}</span>
-       <span class="tx"><b>${esc(p.nom)}</b>
+       <span class="tx"><b>${esc(p.nom)}${p.ancien?' <span class="anc" title="deja adherent l\'an dernier">ancien</span>':""}</b>
          <span class="why"><span class="grjrs" aria-label="jours déclarés">${js}</span>${
            esc(motifCourt(p.raison))}</span></span>
      </button>`;
   };
+  // dans chaque famille de motif, les anciens d'abord : eux qu'on refuse
+  // pesent plus lourd que les nouveaux, ils ne doivent pas se perdre dans le tas
   body.innerHTML = FAMILLES
-    .map(f=>({f, gens: vus.filter(([p])=>familleDe(p.raison)===f.cle)}))
+    .map(f=>({f, gens: vus.filter(([p])=>familleDe(p.raison)===f.cle)
+                       .sort((a,b)=>(b[0].ancien?1:0)-(a[0].ancien?1:0))}))
     .filter(g=>g.gens.length)
     .map(g=>`<div class="grfam ${ouv[g.f.cle]?"":"plie"}"
         style="--fc:${g.f.c};--fcs:${g.f.cs};--fct:${g.f.ct}">
@@ -3890,7 +4004,7 @@ function rendJoueur(head, body, p, src){
   const t  = {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:src?src.cle:null,
               dispos:dp.length?dp:null};
   head.innerHTML = `<button class="mini" id="grBack">←</button>
-    <div><b>${esc(p.nom)}</b>
+    <div><b>${esc(p.nom)}${p.ancien?' <span class="anc" title="deja adherent l\'an dernier">ancien</span>':""}</b>
     <div class="sub">niveau ${esc(p.niveau||"?")} · ${
       p.sexe==="F"?"groupes féminins":p.sexe==="H"?"groupes masculins":"sexe non renseigné"} · ${
       src ? esc(src.prof)+", "+esc(src.jour.toLowerCase())+" "+gtx(src.d) : "sans groupe"}</div></div>`;
@@ -4037,13 +4151,14 @@ function ordonne(){ return vivants().slice().sort((a,b)=>
 
 function exportResultat(){
   const L = ordonne(), wb = XLSX.utils.book_new();
-  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","dispos","sexe","effectif","epingle","a_la_main"].concat(CH_FICHE)];
+  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","dispos","sexe","effectif","epingle","a_la_main","ancien"].concat(CH_FICHE)];
   L.forEach((c,i)=>c.membres.forEach(m=>g.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,
     m.nom,m.email||"",m.niveau||"",m.dispos||"",c.sexe,c.membres.length,
-    (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":""].concat(CH_FICHE.map(k=>m[k]||"")))));
+    (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":"",
+    m.ancien?"oui":""].concat(CH_FICHE.map(k=>m[k]||"")))));
   const gws = XLSX.utils.aoa_to_sheet(g);
   gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},
-                {wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},
+                {wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},{wch:8},
                 {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, gws, "Groupes");
 
@@ -4054,11 +4169,11 @@ function exportResultat(){
   cws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:6},{wch:6},{wch:9},{wch:10},{wch:70}];
   XLSX.utils.book_append_sheet(wb, cws, "Cours");
 
-  const np = [["nom","sexe","niveau","email","dispos","raison"].concat(CH_FICHE)];
-  attente.forEach(p=>np.push([p.nom,p.sexe,p.niveau,p.email||"",p.dispos||"",p.raison||""]
+  const np = [["nom","sexe","ancien","niveau","email","dispos","raison"].concat(CH_FICHE)];
+  attente.forEach(p=>np.push([p.nom,p.sexe,p.ancien?"oui":"",p.niveau,p.email||"",p.dispos||"",p.raison||""]
     .concat(CH_FICHE.map(k=>p[k]||""))));
   const nws = XLSX.utils.aoa_to_sheet(np);
-  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:30},{wch:46},{wch:60},
+  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:8},{wch:30},{wch:46},{wch:60},
                 {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, nws, "Non places");
 
@@ -4135,6 +4250,7 @@ async function pingAgent(){
         }
       }catch(e){ /* fichier absent : la ligne le dira */ }
     }
+    await chargerControle();
   }
   majLance();
   if(agent && agent.run && agent.run.en_cours) reprendreSuivi();
@@ -4161,9 +4277,226 @@ function majLance(){
   F("grLanceS").textContent = j.present
     ? `joueurs.xlsx du ${j.date}` + (c.present ? ` · contraintes du ${c.date}` : " · pas de contraintes")
     : "joueurs.xlsx introuvable à côté du solveur";
-  F("grGo").disabled = !j.present;
+  F("grGo").disabled = !j.present || ctlRestants() > 0;
+  majControle();
   F("grRelance").style.display = cours.length ? "block" : "none";
   rendFichiers();
+}
+
+/* ---------------- controle d'avant-calcul ----------------
+   Trois champs decident du resultat : le sexe (les groupes sont non mixtes),
+   le niveau (il choisit le palier), la disponibilite (elle choisit l'heure).
+   Une fiche muette sur l'un des trois ne produit pas un mauvais groupe, elle
+   produit un joueur qu'on retrouve « non place » sans savoir pourquoi. D'ou ce
+   passage oblige : tant qu'il manque quelque chose, le calcul ne part pas.
+
+   La disponibilite accepte TROIS reponses, pas une : des creneaux, « n'importe
+   quand », ou « refuser ». Les deux dernieres sont des decisions — les ecrire
+   evite qu'une fiche vide soit relue comme une fiche a completer a chaque tour. */
+let ctl = null;          // {total, manquantes:[…]} tel que l'agent le voit
+let ctlFix = {};         // id -> {sexe?, niveau?, dispos?} en cours de saisie
+let ctlCren = {};        // id -> ["Lundi 18h30-21h30", …] tant qu'on les compose
+
+function ctlManque(m){ return m.manque.map(x=>({sexe:"sexe", niveau:"niveau",
+  dispos:"disponibilités"}[x]||x)).join(" · "); }
+
+// Une fiche est reglee quand CHAQUE champ manquant a recu une valeur.
+function ctlOk(m){
+  const f = ctlFix[m.id] || {};
+  return m.manque.every(ch => ch === "niveau"
+    ? String(f.niveau||"").trim() !== "" || String(f.niveau_club||"").trim() !== ""
+    : String(f[ch]||"").trim() !== "");
+}
+function ctlRestants(){ return (ctl ? ctl.manquantes : []).filter(m=>!ctlOk(m)).length; }
+
+async function chargerControle(){
+  try{ ctl = await jsonAgent("/controle"); }
+  catch(e){ ctl = null; }
+  ctlFix = {}; ctlCren = {};
+  majControle();
+}
+function majControle(){
+  const b = F("grCtl");
+  if(!agent || !ctl){ b.style.display = "none"; return; }
+  const n = ctlRestants();
+  b.style.display = "flex";
+  b.className = "grctl " + (n ? "ko" : "ok");
+  F("grCtlP").textContent = n ? "!" : "✓";
+  F("grCtlT").textContent = n
+    ? n + " fiche" + (n>1?"s":"") + " à compléter avant de calculer"
+    : ctl.total + " fiches contrôlées";
+  F("grCtlS").textContent = n
+    ? "Sexe, niveau et disponibilités décident du groupe : sans eux le joueur sortira « non placé » sans raison lisible."
+    : "Sexe, niveau et disponibilités sont renseignés partout.";
+  F("grCtlB").textContent = n ? "Compléter" : "Revoir";
+  F("grGo").disabled = !(agent && agent.joueurs && agent.joueurs.present) || n > 0;
+}
+
+// Le bareme depend du sexe : a classement egal une femme et un homme ne portent
+// pas la meme lettre. Tant que le sexe n'est pas tranche, on ne peut pas
+// proposer d'echelle — le dire vaut mieux que d'en proposer une fausse.
+function ctlBareme(m, f){
+  const sx = (f.sexe || m.sexe || "").toUpperCase()[0];
+  const ech = ctl && ctl.bareme ? ctl.bareme[sx === "M" ? "H" : sx] : null;
+  if(!ech) return `<option value="">— choisir d'abord le sexe —</option>`;
+  const v = f.niveau_club || m.niveau_club || "";
+  return `<option value=""${v?"":" selected"}>— non tranché —</option>`
+    + ech.map(x=>`<option value="${x.lettre}"${x.lettre===v?" selected":""}
+        >${x.lettre} — ${esc(x.quoi||"")}</option>`).join("");
+}
+
+function ctlHeures(){
+  const o = [], d = ctr && ctr.debut ? ctr.debut : 9*60, f = ctr && ctr.fin ? ctr.fin : 21*60+30;
+  for(let t = d; t <= f; t += 15) o.push(t);
+  return o;
+}
+function ctlOpts(sel){ return ctlHeures().map(t=>
+  `<option value="${gtx(t)}"${gtx(t)===sel?" selected":""}>${gtx(t)}</option>`).join(""); }
+
+function rendControle(){
+  const L = F("grCtlL");
+  if(!ctl || !ctl.manquantes.length){
+    L.innerHTML = `<p class="ctlvide">Rien à compléter : les ${ctl?ctl.total:0} fiches
+      ont un sexe, un niveau et une disponibilité.</p>`;
+  }else{
+    L.innerHTML = ctl.manquantes.map(m=>{
+      const f = ctlFix[m.id] || {};
+      const src = [m.niveau_fiche && "fiche : « "+esc(m.niveau_fiche)+" »",
+                   m.niveau_club && "club : "+esc(m.niveau_club),
+                   m.groupe && "groupe "+esc(m.groupe),
+                   m.obs && "obs : "+esc(m.obs.slice(0,160))].filter(Boolean).join(" — ");
+      let ch = "";
+      if(m.manque.indexOf("sexe") >= 0)
+        ch += `<div class="ctlch"><label>Sexe</label><span class="ctlseg">
+          ${["F","H"].map(v=>`<button data-id="${m.id}" data-ch="sexe" data-v="${v}"
+             class="${f.sexe===v?"on":""}">${v==="F"?"Femme":"Homme"}</button>`).join("")}
+        </span></div>`;
+      if(m.manque.indexOf("niveau") >= 0){
+        // Deux niveaux, deux natures. Le joueur declare un classement, souvent
+        // approximatif ; le club tranche une lettre du bareme apres l'avoir vu
+        // jouer. La lettre du club prime — sinon surclasser quelqu'un obligerait
+        // a effacer ce qu'il a declare.
+        ch += `<div class="ctlch"><label>Niveau (joueur)</label>
+          <input class="ctlniv" data-id="${m.id}" data-ch="niveau" value="${esc(f.niveau||"")}"
+                 placeholder="classement ou lettre">
+          ${m.niveau_fiche ? `<span class="ctlaide">déclaré : « ${esc(m.niveau_fiche)} »</span>` : ""}
+        </div>
+        <div class="ctlch"><label>Niveau (club)</label>
+          <select class="ctlnivc" data-id="${m.id}" data-ch="niveau_club">${ctlBareme(m, f)}</select>
+          <span class="ctlaide">prime sur le niveau déclaré</span></div>`;
+      }
+      if(m.manque.indexOf("dispos") >= 0){
+        const mode = f.dispos === "Partout" ? "partout"
+                   : f.dispos === "Refuser" ? "refuser"
+                   : f.dispos ? "creneaux" : (ctlCren[m.id] ? "creneaux" : "");
+        ch += `<div class="ctlch"><label>Disponible</label><span class="ctlseg">
+          ${[["creneaux","Des créneaux"],["partout","N'importe quand"],["refuser","Refuser"]]
+            .map(([v,t])=>`<button data-id="${m.id}" data-ch="mode" data-v="${v}"
+              class="${mode===v?"on":""}">${t}</button>`).join("")}
+        </span></div>`;
+        if(mode === "creneaux"){
+          const puces = (ctlCren[m.id]||[]);
+          ch += `<div class="ctlcren">
+            <div class="ctlpuces">${puces.length
+              ? puces.map((c,i)=>`<span class="ctlpuce">${esc(c)}<i data-id="${m.id}"
+                  data-del="${i}" title="retirer">✕</i></span>`).join("")
+              : `<span class="hint">Aucun créneau : ajoutez-en au moins un.</span>`}</div>
+            <div class="ctladd">
+              <select data-id="${m.id}" data-add="jour">${JOURS_CTR()
+                .map(j=>`<option>${j}</option>`).join("")}</select>
+              <select data-id="${m.id}" data-add="de">${ctlOpts("18h30")}</select>
+              <span class="fl">→</span>
+              <select data-id="${m.id}" data-add="a">${ctlOpts("21h30")}</select>
+              <button class="mini" data-id="${m.id}" data-add="go">Ajouter</button>
+            </div></div>`;
+        }
+      }
+      return `<div class="ctlrow ${ctlOk(m)?"fait":""}">
+        <div class="ctlhead"><b>${esc(m.nom)}</b>
+          <span class="ctlmq">${ctlManque(m)}</span></div>
+        ${src ? `<p class="ctlsrc">${src}</p>` : ""}
+        ${ch}</div>`;
+    }).join("");
+  }
+  const n = ctlRestants(), faites = Object.keys(ctlFix).length;
+  F("grCtlN").textContent = ctl ? `${ctl.manquantes.length} sur ${ctl.total} fiches` : "";
+  F("grCtlH").textContent = n
+    ? n + " fiche" + (n>1?"s":"") + " encore incomplète" + (n>1?"s":"")
+      + " — le calcul reste bloqué tant qu'il en reste une."
+    : faites ? "Tout est renseigné. L'enregistrement écrit dans joueurs.xlsx."
+             : "Rien à enregistrer.";
+  F("grCtlOk").disabled = !faites;
+  F("grCtlOk").textContent = faites ? `Enregistrer ${faites} fiche${faites>1?"s":""}`
+                                    : "Enregistrer";
+  majControle();          // le bandeau et le bouton Lancer suivent la saisie
+}
+
+// Un seul ecouteur sur la liste : elle est reconstruite a chaque frappe, des
+// ecouteurs poses sur chaque bouton seraient perdus a la premiere edition.
+function ctlClic(e){
+  const el = e.target.closest("[data-ch],[data-add],[data-del]");
+  if(!el) return;
+  const id = el.dataset.id;
+  ctlFix[id] = ctlFix[id] || {};
+  if(el.dataset.del !== undefined){
+    (ctlCren[id]||[]).splice(+el.dataset.del, 1);
+    ctlFix[id].dispos = (ctlCren[id]||[]).join(" ; ");
+    if(!ctlFix[id].dispos) delete ctlFix[id].dispos;
+    return rendControle();
+  }
+  if(el.dataset.add === "go"){
+    const q = k => F("grCtlL").querySelector(`[data-id="${id}"][data-add="${k}"]`).value;
+    const de = q("de"), a = q("a");
+    if(hmn(de) >= hmn(a)) return;              // plage vide : on ne l'ajoute pas
+    ctlCren[id] = (ctlCren[id]||[]).concat(`${q("jour")} ${de}-${a}`);
+    ctlFix[id].dispos = ctlCren[id].join(" ; ");
+    return rendControle();
+  }
+  // changer le sexe change l'echelle : la lettre deja choisie n'y est plus
+  if(el.dataset.ch === "sexe"){
+    if(ctlFix[id].sexe && ctlFix[id].sexe !== el.dataset.v) delete ctlFix[id].niveau_club;
+    ctlFix[id].sexe = el.dataset.v; return rendControle();
+  }
+  if(el.dataset.ch === "mode"){
+    if(el.dataset.v === "partout"){ ctlFix[id].dispos = "Partout"; delete ctlCren[id]; }
+    else if(el.dataset.v === "refuser"){ ctlFix[id].dispos = "Refuser"; delete ctlCren[id]; }
+    else { ctlCren[id] = ctlCren[id] || []; ctlFix[id].dispos = ctlCren[id].join(" ; ");
+           if(!ctlFix[id].dispos) delete ctlFix[id].dispos; }
+    return rendControle();
+  }
+}
+function ctlSaisie(e){
+  const el = e.target.closest('[data-ch="niveau"],[data-ch="niveau_club"]');
+  if(!el) return;
+  const id = el.dataset.id, ch = el.dataset.ch;
+  ctlFix[id] = ctlFix[id] || {};
+  const v = el.value.trim();
+  if(v) ctlFix[id][ch] = v; else delete ctlFix[id][ch];
+  if(ch === "niveau_club") return rendControle();   // un select ne perd pas de curseur
+  // pas de rendControle() ici : il refabriquerait le champ et perdrait le curseur
+  const n = ctlRestants(), faites = Object.keys(ctlFix).length;
+  F("grCtlOk").disabled = !faites;
+  F("grCtlH").textContent = n ? n + " fiche(s) encore incomplète(s)."
+                              : "Tout est renseigné. L'enregistrement écrit dans joueurs.xlsx.";
+}
+
+async function enregistrerControle(){
+  const corrections = Object.entries(ctlFix)
+    .map(([id, v]) => Object.assign({id}, v))
+    .filter(c => c.sexe || c.niveau || c.niveau_club || c.dispos);
+  if(!corrections.length) return;
+  F("grCtlOk").disabled = true;
+  F("grCtlH").textContent = "Écriture dans joueurs.xlsx…";
+  try{
+    const d = await jsonAgent("/controle", {corrections});
+    (d.ignorees||[]).forEach(x=>console.warn("contrôle :", x));
+    await chargerControle();                   // relecture : c'est le disque qui fait foi
+    rendControle();
+    if(!ctlRestants()) F("grCtlBg").classList.remove("open");
+  }catch(e){
+    F("grCtlH").textContent = "Impossible d'enregistrer : " + e.message;
+    F("grCtlOk").disabled = false;
+  }
 }
 
 async function lancer(){
@@ -4267,7 +4600,8 @@ F("grUndo").onclick = annuler;
 F("grVoirX").onclick = ()=>F("grVoirBg").classList.remove("open");
 F("grVoirBg").onclick = e=>{ if(e.target === F("grVoirBg")) F("grVoirBg").classList.remove("open"); };
 document.addEventListener("keydown", e=>{
-  if(e.key === "Escape") F("grVoirBg").classList.remove("open");
+  if(e.key === "Escape"){ F("grVoirBg").classList.remove("open");
+                          F("grCtlBg").classList.remove("open"); }
   // ⌘Z / Ctrl+Z, sauf quand on est en train de taper dans un champ
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey
      && F("grView").style.display === "grid"
@@ -4282,6 +4616,12 @@ window.addEventListener("resize", ()=>{
   clearTimeout(tRedim);
   tRedim = setTimeout(()=>{ if(F("grView").style.display === "grid") rendWeek(); }, 120);
 });
+F("grCtlB").onclick = ()=>{ rendControle(); F("grCtlBg").classList.add("open"); };
+F("grCtlX").onclick = ()=>F("grCtlBg").classList.remove("open");
+F("grCtlBg").onclick = e=>{ if(e.target === F("grCtlBg")) F("grCtlBg").classList.remove("open"); };
+F("grCtlL").addEventListener("click", ctlClic);
+F("grCtlL").addEventListener("input", ctlSaisie);
+F("grCtlOk").onclick = enregistrerControle;
 F("grGo").onclick = lancer;
 F("grRelance").onclick = lancer;
 F("grNouveau").onclick = ()=>{ ecranLance = true; rend(); };
