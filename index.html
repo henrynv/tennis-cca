@@ -800,6 +800,14 @@
             <label for="nouveau">Nouveau au club</label>
             <select id="nouveau"><option value="">Non</option><option value="1">Oui</option></select>
           </div>
+          <div class="f">
+            <label for="groupe">Groupe <span class="pill" id="groupePill" style="display:none">Deviné par prénom</span></label>
+            <select id="groupe">
+              <option value="">non déterminé</option>
+              <option value="F">Femme</option>
+              <option value="H">Homme</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1003,7 +1011,7 @@
     <div class="modal-body">
       <table class="list">
         <thead><tr>
-          <th>#</th><th>Nom</th><th>Prénom</th><th>Niveau</th><th>Disponibilités</th><th>Contact</th><th>Règl.</th><th>Observations</th><th>📷</th><th></th>
+          <th>#</th><th>Nom</th><th>Prénom</th><th>Groupe</th><th>Niveau</th><th>Disponibilités</th><th>Contact</th><th>Règl.</th><th>Observations</th><th>📷</th><th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -1101,6 +1109,8 @@ let players = [];
 let editId = null;
 let curPhoto = null;      // nouvelle photo (dataURL) à uploader
 let editPhotoUrl = null;  // photo déjà en base pour la fiche en cours d'édition
+let curCouleur = null;    // couleur du papier lue par l'IA sur la fiche en cours (saisie manuelle)
+let groupeDevine = false; // true si le groupe affiché vient de la devinette par prénom, pas d'une lecture
 
 // Le prenom de l'assistante : demande une fois, rappele en haut de chaque ecran.
 let saisiPar = localStorage.getItem("cca_saisiPar") || "";
@@ -1303,6 +1313,12 @@ function applyFiche(f){
   set("email",f.email); set("niveau",f.niveau); set("obs",f.obs);
   set("annotations",f.annotations); set("hors_champ",f.hors_champ);
   autoGrowAll();
+  // couleur du papier -> suggestion de groupe (orange/bleu tranchent, blanc devine par
+  // prenom) ; l'assistante garde la main via le select, qui n'est jamais ecrase ensuite.
+  curCouleur = f.couleur || null;
+  const gc = groupeFromCouleur(f.couleur, f.prenom);
+  F("groupe").value = gc.groupe || ""; groupeDevine = gc.devine && !!gc.groupe;
+  F("groupePill").style.display = groupeDevine ? "" : "none";
   // les observations viennent d'etre lues : on en tire les demandes tout de suite
   chargerDemandes(null);
   if(Array.isArray(f.dispos)) fillDispos(f.dispos);
@@ -1750,6 +1766,7 @@ function readForm(){
     annotations:F("annotations").value.trim(),
     hors_champ:F("hors_champ").value.trim(),
     nouveau:F("nouveau").value==="1",
+    groupe:F("groupe").value || null, groupe_devine:groupeDevine, couleur:curCouleur,
     // `demandes_relues` marque que quelqu'un a vu ce bloc : sans lui, une
     // deduction fausse qu'on efface reviendrait a la prochaine ouverture.
     ...(hasDemandes ? {avec:dmd.avec, sans:dmd.sans,
@@ -1761,6 +1778,8 @@ function readForm(){
 function clearForm(){
   TEXT_IDS.forEach(id=>F(id).value="");
   F("reglement").value=""; F("nouveau").value=""; F("niveau_club").value="";
+  F("groupe").value=""; F("groupePill").style.display="none";
+  curCouleur=null; groupeDevine=false;
   autoGrowAll();
   clearFlags();
   chargerDemandes(null);
@@ -1777,6 +1796,8 @@ F("clear").onclick=()=>{
   if(rempli && !confirm("Effacer tout ce qui est à l'écran ?\n\nLes fiches déjà enregistrées ne sont pas touchées.")) return;
   clearForm();
 };
+// une correction manuelle du groupe n'est plus une devinette
+F("groupe").onchange=()=>{ groupeDevine=false; F("groupePill").style.display="none"; };
 
 /* les zones de texte grandissent avec leur contenu : rien n'est jamais tronque */
 function autoGrow(el){
@@ -1910,6 +1931,7 @@ function renderList(){
       <td>${i+1}</td>
       <td><b>${esc(p.nom)}</b></td>
       <td>${esc(p.prenom)}</td>
+      <td>${p.groupe==="F"?"Femme":p.groupe==="H"?"Homme":"<span style='color:#aaa'>—</span>"}${p.groupe_devine?" <span title='Deviné par prénom, à vérifier'>🔮</span>":""}</td>
       <td>${esc(p.niveau||"")}</td>
       <td>${chips}</td>
       <td>${esc(p.portable||p.tel||"")}<br><span style="color:#889">${esc(p.email||"")}</span></td>
@@ -1941,6 +1963,9 @@ function edit(id){
   F("reglement").value=p.reglement||"";F("obs").value=p.obs||"";
   F("annotations").value=p.annotations||"";F("hors_champ").value=p.hors_champ||"";
   F("nouveau").value=p.nouveau?"1":"";
+  F("groupe").value=p.groupe||""; curCouleur=p.couleur||null;
+  groupeDevine = !!p.groupe_devine;
+  F("groupePill").style.display = groupeDevine ? "" : "none";
   autoGrowAll();
   flagDoubtful(p.confiance);
   chargerDemandes(p);            // apres flagDoubtful : il remet le compteur a zero
@@ -2141,6 +2166,50 @@ function groupeFromName(n){
   return null;
 }
 
+/* ---------- devine du sexe par prenom (fiches blanches : la couleur ne dit rien) ----------
+   Liste de prenoms francais courants, pour donner une valeur par defaut modifiable a la
+   relecture. Prenom absent de la liste ou ambigu (Claude, Dominique, Camille...) => null,
+   plutot que d'inventer une reponse fausse : la fiche reste marquee "groupe_devine". */
+const PRENOMS_H = new Set(("jean pierre michel alain bernard daniel philippe patrick christian gerard "
+  +"jacques andre roger henri louis rene marcel robert georges francois yves serge christophe eric "
+  +"frederic laurent nicolas olivier pascal stephane thierry vincent xavier julien david sebastien "
+  +"thomas antoine guillaume maxime alexandre benjamin romain hugo lucas mathieu matthieu kevin cedric "
+  +"fabrice franck gregory ludovic sylvain emmanuel jerome loic yann bruno didier gilles herve joel "
+  +"marc remi rodolphe sacha theo tristan valentin william paul jules gabriel raymond maurice edmond "
+  +"gaston lucien albert felix leon emile fernand gustave achille arnaud fabien florian jonathan "
+  +"mickael nicolas pierrick quentin raphael simon tanguy yannick baptiste clement corentin damien "
+  +"denis dimitri elie fabien gael ivan jerome killian lionel malo martin milan noah oscar owen rayan "
+  +"regis renaud teddy titouan ulysse victor axel enzo evan gabin ilan liam mael nathan noe timeo tom").split(" ").filter(Boolean));
+const PRENOMS_F = new Set(("marie jeanne francoise monique nicole christine sylvie catherine "
+  +"isabelle martine nathalie veronique chantal annie sophie anne brigitte danielle corinne valerie "
+  +"sandrine patricia michele josiane ghislaine colette yvette simone denise suzanne odette paulette "
+  +"jacqueline madeleine renee georgette claudine bernadette andree huguette elisabeth laurence karine "
+  +"aurelie celine julie emilie laetitia amandine elodie marion clemence charlotte emma lea manon "
+  +"chloe sarah alice julia juliette lucie margaux pauline agnes beatrice cecile daniele fabienne "
+  +"florence francine helene ines jeannine liliane lucette marguerite marthe micheline "
+  +"raymonde solange therese yolande adeline alexandra alexia amelie anais audrey aurore "
+  +"caroline delphine emmanuelle estelle eve fanny gaelle ingrid jessica jocelyne laura "
+  +"leila magali malika maud melanie nadege nadia nelly noemie oceane priscilla romane sabine "
+  +"severine sonia stephanie tiphaine vanessa virginie zoe").split(" ").filter(Boolean));
+function normPrenom(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .split(/[\s'-]+/)[0].trim();
+}
+function sexeDePrenom(prenom){
+  const p = normPrenom(prenom);
+  if(!p) return null;
+  if(PRENOMS_H.has(p)) return "H";
+  if(PRENOMS_F.has(p)) return "F";
+  return null;
+}
+// couleur du papier (lue par l'IA) -> groupe. orange/bleu tranchent ; blanc (ou couleur
+// absente) n'a pas de sens, on devine par prenom et on le signale via `devine`.
+function groupeFromCouleur(couleur, prenom){
+  if(couleur === "orange") return {groupe:"F", devine:false};
+  if(couleur === "bleu")   return {groupe:"H", devine:false};
+  return {groupe: sexeDePrenom(prenom), devine:true};
+}
+
 // pdf.js ordonnance son rendu avec requestAnimationFrame, que le navigateur gele
 // des que l'onglet passe en arriere-plan : sans ce relais, un import de plusieurs
 // centaines de pages se fige silencieusement quand on va voir ailleurs.
@@ -2168,8 +2237,10 @@ async function ingestInner(files){
       if(dr < IMP.darkMin){ stats.blank++; paint(); return; }   // verso vierge : aucun appel IA
       const blob = await toBlob(cv);
       await qPut({
+        // groupeForce : convention de nommage de fichier ("Femmes.pdf"/"Hommes.pdf"),
+        // conservee pour les anciens lots. Prioritaire sur la couleur lue par l'IA.
         key: f.name + "#" + n, file: f.name, page: n,
-        blob, status: "wait", groupe: groupeFromName(f.name),
+        blob, status: "wait", groupeForce: groupeFromName(f.name),
       });
       paint();
     };
@@ -2251,6 +2322,9 @@ async function saveFiche(it, fiche, meta){
   else photo_url = sb.storage.from("photos").getPublicUrl(path).data.publicUrl;
 
   const pl = prefLine(fiche.dispos);
+  // groupeForce (nom de fichier) prime sur la couleur lue par l'IA ; a defaut, orange/bleu
+  // tranchent et blanc devine par prenom (groupe_devine=true : a verifier en priorite).
+  const gc = it.groupeForce ? {groupe: it.groupeForce, devine:false} : groupeFromCouleur(fiche.couleur, fiche.prenom);
   const row = {
     nom: fiche.nom||"", prenom: fiche.prenom||"", ddn: fiche.ddn||"",
     adresse: fiche.adresse||"", code_postal: fiche.code_postal||"", ville: fiche.ville||"",
@@ -2263,7 +2337,8 @@ async function saveFiche(it, fiche, meta){
     dispos: fiche.dispos||[],
     confiance: fiche.confiance||null,
     statut: "a_verifier",
-    groupe: it.groupe, source_fichier: it.file, source_page: it.page,
+    groupe: gc.groupe, groupe_devine: gc.devine, couleur: fiche.couleur||null,
+    source_fichier: it.file, source_page: it.page,
     modele: meta.model || null, photo_url,
   };
   const { error } = await sb.from("fiches").insert(row);
