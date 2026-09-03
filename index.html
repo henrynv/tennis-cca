@@ -372,14 +372,17 @@
     padding:3px 0 2px;flex-wrap:wrap}
   .grtot .n{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
   .grtot .lb{font-size:11.5px;color:var(--muted);white-space:nowrap;line-height:1.25}
-  .grbar{flex:1 1 240px;min-width:150px;display:flex;height:10px;border-radius:5px;
+  /* Deux barres portaient le meme nom de classe : celle-ci, haute de 10 px dans
+     le bandeau, et celle du bas de l'ecran. Leurs regles se melangeaient — la
+     barre du bas heritait `height:10px` et ecrasait son propre contenu. */
+  .grjauge{flex:0 1 220px;min-width:150px;display:flex;height:10px;border-radius:5px;
     overflow:hidden;background:var(--line)}
-  .grbar b{display:block;height:100%}
+  .grjauge b{display:block;height:100%}
   /* memes teintes que les pastilles de la legende : deux nuances pour une seule
      idee, c'etait a l'oeil de faire le rapprochement */
-  .grbar .pl{background:#5dcaa5}
-  .grbar .at{background:#ef9f27}
-  .grbar .hc{background:#b4b2a9}
+  .grjauge .pl{background:#5dcaa5}
+  .grjauge .at{background:#ef9f27}
+  .grjauge .hc{background:#b4b2a9}
   .grleg{display:flex;gap:6px 14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;
     align-items:center}
   .grleg span{display:flex;align-items:center;gap:5px}
@@ -525,8 +528,10 @@
 
   .grbar{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:7px 16px;
     display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .grbar .tx{flex:1;min-width:200px;font-size:13px;line-height:1.3}
-  .grbar .tx em{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px}
+  .grbar .tx{flex:1;min-width:200px;font-size:13px;line-height:1.35}
+  /* Deux lignes : ce qu'on vient de faire, puis l'etat du planning. Sur une
+     seule, l'oeil ne separait pas l'action du decompte. */
+  .grbar .tx em{font-style:normal;color:var(--muted);font-size:12px;display:block}
   .grbar .big{height:38px;padding:0 18px;font-size:15px;border-radius:9px}
   .grbar .nb{font-weight:700;color:#2f5597}
   .grbar .lien{border:none;background:none;color:var(--muted);text-decoration:underline;
@@ -534,6 +539,16 @@
   .grbar .lien:hover{color:var(--accent)}
   .grko{color:var(--warn);font-weight:600;font-size:12.5px;line-height:1.35;margin-bottom:3px}
   .grko code{background:#fdeaea;border-radius:4px;padding:0 4px;font-size:11.5px}
+  /* La plomberie sous la barre : agent, sauvegarde, export des figeages. Elle
+     doit rester lisible sans jamais concurrencer les trois sorties du dessus. */
+  .grplomb{flex:none;background:var(--panel);border-top:1px solid var(--line);
+    padding:4px 16px 5px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    font-size:11.5px;color:var(--muted)}
+  .grplomb .lien{border:none;background:none;color:var(--muted);text-decoration:underline;
+    padding:0;font-size:11.5px;height:auto}
+  .grplomb .lien:hover{color:var(--accent)}
+  .grplomb code{background:#eef1f4;border-radius:4px;padding:0 4px;font-size:11px}
+  .grplomb .fin{margin-left:auto}
 
   .grsh{flex:none;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;
     align-items:center;gap:8px}
@@ -619,7 +634,11 @@
   .grm:hover .act,.grm.ep .act{opacity:1}
   .grm .act button,.grm .pin{border:1px solid var(--line);background:#fff;border-radius:6px;
     padding:2px 7px;font-size:11.5px;color:var(--muted);height:auto;line-height:1.5}
-  .grm .pin.on{background:#e8eef8;border-color:#2f5597;color:#2f5597}
+  .grm .pin.on{background:#e8eef8;border-color:#2f5597;color:#2f5597;font-weight:600}
+  .grm .pin{flex:none;white-space:nowrap}
+  /* Le bouton porte desormais un mot : il reste visible en permanence, sinon
+     « garder deux eleves sur quatre » se decouvre au survol, donc jamais. */
+  .grm .pin:hover{border-color:#2f5597;color:#2f5597}
   .grnote{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 0}
   .grh4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
     font-weight:700;margin:14px 0 5px}
@@ -683,6 +702,29 @@
   .grfam.plie .grfamb{display:none}
   .grfamb{padding:0 7px 7px}
   @media(prefers-reduced-motion:reduce){.grfamh .chev{transition:none}}
+  /* La tuile de tete : elle ne classe pas un probleme, elle propose une
+     decision. Meme gabarit que les autres, cadre plein pour qu'on la lise
+     avant elles. */
+  .grfam.tete{border-color:var(--accent);border-width:1.5px}
+  .grfam.tete .grfamh{background:var(--accent-soft)}
+  .grverd{border-left:3px solid var(--warn);background:#fdf6f3;border-radius:0 7px 7px 0;
+    padding:7px 9px;margin:8px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink)}
+  .grverd.ok{border-left-color:var(--accent);background:var(--accent-soft)}
+  .grverd b{font-weight:650}
+  .gracts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .gracts button{font-size:12px;padding:5px 10px;height:auto}
+  /* Le numero se lit, il ne se cache pas derriere un bouton « appeler » :
+     le directeur sportif compose souvent depuis un autre telephone. */
+  .grtel{flex:none;font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--muted);
+    text-decoration:none;white-space:nowrap}
+  .grtel:hover{color:var(--accent);text-decoration:underline}
+  .grp .lg{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  /* « 2 gardes sur 4 » : la phrase qui manquait pour oser relancer le calcul
+     sans perdre les deux eleves qu'on vient de placer a la main. */
+  .grgarde{display:flex;align-items:center;gap:8px;font-size:11.5px;margin:8px 0 2px;
+    padding:6px 8px;border-radius:7px;background:#f4f6f9;color:var(--ink)}
+  .grgarde b{font-weight:650}
+  .grgarde.vide{background:none;padding:6px 0;color:var(--muted)}
   .grm .nm.lien{border:none;background:none;padding:0;height:auto;text-align:left;
     font:inherit;font-size:13px;color:var(--ink);cursor:pointer;border-radius:4px}
   .grm .nm.lien:hover{color:var(--accent);text-decoration:underline}
@@ -751,6 +793,34 @@
   @media(max-width:900px){
     .grbody{grid-template-columns:1fr}
     .grside{border-left:none;border-top:1px solid var(--line);max-height:260px}
+  }
+
+  /* ---------------- le planning mural, sur papier ----------------
+     L'ecran ne montre jamais les noms : quatre cours en parallele dans une
+     colonne de 90 px, il n'y a pas la place. Le papier, si — c'est la mise en
+     page du classeur Excel, une journee par page, une colonne par prof. */
+  #grPrint{display:none}
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    body>*{display:none!important}
+    body{background:#fff}
+    #grPrint{display:block!important}
+    #grPrint .pj{page-break-after:always;break-after:page}
+    #grPrint .pj:last-child{page-break-after:auto;break-after:auto}
+    #grPrint h2{font-size:15pt;margin:0 0 2mm;font-weight:700}
+    #grPrint h2 span{font-size:9pt;font-weight:400;color:#555;margin-left:8px}
+    #grPrint table{border-collapse:collapse;width:100%;table-layout:fixed}
+    #grPrint th,#grPrint td{border:.4pt solid #999;vertical-align:top;padding:1.2mm 1.6mm}
+    #grPrint th{background:#eef1f4;font-size:8.5pt;text-align:center}
+    #grPrint th em{display:block;font-style:normal;font-weight:400;font-size:7pt;color:#555}
+    #grPrint td.h{width:14mm;font-size:8pt;text-align:right;background:#f6f7f9;
+      font-variant-numeric:tabular-nums}
+    #grPrint td .pal{font-size:7.5pt;color:#555;display:flex;justify-content:space-between;
+      border-bottom:.3pt solid #ccc;margin-bottom:.6mm;padding-bottom:.4mm}
+    #grPrint td ul{margin:0;padding:0;list-style:none}
+    #grPrint td li{font-size:8.5pt;line-height:1.35;white-space:nowrap;overflow:hidden;
+      text-overflow:ellipsis}
+    #grPrint .pied{margin-top:2mm;font-size:7.5pt;color:#555}
   }
 </style>
 </head>
@@ -1103,9 +1173,16 @@
         <div class="tx" id="grBarTx"></div>
         <button class="mini" id="grUndo" style="display:none">↶ Annuler</button>
         <button class="mini" id="grNew">+ Nouveau cours</button>
-        <button class="mini" id="grAll">Tout figer</button>
-        <button class="mini" id="grFig">⬇︎ Figeages</button>
-        <button class="primary big" id="grRelance" style="display:none">Relancer</button>
+        <button class="mini" id="grAll">Tout garder</button>
+        <button class="mini" id="grImp">🖨 Imprimer le planning</button>
+        <button class="primary big" id="grRelance" style="display:none">Relancer le calcul</button>
+      </div>
+      <!-- Ce qui n'est ni une decision ni une sortie : l'agent, la sauvegarde,
+           l'export de secours. Visible, jamais au milieu des boutons. -->
+      <div class="grplomb" id="grPlomb">
+        <span id="grKo"></span>
+        <span id="grEtat"></span>
+        <button class="lien fin" id="grFig">⬇︎ Exporter les figeages</button>
       </div>
     </div>
     <div class="grside">
@@ -1187,6 +1264,9 @@
     </div>
   </div>
 </div>
+
+<!-- Le planning mural : vide a l'ecran, rempli au moment d'imprimer. -->
+<div id="grPrint"></div>
 
 <script>
 /* ---------- config grille ---------- */
@@ -3729,7 +3809,7 @@ function rendSum(){
   const barre = tot ? `<div class="grtot">
       <span class="n">${tot}</span>
       <span class="lb">fiches reçues${reste ? "" : ",<br>toutes tranchées"}</span>
-      <div class="grbar">${seg(pl,"pl")}${seg(att,"at")}${seg(horsC,"hc")}</div>
+      <div class="grjauge">${seg(pl,"pl")}${seg(att,"at")}${seg(horsC,"hc")}</div>
       <div class="grleg">
         <span><i style="background:#5dcaa5"></i>${pl} placés${
           deja ? ` <em>· dont ${deja} déjà en compétition</em>` : ""}</span>
@@ -4008,7 +4088,7 @@ function rendWeek(){
     d.title = "Figer ou libérer tout le " + j.toLowerCase();
     d.onclick = ()=>{ const tout = lst.length && lst.every(c=>c.lock>0);
       if(!lst.length) return;
-      avant((tout?"libération":"figeage")+" de tout le "+j.toLowerCase());
+      avant((tout?"libération":"garde")+" de tout le "+j.toLowerCase());
       lst.forEach(c=>c.lock = tout?0:2); memoriser(); rend(); };
     w.appendChild(d);
   });
@@ -4143,7 +4223,7 @@ function rendWeek(){
         if(Date.now() - dragFini < 250) return;
         if(mort){ sel = sel===c.cle ? null : c.cle; selAtt = null; trouve = null; rend(); return; }
         if(ev.target.classList.contains("lk")){
-          avant("figeage de " + c.prof + " " + c.jour.toLowerCase() + " " + gtx(c.d));
+          avant("garde du cours de " + c.prof + " " + c.jour.toLowerCase() + " " + gtx(c.d));
           c.lock = (c.lock+1)%3; memoriser(); rend(); return; }
         const tt = cible();
         if(tt){
@@ -4368,6 +4448,115 @@ function htmlAjout(c, q){
        ? `<p class="grnote">${v.length - AJOUT_MAX} autre(s) non affiché(s) — précisez le nom.</p>` : "");
 }
 
+/* ---------------- ce qu'il reste de place ----------------
+   Le premier chiffre que le club cherche, et qu'aucun ecran n'affichait : 24
+   sans groupe pour 20 places libres, il en manque 4. Tant qu'on ne le dit pas,
+   on cherche a la souris une solution qui n'existe pas. */
+function placesLibres(){
+  return vivants().reduce((s,c)=>s + Math.max(0, c.max - c.membres.length), 0);
+}
+
+/* ---------------- « un groupe tout fait » ----------------
+   Le solveur ecrit un motif par joueur. Or cinq joueuses du meme palier qui
+   demandent toutes le jeudi 19h ne sont pas cinq problemes : c'est un cours a
+   ouvrir, ou un seul coup de telephone. On les regroupe par palier, on cherche
+   l'heure ou elles sont le plus nombreuses ensemble, et on dit ce qui empeche
+   d'y poser un cours — courts, prof, ou plages trop courtes. */
+function grappes(){
+  const tc = typeDefaut(), J = jours();
+  const h0 = ctr ? ctr.debut : 9*60, h1 = ctr ? ctr.fin : 21*60+30;
+  const seuil = Math.max(3, tc.min || 3);
+  const par = {};
+  attente.forEach((p, i)=>{
+    if(!p.sexe || !p.niveau) return;
+    const dp = lireDispos(p.dispos); if(!dp.length) return;
+    // On regroupe sur le niveau, pas sur le palier : un « C » entre aussi bien
+    // dans BC que dans CD, et trancher ici trierait a la place du club. Le
+    // palier du cours se choisit au moment de l'ouvrir.
+    const cle = p.sexe + "|" + p.niveau;
+    (par[cle] = par[cle] || {sexe:p.sexe, niveau:p.niveau, gens:[]}).gens.push({p, i, dp});
+  });
+  const out = [];
+  Object.keys(par).forEach(cle=>{
+    const g = par[cle];
+    if(g.gens.length < seuil) return;
+    const cote = (j,t)=>g.gens.filter(x=>x.dp.some(d=>d.jour===j && d.de<=t && t<d.a));
+    let top = null;
+    J.forEach(j=>{ for(let t=h0; t<h1; t+=15){
+      const n = cote(j,t).length;
+      if(n>=seuil && (!top || n>top.n)) top = {jour:j, t:t, n:n};
+    }});
+    if(!top) return;
+    // la fenetre continue autour de cet instant, au meme effectif : c'est elle
+    // qu'on compare a la duree d'un cours
+    let a = top.t, b = top.t + 15;
+    while(a-15 >= h0 && cote(top.jour, a-15).length >= top.n) a -= 15;
+    while(b < h1 && cote(top.jour, b).length >= top.n) b += 15;
+    // La liste montre tous ceux qui touchent la fenetre ; le compteur, ceux qui
+    // y sont ENSEMBLE. Les deux chiffres se lisent, et aucun ne ment.
+    const dedans = g.gens.filter(x=>x.dp.some(d=>d.jour===top.jour && d.de<b && a<d.a));
+    out.push({sexe:g.sexe, niveau:g.niveau, gens:dedans, n:top.n,
+              jour:top.jour, de:a, a:b, tc:tc});
+  });
+  return out.sort((x,y)=>y.n - x.n || y.gens.length - x.gens.length);
+}
+
+/* Ce qui empeche d'ouvrir le cours a l'heure ou ils sont ensemble. Meme
+   controle que pour un cours qu'on pose a la main : pas un second jeu de
+   regles qui finirait par diverger. */
+function verdict(gr){
+  const tc = gr.tc;
+  if(gr.a - gr.de < tc.duree)
+    return {ok:false, court:true,
+            why:"leurs plages ne se recouvrent que de " + (gr.a - gr.de)
+                + " minutes, et un cours de ce format en dure " + hh(tc.duree/60)};
+  const prof = profPour(gr.jour, gr.de, tc);
+  if(!prof) return {ok:false, why:"aucun prof connu"};
+  const v = valide(brouillon(tc, prof), gr.jour, gr.de, prof);
+  return v.ok ? {ok:true, jour:gr.jour, de:gr.de, prof:prof, warn:v.warn || ""}
+              : {ok:false, why:v.why};
+}
+
+/* Ou un cours de ce format tiendrait encore, n'importe quand dans la semaine :
+   la deuxieme sortie quand leur creneau a eux est ferme. Le soir d'abord,
+   c'est la que le club vit. */
+function creneauxLibres(tc, n){
+  const J = jours(), h0 = ctr ? ctr.debut : 9*60, h1 = ctr ? ctr.fin : 21*60+30;
+  const out = [];
+  J.forEach(j=>{
+    for(let t=h0; t + tc.duree <= h1; t += 15){
+      const p = profPour(j, t, tc); if(!p) continue;
+      const v = valide(brouillon(tc, p), j, t, p);
+      if(v.ok && !v.warn){ out.push({jour:j, de:t, prof:p}); t += tc.duree - 15; }
+    }
+  });
+  out.sort((x,y)=>(x.de<17*60?1:0)-(y.de<17*60?1:0)
+                || J.indexOf(x.jour)-J.indexOf(y.jour) || x.de-y.de);
+  return out.slice(0, n||2);
+}
+
+/* Ouvrir le cours et y poser la grappe. Les joueurs sont epingles d'office,
+   comme tout ce qu'on pose a la main : sans ca la relance les redistribuerait. */
+function ouvrirPour(gr, dest, avecEux){
+  creerCours(dest.jour, dest.de, dest.prof, gr.tc);   // pose deja avant() et rend()
+  const c = cours.find(x=>x.cle === sel); if(!c) return;
+  // Le palier du cours : celui qui contient leur niveau et qui sert deja le plus
+  // dans la semaine, faute de quoi on ouvrirait un palier que rien d'autre ne porte.
+  const combien = {};
+  vivants().forEach(x=>{ if(x.sexe===gr.sexe && x.pal) combien[x.pal] = (combien[x.pal]||0)+1; });
+  const cand = paliersDispo().filter(x=>x.sexe===gr.sexe && String(x.pal).indexOf(gr.niveau)>=0)
+                             .sort((x,y)=>(combien[y.pal]||0)-(combien[x.pal]||0));
+  c.sexe = gr.sexe; c.pal = cand.length ? cand[0].pal : gr.niveau;
+  if(avecEux) gr.gens.slice(0, c.max).forEach(x=>{
+    const k = attente.findIndex(p=>p.nom === x.p.nom); if(k<0) return;
+    const a = attente.splice(k,1)[0];
+    c.membres.push(Object.assign({nom:a.nom, email:a.email||"", niveau:a.niveau,
+                                  dispos:a.dispos||""}, pick(a)));
+    c.epingles.push(a.nom);
+  });
+  selAtt = null; memoriser(); rend();
+}
+
 function rendSide(){
   const head = F("grSh"), body = F("grSb");
   // Un nombre opaque ne dit pas quoi faire. La liste nomme les fiches et la
@@ -4433,17 +4622,18 @@ function rendSide(){
     const neuf = !!c.cree;
     const ouvert = !!(ajout && ajout.cle === c.cle);
     body.innerHTML =
-      `<div class="grseg">
-         <button data-l="0" class="${c.lock===0?"on":""}">🔓 Libre</button>
-         <button data-l="1" class="${c.lock===1?"on":""}">🕘 Créneau figé</button>
-         <button data-l="2" class="${c.lock===2?"on":""}">🔒 Tout figé</button>
+      `<div class="grh4" style="margin-top:2px">Au prochain calcul</div>
+       <div class="grseg">
+         <button data-l="0" class="${c.lock===0?"on":""}">🔓 Tout peut changer</button>
+         <button data-l="1" class="${c.lock===1?"on":""}">🕘 Heure et prof gardés</button>
+         <button data-l="2" class="${c.lock===2?"on":""}">🔒 Rien ne bouge</button>
        </div>
        <p class="grnote">${neuf
          ? (c.lock===0 ? "⚠ Un cours créé à la main et laissé libre n'est pas écrit dans le fichier de figeages : le prochain calcul ne saura pas qu'il existe, et il disparaîtra."
-           : c.lock===1 ? "Le calcul peuple ce cours : le jour, l'heure, le prof et le format sont imposés, il choisit qui entre. Les joueurs que vous y posez à la main y restent épinglés, il complète le reste."
+           : c.lock===1 ? "Le calcul peuple ce cours : le jour, l'heure, le prof et le format sont imposés, il choisit qui entre. Les joueurs que vous y posez à la main y sont gardés, il complète le reste."
            : "Peuplé à la main : le calcul n'ajoutera personne et n'en retirera aucun.")
          : (c.lock===0 ? "Le prochain calcul peut déplacer ce cours, changer son prof, ou le supprimer."
-           : c.lock===1 ? "L'horaire et le prof sont conservés. Le solveur peut changer qui est dans le groupe."
+           : c.lock===1 ? "L'horaire et le prof sont conservés. Le calcul rechoisit qui joue — sauf ceux que vous gardez ci-dessous."
            : "Rien ne bougera : ni l'horaire, ni le prof, ni la composition.")}</p>
        <div class="two" style="margin-top:12px;align-items:end">
          <div><label style="margin:0 0 3px">Prof</label>
@@ -4453,7 +4643,7 @@ function rendSide(){
              color:${dep?"var(--warn)":"var(--ink)"};font-weight:${dep?700:400}">
              ${b===null ? "budget inconnu" : b===0 ? "indisponible" : hh(u)+" / "+hh(b)}${dep?" ⚠":""}</div></div>
        </div>
-       <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change le prof. Les deux figent le créneau.</p>
+       <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change le prof. Les deux gardent l'heure et le prof.</p>
        ${neuf ? `<div class="two" style="margin-top:12px;align-items:end">
          <div><label style="margin:0 0 3px">Format</label>
            <select id="grType">${typesDispo().map(tc=>
@@ -4470,14 +4660,29 @@ function rendSide(){
          <p class="grnote" style="margin:0 0 4px">Déjà dans ce groupe hors CCA — le calcul ne peut ni les retirer, ni les déplacer, ni compter leur place.</p>
          ${c.enPlace.map(n=>`<div class="grm hors"><span class="nm">${esc(n)}</span><span class="cad" title="Membre du groupe hors CCA">🔒 en place</span></div>`).join("")}
        </div>` : ""}
-       <div style="margin-top:12px">${c.enPlace.length ? `<p class="grnote" style="margin:0 0 4px">Places CCA</p>` : ""}${c.membres.map((m,i)=>{
+       <div style="margin-top:12px">${c.enPlace.length ? `<p class="grnote" style="margin:0 0 4px">Places CCA</p>` : ""}${
+         // Garder deux joueurs sur quatre et relancer : c'est le geste courant, et
+         // il ne se lisait nulle part. La phrase le dit avant la liste, en clair.
+         (()=>{ const n = c.lock===2 ? c.membres.length
+                        : c.membres.filter(m=>c.epingles.indexOf(m.nom)>=0).length;
+           const t = c.membres.length;
+           if(c.lock===2) return `<div class="grgarde"><b>Les ${t} sont gardés</b> — le calcul ne touche à personne.</div>`;
+           if(!n) return `<div class="grgarde vide">Personne n'est gardé : le calcul peut refaire ce groupe entièrement.</div>`;
+           if(c.lock===0) return `<div class="grgarde" style="background:#fdf6f3"><b>${n} gardé${n>1?"s":""} sur ${t}</b>,
+             mais le cours est libre : le calcul peut le supprimer, et ${n>1?"ils partiraient":"il partirait"} avec.
+             Passez-le à « Heure et prof gardés ».</div>`;
+           return `<div class="grgarde"><b>${n} gardé${n>1?"s":""} sur ${t}</b> — au prochain calcul,
+             ${t-n>0 ? `${c.max-n} place${c.max-n>1?"s":""} ${c.max-n>1?"sont repourvues":"est repourvue"}` : "rien d'autre à pourvoir"}.</div>`;
+         })()
+       }${c.membres.map((m,i)=>{
          const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
          return `<div class="grm ${ep?"ep":""}">
            <button class="nm lien" data-fi="${i}" title="Ouvrir sa fiche">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
            <span class="act"><button data-rm="${i}">Retirer</button></span>
            <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}
-             aria-pressed="${ep}" title="${ep?"Épinglé : le calcul le laissera ici"
-             :"Épingler dans ce cours"}"><span aria-hidden="true">📌</span></button></div>`;
+             aria-pressed="${ep}" title="${ep?"Gardé : le calcul le laissera dans ce cours"
+             :"Le garder ici au prochain calcul"}"><span aria-hidden="true">📌</span> ${
+             ep?"Gardé":"Garder"}</button></div>`;
        }).join("")}
        ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
        </div>
@@ -4488,7 +4693,7 @@ function rendSide(){
            <p class="grnote" style="margin:6px 0 4px">Les sans-groupe et les membres des autres cours. Choisir quelqu'un qui a déjà un cours l'y désinscrit.</p>
            <div id="grAddL"></div></div>` : ""}
        </div>
-       <p class="grnote">Un joueur déplacé à la main est épinglé d'office : sans ça le calcul suivant déferait le déplacement.</p>
+       <p class="grnote">Un joueur déplacé à la main est gardé d'office : sans ça le calcul suivant déferait le déplacement.</p>
        <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
          <button class="mini danger" id="grSupp">Supprimer ce cours</button>
          <p class="grnote" style="margin-top:6px">${neuf
@@ -4497,7 +4702,7 @@ function rendSide(){
              + esc(c.prof) + " sur ce créneau. Réversible tant qu'on n'a pas relancé."}</p>
        </div>`;
     body.querySelectorAll(".grseg button").forEach(b2=>b2.onclick = ()=>{
-      avant("figeage de " + c.prof + " " + c.jour.toLowerCase());
+      avant("garde du cours de " + c.prof + " " + c.jour.toLowerCase());
       c.lock = +b2.dataset.l; memoriser(); rend(); });
     if(neuf){
       F("grType").onchange = e=>{
@@ -4592,19 +4797,28 @@ function rendSide(){
     });
     body.querySelectorAll("[data-ep]").forEach(b2=>b2.onclick = ()=>{
       const n = c.membres[+b2.dataset.ep].nom, i = c.epingles.indexOf(n);
-      avant((i>=0?"désépinglage":"épinglage")+" de "+n);
+      avant((i>=0?"retrait du gardé "+n : "garde de "+n));
       i>=0 ? c.epingles.splice(i,1) : c.epingles.push(n);
+      // Garder quelqu'un dans un cours que le calcul a le droit de supprimer ne
+      // veut rien dire : on remonte le cours d'un cran, comme pour un changement
+      // de prof. La phrase au-dessus de la liste le dit.
+      if(i<0 && c.lock===0) c.lock = 1;
       memoriser(); rend();
     });
     return;
   }
   const vus = attente.map((p,i)=>[p,i]).filter(([p])=> !filtre.pal || filtre.pal.indexOf(p.niveau)>=0);
   const nAnc = vus.filter(([p])=>p.ancien).length;
+  // Le sous-titre ne dit plus quoi cliquer, il dit si c'est jouable : 24 sans
+  // groupe pour 20 places, il en manque 4 et aucune souris n'y peut rien.
+  const libres = placesLibres(), manque = attente.length - libres;
   head.innerHTML = `<div><b>${attente.length} sans groupe</b>${
       nAnc ? ` <span class="anc" title="deja adherents l'an dernier">${nAnc} ancien${nAnc>1?"s":""}</span>` : ""}
     <div class="sub">${filtre.pal && vus.length!==attente.length
       ? vus.length+" au palier "+esc(filtre.pal)+" · cliquez un nom pour le placer"
-      : "Cliquez un nom : la grille montre où il peut aller."}</div></div>`;
+      : manque > 0
+        ? `${libres} place${libres>1?"s":""} libre${libres>1?"s":""} dans les cours ouverts : <b style="color:var(--warn)">il en manque ${manque}</b>.`
+        : `${libres} place${libres>1?"s":""} libre${libres>1?"s":""} : tout le monde peut entrer.`}</div></div>`;
   // Deux lignes par joueur : le nom, puis ses jours et le motif en trois mots.
   // La phrase entiere du solveur tenait cinq lignes — on n'en voyait que huit
   // sur vingt sans faire defiler, et la comparaison entre eux etait impossible.
@@ -4620,7 +4834,57 @@ function rendSide(){
   };
   // dans chaque famille de motif, les anciens d'abord : eux qu'on refuse
   // pesent plus lourd que les nouveaux, ils ne doivent pas se perdre dans le tas
-  body.innerHTML = FAMILLES
+  // La tuile de tete passe AVANT les familles : elle ne classe pas un probleme,
+  // elle propose la decision qui debloque le plus de monde d'un coup.
+  const grs = filtre.pal ? [] : grappes();
+  const tete = grs.slice(0,2).map((gr,k)=>{
+    const v = verdict(gr), autres = v.ok ? [] : creneauxLibres(gr.tc, 2);
+    const gens = gr.gens.map(x=>{
+      const tel = String(x.p.portable||"").trim();
+      return `<div class="grm">
+        <button class="grp" data-i="${x.i}" style="flex:1;min-width:0;margin:0">
+          <span class="niv" title="niveau ${esc(x.p.niveau||"inconnu")}">${esc(x.p.niveau||"?")}</span>
+          <span class="tx"><b>${esc(x.p.nom)}${x.p.ancien
+            ? ' <span class="anc" title="deja adherent l\'an dernier">ancien</span>' : ""}</b>
+            <span class="why">${esc(x.dp.map(d=>d.jour.slice(0,3).toLowerCase()+" "+gtx(d.de)+"–"+gtx(d.a)).slice(0,2).join(" · "))}</span></span>
+        </button>
+        ${tel ? `<a class="grtel" href="tel:${esc(tel.replace(/[^+\d]/g,""))}">${esc(tel)}</a>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="grfam tete" style="--fc:var(--accent);--fcs:var(--accent-soft);--fct:#14512f">
+      <div class="grfamh" style="cursor:default">
+        <span class="ic" aria-hidden="true">👥</span>
+        <span class="tx"><b>Un groupe tout fait</b></span>
+        <span class="n">${gr.n}</span>
+      </div>
+      <div class="grfamb">
+        <p class="grfama">${gr.sexe==="F"?"Femmes":"Hommes"} de niveau ${esc(gr.niveau)} —
+          ${gr.n} sont libres ensemble ${esc(gr.jour.toLowerCase())} entre ${gtx(gr.de)} et ${gtx(gr.a)}${
+          gr.gens.length > gr.n ? `, sur ${gr.gens.length} qui demandent ce créneau` : ""} :
+          de quoi faire un cours à ${gr.sexe==="F"?"elles seules":"eux seuls"}.</p>
+        ${gens}
+        ${v.ok
+          ? `<div class="grverd ok"><b>C'est ouvrable.</b> ${esc(v.prof)} est libre
+             ${esc(gr.jour.toLowerCase())} ${gtx(v.de)}, et il reste un court.
+             ${v.warn ? "⚠ " + esc(v.warn) + "." : ""}</div>`
+          : `<div class="grverd"><b>Impossible tel quel.</b> ${esc(v.why)}.</div>`
+            + (autres.length
+              ? `<div class="grverd ok"><b>Ailleurs, oui.</b> Un cours de ce format tiendrait
+                 ${autres.map(o=>esc(o.jour.toLowerCase())+" "+gtx(o.de)+" avec "+esc(o.prof)).join(", ou ")}.
+                 Hors de leurs plages : à leur proposer par téléphone.</div>`
+              : `<div class="grverd"><b>Nulle part ailleurs non plus.</b> Aucun créneau de la semaine
+                 n'a à la fois un court libre et un prof qui a encore des heures.</div>`)}
+        <div class="gracts">
+          ${v.ok ? `<button class="mini primary" data-gr="${k}" data-ou="ici">Ouvrir le cours
+            ${esc(gr.jour.toLowerCase())} ${gtx(v.de)}</button>` : ""}
+          ${!v.ok && autres.length ? `<button class="mini" data-gr="${k}" data-ou="0">Ouvrir un cours
+            ${esc(autres[0].jour.toLowerCase())} ${gtx(autres[0].de)}</button>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  body.innerHTML = tete + FAMILLES
     .map(f=>({f, gens: vus.filter(([p])=>familleDe(p.raison)===f.cle)
                        .sort((a,b)=>(b[0].ancien?1:0)-(a[0].ancien?1:0))}))
     .filter(g=>g.gens.length)
@@ -4640,6 +4904,18 @@ function rendSide(){
     || `<p class="grnote">Personne ici.</p>`;
   body.querySelectorAll("[data-f]").forEach(b=>b.onclick = ()=>{
     ouv[b.dataset.f] = !ouv[b.dataset.f]; rendSide(); });
+  body.querySelectorAll("[data-gr]").forEach(b=>b.onclick = ()=>{
+    const gr = grs[+b.dataset.gr]; if(!gr) return;
+    if(b.dataset.ou === "ici"){
+      const v = verdict(gr); if(!v.ok) return;
+      ouvrirPour(gr, {jour:v.jour, de:v.de, prof:v.prof}, true);
+    } else {
+      // ailleurs : le cours s'ouvre vide, au bon palier. Les joueurs restent
+      // dans la liste tant que personne ne les a appeles.
+      const o = creneauxLibres(gr.tc, 2)[+b.dataset.ou]; if(!o) return;
+      ouvrirPour(gr, o, false);
+    }
+  });
   body.querySelectorAll(".grp").forEach(el=>el.onclick = ()=>{
     const i = +el.dataset.i;
     ouv[familleDe(attente[i].raison)] = true;   // au retour, la famille est encore la
@@ -4720,7 +4996,7 @@ function rendJoueur(head, body, p, src){
        </div>`).join("")
        : `<p class="grnote">Aucun ${src?"autre ":""}cours ouvert de son sexe et de son palier. Il faudrait
           en ouvrir un — c'est au prochain calcul de le faire, pas à la main.</p>`}
-     <p class="grnote">Un joueur ${src?"déplacé":"placé"} à la main est épinglé d'office : sans ça le
+     <p class="grnote">Un joueur ${src?"déplacé":"placé"} à la main est gardé d'office : sans ça le
        calcul suivant déferait le geste.</p>`;
 
   body.querySelectorAll("[data-go]").forEach(b=>b.onclick = ()=>{
@@ -4753,32 +5029,77 @@ function popProf(p, chip){
   d.style.top  = (r.bottom + 6) + "px";
 }
 
+/* La barre ne porte plus que deux choses : ce qu'on vient de faire, et par ou
+   on sort. L'agent, la sauvegarde et l'export de secours sont descendus d'un
+   cran, dans la ligne d'etat : ils informent, ils ne se cliquent presque jamais. */
 function rendBar(){
   const n = cours.filter(c=>c.lock>0 && c.diff!=="supp").length, l = vivants().length - n;
-  const fige = n===0
-    ? `Rien n'est figé.<em>Le prochain calcul repartira d'une page blanche : les ${vivants().length} cours peuvent tous changer.</em>`
-    : `<span class="nb">${n} cours figé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
-       <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.</em>`;
-  F("grBarTx").innerHTML =
-    (nuageKo ? `<div class="grko">⚠ Le planning n'est pas partagé avec les autres
-       ordinateurs : ${esc(nuageKo)}</div>` : "")
-    + (stockKo ? `<div class="grko">⚠ La mémoire du navigateur est pleine : plus rien n'est
-       enregistré. ${agent ? "Le fichier <code>etat-ecran.json</code> prend le relais."
-       : "Lancez l'agent (CCA.command) pour écrire sur le disque, ou exportez l'Excel maintenant."}</div>` : "")
-    + fige
-    + (agent ? "" : `<em>Agent non détecté — double-cliquez <code>CCA.command</code>
-       pour calculer d'ici.</em>`);
-  // avec l'agent, relancer d'ici est le chemin normal : l'export des figeages
-  // n'est plus qu'un repli, et se lit comme tel
   const ns = cours.filter(c=>c.diff==="supp").length;
-  if(ns) F("grBarTx").innerHTML += ` <em>${ns} cours supprimé${ns>1?"s":""} —
-    le prochain calcul n'y reviendra pas.</em>`;
+  const d = hist[hist.length-1];
+  const resume = (n ? `${n} cours gardé${n>1?"s":""} tel${n>1?"s":""} quel${n>1?"s":""}`
+                    : "aucun cours gardé")
+    + ` · ${l} à recalculer · ${attente.length} sans groupe`
+    + (ns ? ` · ${ns} supprimé${ns>1?"s":""}` : "");
+  F("grBarTx").innerHTML = d
+    ? `Dernière action : <b>${esc(d.nom)}</b><em>${resume}</em>`
+    : (n ? `<span class="nb">${n} cours gardé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
+           <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.${
+           ns ? ` ${ns} cours supprimé${ns>1?"s":""}, le calcul n'y reviendra pas.` : ""}</em>`
+         : `Rien n'est gardé.<em>Le prochain calcul repartira d'une page blanche : les ${
+           vivants().length} cours peuvent tous changer.</em>`);
   F("grNew").textContent = creation ? "Annuler" : "+ Nouveau cours";
-  F("grFig").className = agent ? "lien" : "mini";
-  F("grAll").textContent = n===vivants().length && n>0 ? "Tout libérer" : "Tout figer";
-  const u = F("grUndo"), d = hist[hist.length-1];
+  F("grAll").textContent = n===vivants().length && n>0 ? "Tout libérer" : "Tout garder";
+  const u = F("grUndo");
   u.style.display = d ? "block" : "none";
   if(d){ u.title = "Annuler : " + d.nom + "  (⌘Z)"; }
+  // la ligne d'etat : d'abord ce qui ne va pas, ensuite ou tourne le calcul
+  F("grKo").innerHTML =
+    (nuageKo ? `<span class="grko">⚠ Planning non partagé avec les autres ordinateurs :
+       ${esc(nuageKo)}</span>` : "")
+    + (stockKo ? `<span class="grko">⚠ Mémoire du navigateur pleine — plus rien n'est enregistré.
+       ${agent ? "Le fichier <code>etat-ecran.json</code> prend le relais."
+       : "Exportez l'Excel maintenant."}</span>` : "");
+  F("grEtat").innerHTML = agent
+    ? "Calcul possible depuis ce poste."
+    : `Le calcul tourne sur l'ordinateur du club — double-cliquez <code>CCA.command</code> pour calculer d'ici.`;
+}
+
+/* ---------------- le planning mural, sur papier ----------------
+   L'ecran ne montre jamais les noms : quatre cours en parallele dans une
+   colonne de 90 px, il n'y a pas la place. Le papier, si — et c'est ce que le
+   club affiche au mur. Meme mise en page que l'onglet « edt » du classeur :
+   une journee par page, une colonne par prof, les joueurs dans le pave. */
+function htmlImpression(){
+  const J = jours().filter(j=>vivants().some(c=>c.jour===j));
+  const cur = scen.find(e=>e.n===vu);
+  const quand = new Date().toLocaleDateString("fr-FR");
+  return J.map(j=>{
+    const lst = vivants().filter(c=>c.jour===j).sort((a,b)=>a.d-b.d);
+    const profs = [...new Set(lst.map(c=>c.prof))].sort();
+    const heures = [...new Set(lst.map(c=>c.d))].sort((a,b)=>a-b);
+    return `<section class="pj">
+      <h2>${esc(j)} <span>${lst.length} cours · ${lst.reduce((s,c)=>s+c.membres.length,0)} joueurs${
+        cur ? " · « " + esc(cur.nom) + " »" : ""} · imprimé le ${quand}</span></h2>
+      <table>
+        <thead><tr><th></th>${profs.map(p=>`<th>${esc(p)}<em>${hh(utilise(p,j))}</em></th>`).join("")}</tr></thead>
+        <tbody>${heures.map(h=>`<tr><td class="h">${gtx(h)}</td>${profs.map(p=>{
+          const c = lst.find(x=>x.prof===p && x.d===h);
+          if(!c) return "<td></td>";
+          return `<td><div class="pal"><span>${esc(c.pal || "palier ?")}${
+            c.sexe==="F" ? " femmes" : c.sexe==="H" ? " hommes" : ""}</span>
+            <span>${gtx(c.d)}–${gtx(c.f)}</span></div>
+            <ul>${c.membres.map(m=>`<li>${esc(m.nom)}</li>`).join("")
+              + c.enPlace.map(nm=>`<li>${esc(nm)} (hors CCA)</li>`).join("")}</ul></td>`;
+        }).join("")}</tr>`).join("")}</tbody>
+      </table>
+      <p class="pied">Planning susceptible de changer au prochain calcul.</p>
+    </section>`;
+  }).join("");
+}
+function imprimer(){
+  if(!vivants().length) return;
+  F("grPrint").innerHTML = htmlImpression();
+  window.print();
 }
 
 /* ---------------- recherche ---------------- */
@@ -5908,10 +6229,11 @@ F("btnHome").onclick = () => {
 F("grHome").onclick = ()=>showScreen("accueil");
 F("grExport").onclick = exportResultat;
 F("grFig").onclick = exportFigeages;
+F("grImp").onclick = imprimer;
 F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
   if(!v.length) return;
-  avant(tout ? "tout libérer" : "tout figer");
+  avant(tout ? "tout libérer" : "tout garder");
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
 F("grNew").onclick = armerCrea;
