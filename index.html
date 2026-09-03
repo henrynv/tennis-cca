@@ -366,29 +366,32 @@
     border:1px solid var(--accent);border-radius:20px}
 
   .grsum{flex:none;background:var(--panel);border-bottom:1px solid var(--line);
-    padding:5px 16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-  .grk{display:flex;flex-direction:column;line-height:1.15}
-  .grk b{font-size:17px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
-  .grk span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-  .grk .up{color:var(--accent);font-size:12px;font-weight:600}
-  .grk.ok b{color:var(--accent)}
-  .grk.att b{color:#96600d}
-  .grk.fig b{color:#2f5597}
-  .grk.man b{color:#7a4fb5}
+    padding:5px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  /* Le bandeau tenait sur deux lignes : la barre des fiches, puis quatre tuiles
+     chiffrees. Les quatre chiffres se lisent tous ailleurs — « cours ouverts »
+     dans l'entete de chaque jour, « gardes » et « retouches » dans les filtres
+     et dans la barre du bas, « anciens sans groupe » dans le volet. Ils
+     reviennent ici en fin de ligne, en petit, et l'ecran gagne une ligne de
+     hauteur la ou la grille en manque. */
+  .grmini{margin-left:auto;display:flex;gap:10px;align-items:baseline;font-size:11.5px;
+    color:var(--muted);flex-wrap:wrap}
+  .grmini b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink-2,#4a545f)}
+  .grmini .fig b{color:#2f5597}
+  .grmini .man b{color:#7a4fb5}
   /* La barre des fiches recues. Elle occupe toute la largeur AVANT les tuiles :
      sa longueur pleine est le message — chaque fiche deposee est quelque part.
      Aucun chiffre DANS la barre : a 16 px de haut ils se faisaient rogner, et
      les repeter la ou la legende les donne deja n'apportait rien. La barre ne
      porte que des proportions ; le fond gris qui depasse a droite est la part
      que le calcul ne sait pas nommer, et il se voit sans legende. */
-  .grtot{flex:1 1 100%;display:flex;align-items:center;gap:8px 14px;
+  .grtot{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px 11px;
     padding:3px 0 2px;flex-wrap:wrap}
   .grtot .n{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
   .grtot .lb{font-size:11.5px;color:var(--muted);white-space:nowrap;line-height:1.25}
   /* Deux barres portaient le meme nom de classe : celle-ci, haute de 10 px dans
      le bandeau, et celle du bas de l'ecran. Leurs regles se melangeaient — la
      barre du bas heritait `height:10px` et ecrasait son propre contenu. */
-  .grjauge{flex:0 1 220px;min-width:150px;display:flex;height:10px;border-radius:5px;
+  .grjauge{flex:0 1 150px;min-width:100px;display:flex;height:10px;border-radius:5px;
     overflow:hidden;background:var(--line)}
   .grjauge b{display:block;height:100%}
   /* memes teintes que les pastilles de la legende : deux nuances pour une seule
@@ -396,16 +399,13 @@
   .grjauge .pl{background:#5dcaa5}
   .grjauge .at{background:#ef9f27}
   .grjauge .hc{background:#b4b2a9}
-  .grleg{display:flex;gap:6px 14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;
+  .grleg{display:flex;gap:5px 11px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;
     align-items:center}
   .grleg span{display:flex;align-items:center;gap:5px}
   .grleg i{width:9px;height:9px;border-radius:2px;flex:none}
   .grleg em{font-style:normal;opacity:.75}
   .grleg a{color:inherit;text-decoration-style:dotted;text-underline-offset:2px}
   .grleg .rst{color:#96600d}
-  .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
-  .grkeys span{display:flex;align-items:center;gap:5px}
-  .grkeys i{width:9px;height:9px;border-radius:2px;flex:none}
 
   .grfil{flex:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:5px 14px;
     background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px}
@@ -621,7 +621,6 @@
   .anc{display:inline-block;background:#fbeccb;color:#7a5600;border-radius:20px;
     padding:0 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:1px;
     text-transform:uppercase;letter-spacing:.02em}
-  .grk.anc b{color:#9a3f6b}
   /* Controle d'avant-calcul : trois champs sans lesquels un calcul ment. */
   .grctl{display:flex;align-items:center;gap:12px;border:1px solid var(--line);
     border-radius:10px;padding:11px 14px;margin:14px 0 0;text-align:left;background:#fff}
@@ -837,9 +836,6 @@
   @media(max-width:1240px){ .grpb .gg{display:none} }
   @media(max-height:720px){
     .grsum{padding:3px 16px;gap:15px}
-    .grk{flex-direction:row;align-items:baseline;gap:5px}
-    .grk b{font-size:14px}
-    .grk span{font-size:10.5px}
     .grbar{padding:5px 16px}
     .grbar .big{height:34px}
   }
@@ -3891,7 +3887,6 @@ function majTuile(){
     + (cur ? ` · « ${cur.nom} »` : "");
   g.textContent = "Reprendre →";
 }
-function kpi(v,l,cl){ return `<div class="grk ${cl||""}"><b>${v}</b><span>${l}</span></div>`; }
 function rendSum(){
   // Le club depose un nombre de fiches qu'il connait par coeur. Le header doit
   // retomber dessus sans qu'il ait a soustraire quoi que ce soit : la barre
@@ -3922,19 +3917,24 @@ function rendSum(){
       <div class="grjauge">${seg(pl,"pl")}${seg(att,"at")}${seg(horsC,"hc")}</div>
       <div class="grleg">
         <span><i style="background:#5dcaa5"></i>${pl} placés${
-          deja ? ` <em>· dont ${deja} déjà en compétition</em>` : ""}</span>
-        <span><i style="background:#ef9f27"></i>${att} sans groupe</span>
+          deja ? ` <em>(${deja} en compétition)</em>` : ""}</span>
+        <span><i style="background:#ef9f27"></i>${att} sans groupe${
+          nAncAtt ? ` <em>(${nAncAtt} ancien${nAncAtt>1?"s":""})</em>` : ""}</span>
         ${horsC ? `<span><i style="background:#b4b2a9"></i><a href="#"
            id="grHorsC">${horsC} hors calcul</a></span>` : ""}
         ${reste ? `<span class="rst" title="Ce calcul ne dit rien de ces fiches : soit il date d'avant, soit elles ont été déposées depuis. Relancez pour les prendre en compte."><i style="background:var(--line)"></i>${reste} hors de ce calcul</span>` : ""}
       </div>
     </div>` : "";
+  // Fin de ligne : les compteurs qui ne commandent aucun geste, a leur juste
+  // taille. « Anciens sans groupe » a rejoint la legende, a cote du chiffre
+  // qu'il precise.
   F("grSum").innerHTML = barre +
-    kpi(vivants().length, "cours ouverts", "") +
-    (nAncAtt ? kpi(nAncAtt, "anciens sans groupe", "att") : "") +
-    kpi(nFig, "cours figés", nFig ? "fig" : "") +
-    (nMan ? kpi(nMan, "cours retouchés", "man") : "") +
-    `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni plages de courts ni heures des profs."}</div>`;
+    `<div class="grmini">
+       <span><b>${vivants().length}</b> cours</span>
+       ${nFig ? `<span class="fig"><b>${nFig}</b> gardé${nFig>1?"s":""}</span>` : ""}
+       ${nMan ? `<span class="man"><b>${nMan}</b> retouché${nMan>1?"s":""}</span>` : ""}
+       ${ctr ? "" : `<span style="color:var(--warn)">contraintes non déposées</span>`}
+     </div>`;
   const lien = F("grHorsC");
   if(lien) lien.onclick = e => { e.preventDefault(); selAtt = null; sel = null;
                                  forcing = null; moving = null; horsVue = true; rend(); };
