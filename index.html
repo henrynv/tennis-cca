@@ -532,7 +532,12 @@
   .ctlhead b{font-size:13.5px}
   .ctlmq{background:#fdecea;color:#8d2b20;border-radius:20px;padding:1px 8px;
     font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+  /* Ce qui n'empeche pas de calculer ne se peint pas comme ce qui l'empeche :
+     tout en rouge, plus rien ne ressort. */
+  .ctlmq.opt{background:#f0f2f5;color:#5c646e}
   .ctlsrc{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.4}
+  .ctlhors{font-size:11.5px;color:#8a6d1f;background:#fdf6e3;border-radius:6px;
+    padding:5px 9px;margin-top:9px;line-height:1.45}
   .ctlch{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
   .ctlch>label{font-size:11.5px;color:var(--muted);min-width:74px}
   .ctlseg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
@@ -4303,17 +4308,42 @@ let ctl = null;          // {total, manquantes:[…]} tel que l'agent le voit
 let ctlFix = {};         // id -> {sexe?, niveau?, dispos?} en cours de saisie
 let ctlCren = {};        // id -> ["Lundi 18h30-21h30", …] tant qu'on les compose
 
-function ctlManque(m){ return m.manque.map(x=>({sexe:"sexe", niveau:"niveau",
-  dispos:"disponibilités"}[x]||x)).join(" · "); }
-
-// Une fiche est reglee quand CHAQUE champ manquant a recu une valeur.
-function ctlOk(m){
-  const f = ctlFix[m.id] || {};
-  return m.manque.every(ch => ch === "niveau"
-    ? String(f.niveau||"").trim() !== "" || String(f.niveau_club||"").trim() !== ""
-    : String(f[ch]||"").trim() !== "");
+// Une pastille par manque, et la couleur dit la consequence : rouge = le calcul
+// ne partira pas, gris = il partira sans ce joueur.
+function ctlManque(m){
+  return m.manque.map(x=>{
+    const lib = {sexe:"sexe", niveau:"niveau", dispos:"disponibilités"}[x] || x;
+    return `<span class="ctlmq${x === "sexe" ? "" : " opt"}">${lib}</span>`;
+  }).join("");
 }
-function ctlRestants(){ return (ctl ? ctl.manquantes : []).filter(m=>!ctlOk(m)).length; }
+
+// Tous les manques ne se valent pas, et l'ecran doit le montrer.
+//
+//   sexe    -> BLOQUE. A classement egal une femme et un homme ne portent pas la
+//              meme lettre, et les paliers sont separes par sexe : sans lui il
+//              n'y a rien a calculer, pas meme un mauvais placement.
+//   niveau  -> ECARTE. Le club peut lancer sans : il n'a pas toujours vu jouer
+//   dispos     tout le monde a temps. La fiche reste alors hors des groupes,
+//              et le solveur la sort a part plutot qu'en « non placee ».
+//
+// Le champ rempli ici a la main compte autant que celui deja dans le classeur :
+// completer le sexe d'une fiche debloque le calcul sans quitter l'ecran.
+function ctlRempli(m, ch){
+  const f = ctlFix[m.id] || {};
+  if(ch === "niveau")
+    return String(f.niveau||"").trim() !== "" || String(f.niveau_club||"").trim() !== "";
+  return String(f[ch]||"").trim() !== "";
+}
+// Reglee = plus rien a completer sur cette fiche.
+function ctlOk(m){ return m.manque.every(ch => ctlRempli(m, ch)); }
+// Bloquante = il lui manque le sexe, et il n'a pas encore ete saisi.
+function ctlBloque(m){ return m.manque.indexOf("sexe") >= 0 && !ctlRempli(m, "sexe"); }
+// Ecartee = le calcul peut partir, mais sans elle.
+function ctlEcarte(m){
+  return ["niveau","dispos"].some(ch => m.manque.indexOf(ch) >= 0 && !ctlRempli(m, ch));
+}
+function ctlRestants(){ return (ctl ? ctl.manquantes : []).filter(ctlBloque).length; }
+function ctlHorsCalcul(){ return (ctl ? ctl.manquantes : []).filter(ctlEcarte).length; }
 
 async function chargerControle(){
   try{ ctl = await jsonAgent("/controle"); }
@@ -4324,17 +4354,25 @@ async function chargerControle(){
 function majControle(){
   const b = F("grCtl");
   if(!agent || !ctl){ b.style.display = "none"; return; }
-  const n = ctlRestants();
+  const n = ctlRestants(), hors = ctlHorsCalcul();
   b.style.display = "flex";
+  // Rouge seulement quand le calcul est vraiment empeche. Des fiches qui
+  // resteront dehors, c'est une information, pas une faute : les peindre en
+  // rouge apprendrait a ignorer le rouge.
   b.className = "grctl " + (n ? "ko" : "ok");
   F("grCtlP").textContent = n ? "!" : "✓";
   F("grCtlT").textContent = n
-    ? n + " fiche" + (n>1?"s":"") + " à compléter avant de calculer"
+    ? "Sexe manquant sur " + n + " fiche" + (n>1?"s":"") + " — à compléter avant de calculer"
+    : hors
+    ? hors + " joueur" + (hors>1?"s":"") + " hors du calcul"
     : ctl.total + " fiches contrôlées";
   F("grCtlS").textContent = n
-    ? "Sexe, niveau et disponibilités décident du groupe : sans eux le joueur sortira « non placé » sans raison lisible."
+    ? "Le sexe décide des paliers : sans lui il n'y a rien à calculer pour cette fiche."
+    : hors
+    ? "Faute de niveau ou de disponibilités. Le calcul peut partir sans eux ; ils n'entreront ni dans les groupes ni dans l'emploi du temps."
     : "Sexe, niveau et disponibilités sont renseignés partout.";
-  F("grCtlB").textContent = n ? "Compléter" : "Revoir";
+  F("grCtlB").textContent = (n || hors) ? "Compléter" : "Revoir";
+  // Seul le sexe empeche de lancer.
   F("grGo").disabled = !(agent && agent.joueurs && agent.joueurs.present) || n > 0;
 }
 
@@ -4417,18 +4455,29 @@ function rendControle(){
             </div></div>`;
         }
       }
+      // Dire la consequence AU MOMENT du choix. Laisser un champ vide est une
+      // decision permise ; elle ne doit pas se decouvrir apres coup, en cherchant
+      // un joueur qui n'est nulle part dans l'emploi du temps.
+      const mq = m.manque.filter(x => x !== "sexe" && !ctlRempli(m, x))
+                         .map(x => x === "niveau" ? "niveau" : "disponibilités");
+      const hors = mq.length
+        ? `<p class="ctlhors">Sans ${mq.join(" ni ")}, ${esc(m.nom)} n'entrera ni dans
+           les groupes ni dans l'emploi du temps. Vous pouvez lancer le calcul quand même.</p>`
+        : "";
       return `<div class="ctlrow ${ctlOk(m)?"fait":""}">
-        <div class="ctlhead"><b>${esc(m.nom)}</b>
-          <span class="ctlmq">${ctlManque(m)}</span></div>
+        <div class="ctlhead"><b>${esc(m.nom)}</b>${ctlManque(m)}</div>
         ${src ? `<p class="ctlsrc">${src}</p>` : ""}
-        ${ch}</div>`;
+        ${ch}${hors}</div>`;
     }).join("");
   }
-  const n = ctlRestants(), faites = Object.keys(ctlFix).length;
+  const n = ctlRestants(), hors = ctlHorsCalcul(), faites = Object.keys(ctlFix).length;
   F("grCtlN").textContent = ctl ? `${ctl.manquantes.length} sur ${ctl.total} fiches` : "";
   F("grCtlH").textContent = n
-    ? n + " fiche" + (n>1?"s":"") + " encore incomplète" + (n>1?"s":"")
+    ? "Sexe manquant sur " + n + " fiche" + (n>1?"s":"")
       + " — le calcul reste bloqué tant qu'il en reste une."
+    : hors
+    ? hors + " joueur" + (hors>1?"s":"") + (hors>1?" resteront":" restera")
+      + " hors du calcul — vous pouvez lancer."
     : faites ? "Tout est renseigné. L'enregistrement écrit dans joueurs.xlsx."
              : "Rien à enregistrer.";
   F("grCtlOk").disabled = !faites;
