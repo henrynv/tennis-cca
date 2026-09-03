@@ -362,6 +362,23 @@
   .grk.att b{color:#96600d}
   .grk.fig b{color:#2f5597}
   .grk.man b{color:#7a4fb5}
+  /* La barre des fiches recues. Elle occupe toute la largeur AVANT les tuiles :
+     sa longueur pleine est le message — chaque fiche deposee est quelque part.
+     Les trois segments s'additionnent au total affiche a sa gauche. */
+  .grtot{flex:1 1 100%;display:flex;align-items:center;gap:14px;padding:2px 0 1px}
+  .grtot .n{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+  .grtot .lb{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .grbar{flex:1;display:flex;height:16px;min-width:180px;border-radius:4px;overflow:hidden;
+    background:var(--line)}
+  .grbar b{font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;
+    font-variant-numeric:tabular-nums;overflow:hidden}
+  .grbar .pl{background:#cfe8dd;color:#0f6e56}
+  .grbar .at{background:#f7e3bd;color:#7a4a0a}
+  .grbar .hc{background:#dcdad2;color:#4d4b45}
+  .grleg{display:flex;gap:14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .grleg span{display:flex;align-items:center;gap:5px}
+  .grleg i{width:9px;height:9px;border-radius:2px;flex:none}
+  .grleg em{font-style:normal;opacity:.75}
   .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
   .grkeys span{display:flex;align-items:center;gap:5px}
   .grkeys i{width:9px;height:9px;border-radius:2px;flex:none}
@@ -2934,6 +2951,13 @@ let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
 let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
 let scen = [];          // scenarios : {n,nom,valide,cours,attente}
+// Les inscrits que le solveur n'a pas eus en main. `enPlace` : deja membres d'un
+// groupe competition, donc PLACES. `hors` : rien a decider (niveau manquant,
+// fiche mise de cote). Sans eux le header ne peut pas retomber sur le nombre de
+// fiches recues, et le club doit soustraire de tete.
+let annexes = {enPlace:[], hors:[]};
+// le volet montre la liste « hors calcul » plutot qu'un cours ou un joueur
+let horsVue = false;
 let vu = 0, sel = null, selAtt = null, moving = null, forcing = null, trouve = null;
 let filtre = {profs:[], pal:"", etat:""};
 // Creation d'un cours en cours : {tc, mode, stop}. Non nul = la grille est une
@@ -3056,7 +3080,7 @@ let majEtat = 0;          // date de la derniere ecriture reussie
 let stockKo = false;      // le navigateur a refuse d'ecrire
 let tPousse = 0, aPousser = null;
 
-function paquet(){ return {cours, attente, ctr, resFic, scen, vu, maj: Date.now()}; }
+function paquet(){ return {cours, attente, annexes, ctr, resFic, scen, vu, maj: Date.now()}; }
 function sauver(){
   const o = paquet();
   majEtat = o.maj;
@@ -3082,6 +3106,8 @@ function pousserEcran(o){
 }
 function adopter(o){
   cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
+  annexes = o.annexes || {enPlace:[], hors:[]};
+  annexes.enPlace = annexes.enPlace||[]; annexes.hors = annexes.hors||[];
   resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0; majEtat = o.maj||0;
   // Un etat sauvegarde par une version anterieure n'a pas forcement tous les
   // champs que le code d'aujourd'hui attend : `terrains` par exemple est arrive
@@ -3155,6 +3181,9 @@ function lireResultat(wb){
       const c = par[String(r[ig["groupe"]]||"").trim()];
       if(!c) return;
       c.membres.push(Object.assign({
+        // l'id de la fiche : c'est lui qui ouvre la preinscription depuis le
+        // volet. Absent des classeurs d'avant ce changement -> pas de bouton.
+        id: ig["id"]!==undefined ? String(r[ig["id"]]||"").trim() : "",
         nom: [r[ig["nom"]], r[ig["prenom"]]].filter(Boolean).join(" ").trim(),
         email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim(),
         // absent des classeurs d'avant ce changement : false par defaut, pas "on ne sait pas"
@@ -3177,6 +3206,7 @@ function lireResultat(wb){
   if(np){
     const inp = idx(np[0]);
     attente = np.slice(1).filter(r=>r[inp["nom"]]).map(r=>Object.assign({
+      id: inp["id"]!==undefined ? String(r[inp["id"]]||"").trim() : "",
       nom: String(r[inp["nom"]]).trim(), sexe: String(r[inp["sexe"]]||"").toUpperCase(),
       niveau: String(r[inp["niveau"]]||"").trim(),
       ancien: inp["ancien"]!==undefined && String(r[inp["ancien"]]||"").trim().toLowerCase()==="oui",
@@ -3184,6 +3214,25 @@ function lireResultat(wb){
       dispos: r[inp["dispos"]]||"", raison: r[inp["raison"]]||""
     }, lireFiche(r, inp)));
   }
+  // Les deux paquets que le solveur n'a pas eus en main. Un classeur anterieur
+  // ne les a pas : on retombe sur des listes vides, et le header dit alors ce
+  // qu'il sait sans inventer un total.
+  const lireAnnexe = (nom, cle) => {
+    const a = aoa(wb, nom);
+    if(!a) return [];
+    const ia = idx(a[0]);
+    return a.slice(1).filter(r=>r[ia["nom"]]).map(r=>({
+      id: ia["id"]!==undefined ? String(r[ia["id"]]||"").trim() : "",
+      nom: String(r[ia["nom"]]).trim(),
+      sexe: String(r[ia["sexe"]]||"").toUpperCase(),
+      niveau: String(r[ia["niveau"]]||"").trim(),
+      ancien: ia["ancien"]!==undefined && String(r[ia["ancien"]]||"").trim().toLowerCase()==="oui",
+      email: ia["email"]!==undefined ? String(r[ia["email"]]||"").trim() : "",
+      quoi: ia[cle]!==undefined ? String(r[ia[cle]]||"").trim() : ""
+    }));
+  };
+  annexes = {enPlace: lireAnnexe("Deja en place", "cours"),
+             hors:    lireAnnexe("Hors calcul", "raison")};
   cours.sort((a,b)=>DAYS.indexOf(a.jour)-DAYS.indexOf(b.jour) || a.d-b.d);
 }
 
@@ -3559,7 +3608,8 @@ function majTuile(){
   const t = F("tGroupesSub"), g = F("tGroupesGo");
   if(!t) return;
   if(!cours.length){ t.textContent = "Aucun résultat de calcul importé pour l'instant."; g.textContent = "Ouvrir →"; return; }
-  const pl = vivants().reduce((s,c)=>s+c.membres.length,0);
+  // meme comptage que le header : les membres deja en place ont un cours
+  const pl = vivants().reduce((s,c)=>s+c.membres.length,0) + annexes.enPlace.length;
   const cur = scen.find(e=>e.n===vu);
   t.textContent = `${vivants().length} cours · ${pl} joueurs placés, ${attente.length} sans groupe`
     + (cur ? ` · « ${cur.nom} »` : "");
@@ -3567,18 +3617,43 @@ function majTuile(){
 }
 function kpi(v,l,cl){ return `<div class="grk ${cl||""}"><b>${v}</b><span>${l}</span></div>`; }
 function rendSum(){
-  const pl = vivants().reduce((s,c)=>s+c.membres.length,0), tot = pl + attente.length;
+  // Le club depose un nombre de fiches qu'il connait par coeur. Le header doit
+  // retomber dessus sans qu'il ait a soustraire quoi que ce soit : la barre
+  // pleine dit « tout le monde est quelque part » avant qu'on lise un chiffre.
+  // Les membres deja en place ont un cours, donc ils comptent comme places ;
+  // le sous-titre le precise, sinon le ratio n'est pas comparable d'un calcul
+  // a l'autre.
+  const solv = vivants().reduce((s,c)=>s+c.membres.length,0);
+  const deja = annexes.enPlace.length, horsC = annexes.hors.length;
+  const pl = solv + deja, att = attente.length, tot = pl + att + horsC;
   const nMan = cours.filter(c=>c.manuel && c.diff!=="supp").length;
   const nFig = cours.filter(c=>c.lock>0 && c.diff!=="supp").length;
   const nAncAtt = attente.filter(p=>p.ancien).length;
-  F("grSum").innerHTML =
-    kpi(pl+"/"+tot, "joueurs placés", pl===tot ? "ok" : "") +
+  // Un segment sous ~7 % n'a pas la place d'afficher son nombre : il reste
+  // visible comme filet colore, et la legende en dessous le nomme.
+  const seg = (n, cl) => n ? `<b class="${cl}" style="flex:${n}">${
+    n / tot > 0.07 ? n : ""}</b>` : "";
+  const barre = tot ? `<div class="grtot">
+      <span class="n">${tot}</span>
+      <span class="lb">fiches reçues,<br>toutes tranchées</span>
+      <div class="grbar">${seg(pl,"pl")}${seg(att,"at")}${seg(horsC,"hc")}</div>
+      <div class="grleg">
+        <span><i style="background:#5dcaa5"></i>${pl} placés${
+          deja ? ` <em>· dont ${deja} déjà en compétition</em>` : ""}</span>
+        <span><i style="background:#ef9f27"></i>${att} sans groupe</span>
+        ${horsC ? `<span><i style="background:#b4b2a9"></i><a href="#" id="grHorsC"
+           style="color:inherit">${horsC} hors calcul</a></span>` : ""}
+      </div>
+    </div>` : "";
+  F("grSum").innerHTML = barre +
     kpi(vivants().length, "cours ouverts", "") +
-    kpi(attente.length, "sans groupe", attente.length ? "att" : "") +
-    (nAncAtt ? kpi(nAncAtt, "dont anciens", "anc") : "") +
+    (nAncAtt ? kpi(nAncAtt, "anciens sans groupe", "att") : "") +
     kpi(nFig, "cours figés", nFig ? "fig" : "") +
     (nMan ? kpi(nMan, "cours retouchés", "man") : "") +
     `<div class="grkeys">${ctr ? "" : "Contraintes non déposées : ni plages de courts ni heures des profs."}</div>`;
+  const lien = F("grHorsC");
+  if(lien) lien.onclick = e => { e.preventDefault(); selAtt = null; sel = null;
+                                 forcing = null; moving = null; horsVue = true; rend(); };
 }
 function actif(){ return filtre.profs.length || filtre.pal || filtre.etat; }
 function passe(c){
@@ -4201,6 +4276,27 @@ function htmlAjout(c, q){
 
 function rendSide(){
   const head = F("grSh"), body = F("grSb");
+  // Un nombre opaque ne dit pas quoi faire. La liste nomme les fiches et la
+  // raison, pour que « 7 hors calcul » devienne sept gestes identifies.
+  // toute selection reprend la main : la liste n'est pas un ecran, c'est une vue
+  if(horsVue && (sel !== null || selAtt !== null || moving)) horsVue = false;
+  if(horsVue){
+    head.innerHTML = `<button class="mini" id="grBack">←</button>
+      <div><b>${annexes.hors.length} fiche(s) hors calcul</b>
+      <div class="sub">ni placées ni sans groupe : il manque de quoi décider</div></div>`;
+    F("grBack").onclick = ()=>{ horsVue = false; rend(); };
+    body.innerHTML = annexes.hors.length
+      ? annexes.hors.map(h=>`<div class="grm">
+          <span class="nm">${esc(h.nom)}${h.ancien?' <span class="anc">ancien</span>':""}</span>
+          <span class="cad">${esc(h.quoi||"—")}</span>
+          ${h.id?`<button class="mini" data-fic="${esc(h.id)}">Fiche</button>`:""}
+        </div>`).join("")
+        + `<p class="grnote">Complétez-les à l'écran de contrôle, puis relancez :
+           elles entreront dans le calcul suivant.</p>`
+      : `<p class="grnote">Aucune.</p>`;
+    body.querySelectorAll("[data-fic]").forEach(b=>b.onclick=()=>ouvrirFiche(b.dataset.fic));
+    return;
+  }
   // un joueur deja place ouvre la meme fiche qu'un sans-groupe
   if(moving && moving.from){
     const src = cours.find(x=>x.cle===moving.from);
@@ -4469,11 +4565,15 @@ function rendJoueur(head, body, p, src){
     <div><b>${esc(p.nom)}${p.ancien?' <span class="anc" title="deja adherent l\'an dernier">ancien</span>':""}</b>
     <div class="sub">niveau ${esc(p.niveau||"?")} · ${
       p.sexe==="F"?"groupes féminins":p.sexe==="H"?"groupes masculins":"sexe non renseigné"} · ${
-      src ? esc(src.prof)+", "+esc(src.jour.toLowerCase())+" "+gtx(src.d) : "sans groupe"}</div></div>`;
+      src ? esc(src.prof)+", "+esc(src.jour.toLowerCase())+" "+gtx(src.d) : "sans groupe"}</div></div>`
+    + (p.id ? `<button class="mini" id="grFiche" style="margin-left:auto"
+         title="Ouvrir sa préinscription, photo comprise">Fiche</button>` : "");
   F("grBack").onclick = ()=>{
     if(src){ moving = null; sel = src.cle; } else { selAtt = null; }
     forcing = null; rend();
   };
+  const bf = F("grFiche");
+  if(bf) bf.onclick = ()=>ouvrirFiche(p.id);
 
   const poss = vivants().filter(c=>compat(c,t))
     .map(c=>({c, dedans: dansDispo(c,t) !== false, libre: c.membres.length < c.max}))
@@ -5124,6 +5224,35 @@ async function terminer(d){
 }
 
 /* ---------------- cablage ---------------- */
+// Ouvrir la preinscription d'un joueur sans quitter son planning : c'est la
+// photo de la fiche qui tranche une orthographe ou une disponibilite douteuse,
+// et y aller par l'accueil faisait perdre la selection en cours.
+let retourGroupes = false;
+async function ouvrirFiche(id){
+  if(!id) return;
+  if(!players.some(x=>x.id===id)){
+    // la liste peut ne pas etre chargee si l'ecran des groupes a ete ouvert
+    // directement : on retente une fois avant d'abandonner
+    try{ await loadPlayers(); }catch(e){}
+  }
+  if(!players.some(x=>x.id===id)){
+    alert("Fiche introuvable en base. Elle a peut-être été supprimée depuis le calcul.");
+    return;
+  }
+  retourGroupes = true;
+  askWho();
+  setMode("saisie");
+  edit(id);
+  F("ficheStep").textContent = "Fiche ouverte depuis le planning";
+  showScreen("fiche");
+}
+// « Accueil » depuis une fiche ouverte par le planning ramene au planning.
+const _home = F("btnHome").onclick;
+F("btnHome").onclick = () => {
+  if(retourGroupes){ retourGroupes = false; reviewing = false; clearForm();
+                     showScreen("groupes"); rend(); return; }
+  _home();
+};
 F("grHome").onclick = ()=>showScreen("accueil");
 F("grExport").onclick = exportResultat;
 F("grFig").onclick = exportFigeages;
