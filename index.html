@@ -538,6 +538,10 @@
   .ctlsrc{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.4}
   .ctlhors{font-size:11.5px;color:#8a6d1f;background:#fdf6e3;border-radius:6px;
     padding:5px 9px;margin-top:9px;line-height:1.45}
+  .ctlsug{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;
+    font-size:11.5px;color:#2c5c3f;background:#f2f9f4;border:1px solid #cfe6d6;
+    border-radius:6px;padding:6px 9px;line-height:1.45}
+  .ctlsug button{flex:0 0 auto}
   .ctlch{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap}
   .ctlch>label{font-size:11.5px;color:var(--muted);min-width:74px}
   .ctlseg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
@@ -4405,9 +4409,19 @@ function rendControle(){
   }else{
     L.innerHTML = ctl.manquantes.map(m=>{
       const f = ctlFix[m.id] || {};
+      // `hors_champ` porte ce qui est ecrit EN TRAVERS de la grille — « dispo
+      // tte la journee », « peu importe ». C'est exactement la reponse de ceux
+      // qui n'ont rien coche, et elle manquait ici : on demandait une
+      // disponibilite sans montrer la phrase qui la donne, ce qui obligeait a
+      // rouvrir le scan fiche par fiche.
       const src = [m.niveau_fiche && "fiche : « "+esc(m.niveau_fiche)+" »",
                    m.niveau_club && "club : "+esc(m.niveau_club),
                    m.groupe && "groupe "+esc(m.groupe),
+                   // …sauf quand la proposition juste en dessous cite deja
+                   // toute la phrase : la lire deux fois n'apprend rien.
+                   m.hors_champ && !(m.suggestion && !f.dispos
+                     && m.hors_champ.trim() === m.suggestion.phrase.trim())
+                     && "en travers de la grille : « "+esc(m.hors_champ.slice(0,220))+" »",
                    m.obs && "obs : "+esc(m.obs.slice(0,160))].filter(Boolean).join(" — ");
       let ch = "";
       if(m.manque.indexOf("sexe") >= 0)
@@ -4430,6 +4444,14 @@ function rendControle(){
           <span class="ctlaide">prime sur le niveau déclaré</span></div>`;
       }
       if(m.manque.indexOf("dispos") >= 0){
+        // Quand la fiche repond en toutes lettres, on cite la phrase et on
+        // propose la valeur — un clic au lieu d'une saisie. La phrase est
+        // montree AVANT le bouton : c'est elle qui doit emporter la decision,
+        // pas notre resume. Rien n'est applique tant qu'on n'a pas clique.
+        if(m.suggestion && !f.dispos)
+          ch += `<div class="ctlsug">La fiche dit « ${esc(m.suggestion.phrase)} »
+            <button class="mini" data-id="${m.id}" data-ch="mode" data-v="partout"
+              >Noter « n'importe quand »</button></div>`;
         const mode = f.dispos === "Partout" ? "partout"
                    : f.dispos === "Refuser" ? "refuser"
                    : f.dispos ? "creneaux" : (ctlCren[m.id] ? "creneaux" : "");
