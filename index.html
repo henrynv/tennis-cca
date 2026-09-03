@@ -1033,8 +1033,8 @@
       </div>
       <div class="grfile" id="grFiles"></div>
       <p class="grerr" id="grErr"></p>
-      <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=600</code>,
-        puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
+      <p class="hint" id="grAide">Le calcul tourne sur l'ordinateur du club ;
+        son résultat arrive ici par la base partagée.</p>
       <p style="margin-top:12px"><button class="mini" id="grRetour"
         style="display:none">← Revenir aux groupes</button></p>
     </div>
@@ -3103,6 +3103,7 @@ function sauver(){
     if(!stockKo){ stockKo = true; rendBar(); }
   }
   pousserEcran(o);
+  pousserNuage(o);
 }
 function pousserEcran(o){
   if(!agent) return;
@@ -3112,6 +3113,66 @@ function pousserEcran(o){
     try{ await jsonAgent("/ecran", {etat: aPousser}); }
     catch(e){ /* agent arrete en cours de route : le navigateur garde la copie */ }
   }, 800);
+}
+
+/* ---------------- la troisieme copie : la base partagee ----------------
+   Le navigateur et `etat-ecran.json` sont tous les deux locaux a UNE machine.
+   Depuis un autre ordinateur on se connectait donc sans probleme, mais l'ecran
+   annoncait « aucun fichier depose » : le planning etait reste dans le
+   localStorage du poste du club. Cette copie-la suit le compte.
+   Meme arbitrage que pour le disque, et volontairement aussi simple : le `maj`
+   le plus recent gagne, rien n'est verrouille. Deux personnes qui corrigent la
+   meme minute sur deux postes s'ecrasent — le club n'a qu'une assistante a la
+   fois sur cet ecran, et un vrai verrou couterait plus qu'il ne rapporte. */
+let majNuage = 0;         // dernier `maj` vu en base
+let nuageKo = null;       // message d'echec a afficher dans la barre, ou null
+let tNuage = 0, dernierPousse = "";
+
+async function sessionOuverte(){
+  try{ const { data:{ session } } = await sb.auth.getSession(); return !!session; }
+  catch(e){ return false; }
+}
+
+function pousserNuage(o){
+  clearTimeout(tNuage);
+  // L'etat pese quelques centaines de ko : on laisse la rafale de corrections
+  // retomber avant d'envoyer, sinon chaque glissement de joueur ferait un envoi.
+  tNuage = setTimeout(async ()=>{
+    if(!await sessionOuverte()) return;
+    if(majNuage > o.maj) return;             // la base est plus recente : ne rien ecraser
+    const j = JSON.stringify(o);
+    if(j === dernierPousse) return;          // rien n'a change depuis le dernier envoi
+    const { error } = await sb.from("ecran_groupes").upsert({
+      id: "courant", etat: o, maj: o.maj,
+      ecrit_le: new Date().toISOString(),
+      ecrit_par: (typeof saisiPar === "string" && saisiPar) || null,
+    });
+    const avant = nuageKo;
+    nuageKo = error ? error.message : null;
+    if(!error){ majNuage = o.maj; dernierPousse = j; }
+    if(avant !== nuageKo) rendBar();
+  }, 2500);
+}
+
+async function tirerNuage(){
+  if(!await sessionOuverte()) return;
+  const { data, error } = await sb.from("ecran_groupes")
+    .select("etat,maj").eq("id", "courant").maybeSingle();
+  if(error){ nuageKo = error.message; rendBar(); return; }
+  nuageKo = null;
+  const aPublier = ()=>{ const o = paquet(); o.maj = majEtat || o.maj; pousserNuage(o); };
+  if(!data){ if(cours.length) aPublier(); rendBar(); return; }
+  majNuage = data.maj || 0;
+  if(majNuage > majEtat){
+    adopter(data.etat);
+    try{ localStorage.setItem(CLE, JSON.stringify(data.etat)); }catch(e){}
+    // Meme filet qu'au demarrage : un etat ecrit par une version anterieure ne
+    // doit pas faire echouer le dessin et laisser l'ecran vide sans un mot.
+    try{ rend(); }catch(e){ console.error("etat de la base illisible :", e); }
+    return;
+  }
+  if(cours.length && majEtat > majNuage) aPublier();   // ce poste est en avance
+  rendBar();
 }
 function adopter(o){
   cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
@@ -4692,7 +4753,9 @@ function rendBar(){
     : `<span class="nb">${n} cours figé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
        <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.</em>`;
   F("grBarTx").innerHTML =
-    (stockKo ? `<div class="grko">⚠ La mémoire du navigateur est pleine : plus rien n'est
+    (nuageKo ? `<div class="grko">⚠ Le planning n'est pas partagé avec les autres
+       ordinateurs : ${esc(nuageKo)}</div>` : "")
+    + (stockKo ? `<div class="grko">⚠ La mémoire du navigateur est pleine : plus rien n'est
        enregistré. ${agent ? "Le fichier <code>etat-ecran.json</code> prend le relais."
        : "Lancez l'agent (CCA.command) pour écrire sur le disque, ou exportez l'Excel maintenant."}</div>` : "")
     + fige
@@ -4837,6 +4900,9 @@ async function pingAgent(){
       if(d.present && d.etat && (d.etat.maj||0) > majEtat){
         adopter(d.etat);
         try{ localStorage.setItem(CLE, JSON.stringify(d.etat)); }catch(e2){}
+        // Sans cet envoi, un resultat relu sur le disque du poste du club ne
+        // partait jamais vers la base : les autres ordinateurs restaient vides.
+        pousserNuage(d.etat);
         rend();
       }
     }catch(e){ /* endpoint absent : agent d'une version anterieure */ }
@@ -4861,9 +4927,9 @@ function majLance(){
   F("grAide").innerHTML = agent
     ? `Agent local détecté. Le calcul tourne sur cette machine ; ces fichiers sont ceux
        qu'il lit à côté de <code>solve_cca.py</code>.`
-    : `Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=600</code>,
-       puis déposez <b>resultat-cca.xlsx</b> ci-dessus. Ou lancez
-       <code>python agent.py</code> pour calculer depuis cette page.`;
+    : `Le calcul tourne sur l'ordinateur du club ; son résultat arrive ici par la
+       base partagée. Pour calculer depuis ce poste, lancez
+       <code>python agent.py</code> à côté de <code>solve_cca.py</code>.`;
   const dejaLa = cours.length > 0;
   F("grEmptyT").textContent = dejaLa ? "Nouveau calcul"
     : agent ? "Constituer les groupes" : "Le résultat du calcul";
@@ -4871,7 +4937,7 @@ function majLance(){
     ? "Les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti, et les cours figés repartent avec."
     : agent
     ? "Le calcul crée les créneaux et y place les joueurs. Vous corrigez ensuite, autant de fois qu'il faut."
-    : "Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.";
+    : "Le solveur tourne sur l'ordinateur du club. Son résultat arrive ici par la base partagée dès qu'il a été ouvert une fois sur ce poste : cet écran sert ensuite à relire, corriger et figer avant la relance, depuis n'importe quel ordinateur.";
   if(!agent){ b.style.display = "none"; rendFichiers(); return; }
   b.style.display = "flex";
   const j = agent.joueurs, c = agent.contraintes;
@@ -5341,6 +5407,14 @@ relire();
 try{ rend(); }
 catch(e){ console.error("affichage initial impossible (etat illisible ?) :", e); }
 pingAgent();
+tirerNuage();
+// Au chargement, la session n'est pas toujours restauree quand ce script tourne :
+// la premiere lecture partirait alors avec la seule cle publique, et la base
+// repondrait vide au lieu de refuser — exactement le symptome qu'on corrige ici.
+sb.auth.onAuthStateChange(evt => {
+  // Pas d'await dans ce callback : supabase-js se bloque si on l'y rappelle.
+  if(evt === "INITIAL_SESSION" || evt === "SIGNED_IN") setTimeout(tirerNuage, 0);
+});
 })();
 </script>
 </body>
