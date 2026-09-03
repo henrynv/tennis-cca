@@ -1,0 +1,12 @@
+{
+  "name": "banc-edt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Banc d'essai de l'export Excel de l'ecran Groupes et EDT",
+  "scripts": {
+    "test": "node banc-edt.js --apercu"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
