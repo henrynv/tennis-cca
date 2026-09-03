@@ -3354,7 +3354,12 @@ const LIGNES = [
      return `${noms.map(esc).join(", ")} — <b>${hh(h)}</b> par semaine`;
    }},
   {k:"courts", lab:"Courts et ouverture", fic:"contraintes-tennis.xlsx",
-   onglets:["General","Fermetures","Types de cours"], remplacable:true,
+   // `Terrains` est la SEULE source de verite sur les courts — c'est lui qui dit
+   // que le mercredi ne commence qu'a 19h et que le samedi n'a qu'un court. Il
+   // manquait a cette liste : la carte annoncait « 14 plages de courts » sans
+   // qu'on puisse en voir une seule. `Fermetures` est l'onglet qu'il a remplace,
+   // il n'existe plus dans le classeur et n'apparaissait donc jamais.
+   onglets:["General","Terrains","Types de cours","Cours imposes"], remplacable:true,
    val(){
      if(!ctr) return "Plages de courts, jours ouverts, amplitude, heures des profs.";
      const j = ctr.jours && ctr.jours.length ? ctr.jours : jours();
@@ -3371,10 +3376,14 @@ const LIGNES = [
        : `<b>${b} lignes de barème</b> · ${p} paliers · ${w} poids d'arbitrage`;
    }},
   {k:"res", lab:"Dernier résultat", fic:"resultat-cca.xlsx",
-   onglets:["Cours","Groupes","Non places","Synthese"], remplacable:false,
+   onglets:["Cours","Groupes","Non places","Deja en place","Hors calcul","Synthese"],
+   remplacable:false,
    val(){
+     // meme comptage que le header : les membres deja en place ont un cours
+     const pl = vivants().reduce((t,c)=>t+c.membres.length,0) + annexes.enPlace.length;
      return cours.length
-       ? `<b>${vivants().length} cours</b>, ${vivants().reduce((t,c)=>t+c.membres.length,0)} joueurs placés, ${attente.length} sans groupe`
+       ? `<b>${vivants().length} cours</b>, ${pl} joueurs placés, ${attente.length} sans groupe`
+         + (annexes.hors.length ? `, ${annexes.hors.length} hors calcul` : "")
        : "Produit par le calcul. Rien à déposer : il arrive tout seul.";
    }}
 ];
