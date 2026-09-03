@@ -62,6 +62,11 @@
   button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
   button.primary:hover{filter:brightness(1.06)}
   button.ghost{color:var(--muted)}
+  /* Sans cette regle, un bouton desactive gardait l'aspect d'un bouton actif :
+     on cliquait, rien ne se passait, et l'ecran passait pour casse. */
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button:disabled:hover{border-color:var(--line);filter:none}
+  button.primary:disabled:hover{border-color:var(--accent)}
   .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
   table.list{border-collapse:collapse;width:100%;font-size:13px}
@@ -549,6 +554,25 @@
   .grplomb .lien:hover{color:var(--accent)}
   .grplomb code{background:#eef1f4;border-radius:4px;padding:0 4px;font-size:11px}
   .grplomb .fin{margin-left:auto}
+
+  /* Trois blocs, trois sorts : garde / interdit / recalcule. La bordure de
+     gauche porte la couleur, pas le fond : la fenetre reste une explication,
+     pas un feu tricolore. */
+  .grrel .bloc{border:1px solid var(--line);border-left-width:3px;border-radius:9px;
+    padding:9px 12px;margin:10px 0}
+  .grrel .bloc h4{margin:0 0 3px;font-size:13px}
+  .grrel .bloc p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+  .grrel .bloc p b{color:var(--ink);font-weight:600}
+  .grrel .garde{border-left-color:#2f5597}
+  .grrel .supp{border-left-color:#b4b2a9}
+  .grrel .refait{border-left-color:#5dcaa5}
+  .grrel .rien{border-left-color:var(--warn)}
+  .grrel ul{margin:8px 0 0;padding:6px 0 0;list-style:none;max-height:180px;overflow:auto;
+    border-top:1px solid var(--line);font-size:12px}
+  .grrel li{display:flex;gap:10px;align-items:baseline;padding:3px 0}
+  .grrel li b{font-weight:600;min-width:118px}
+  .grrel li span{color:var(--muted)}
+  .grrel li em{font-style:normal;color:#2f5597;margin-left:auto;white-space:nowrap}
 
   .grsh{flex:none;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;
     align-items:center;gap:8px}
@@ -1147,6 +1171,32 @@
     </div>
   </div>
 
+  <!-- regenerer : ce qui survit, avant de lancer -->
+  <div class="modal-bg" id="grRelBg">
+    <div class="modal" style="width:min(680px,96vw)">
+      <div class="modal-head">
+        <b>Régénérer l'emploi du temps</b>
+        <span style="flex:1"></span>
+        <button class="mini" id="grRelX">✕</button>
+      </div>
+      <div class="modal-body"><div class="grrel" id="grRelC"></div></div>
+      <div class="modal-head" style="border-top:1px solid var(--line);border-bottom:none;flex-wrap:wrap">
+        <span class="hint" id="grRelH" style="flex:1 1 100%;margin:0;display:none"></span>
+        <span style="flex:1"></span>
+        <label class="hint" for="grRelT" style="flex:none;margin:0;white-space:nowrap">Temps de calcul</label>
+        <select id="grRelT" style="flex:none;width:auto;min-width:124px">
+          <option value="60">1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+          <option value="600">10 minutes</option>
+          <option value="900">15 minutes</option>
+          <option value="1800" selected>30 minutes</option>
+        </select>
+        <button class="primary" id="grRelGo" style="flex:none;white-space:nowrap">Lancer le nouveau calcul</button>
+      </div>
+    </div>
+  </div>
+
   <!-- calcul en cours -->
   <div class="grempty" id="grProg" style="display:none">
     <div class="grcard">
@@ -1175,7 +1225,8 @@
         <button class="mini" id="grNew">+ Nouveau cours</button>
         <button class="mini" id="grAll">Tout garder</button>
         <button class="mini" id="grImp">🖨 Imprimer le planning</button>
-        <button class="primary big" id="grRelance" style="display:none">Relancer le calcul</button>
+        <button class="primary big" id="grRelance" style="display:none"
+          title="Repart du calcul en reposant les cours gardés tels quels">↻ Régénérer l'emploi du temps</button>
       </div>
       <!-- Ce qui n'est ni une decision ni une sortie : l'agent, la sauvegarde,
            l'export de secours. Visible, jamais au milieu des boutons. -->
@@ -5059,9 +5110,14 @@ function rendBar(){
     + (stockKo ? `<span class="grko">⚠ Mémoire du navigateur pleine — plus rien n'est enregistré.
        ${agent ? "Le fichier <code>etat-ecran.json</code> prend le relais."
        : "Exportez l'Excel maintenant."}</span>` : "");
+  // Sans agent, le bouton « Régénérer » n'existe pas : le dire ici evite de le
+  // chercher. Avec agent, nommer le bouton fait le lien entre le decompte des
+  // cours gardes, juste au-dessus, et le geste qui les repose.
   F("grEtat").innerHTML = agent
-    ? "Calcul possible depuis ce poste."
-    : `Le calcul tourne sur l'ordinateur du club — double-cliquez <code>CCA.command</code> pour calculer d'ici.`;
+    ? `Calcul possible depuis ce poste : « ↻ Régénérer l'emploi du temps » repart d'ici
+       en reposant les cours gardés.`
+    : `Le calcul tourne sur l'ordinateur du club : pas de bouton pour régénérer depuis ce
+       poste — double-cliquez <code>CCA.command</code> pour calculer d'ici.`;
 }
 
 /* ---------------- le planning mural, sur papier ----------------
@@ -6120,8 +6176,143 @@ async function lancer(){
     await jsonAgent("/lancer", {temps:t});
     ecranCalcul(t);
     reprendreSuivi();
+    return true;
   }catch(e){
+    // `grErr` vit dans l'ecran de lancement : lance depuis le planning, il est
+    // cache et l'echec passait inapercu. Le retour permet a l'appelant de le
+    // dire la ou l'utilisateur regarde.
     F("grErr").textContent = "Impossible de lancer : " + e.message;
+    return false;
+  }
+}
+
+/* ---------------- regenerer depuis le planning ----------------
+   Le meme calcul que « Lancer », mais demande depuis un emploi du temps deja
+   relu et retouche. Le bouton seul ne disait rien de ce qu'il allait garder :
+   on fige des cours, puis on n'ose pas relancer faute de savoir si le travail
+   part a la poubelle. Cette fenetre nomme les trois sorts possibles — repose
+   tel quel, interdit, recalcule — avant que quoi que ce soit ne parte, et
+   rappelle que le planning affiche reste dans les pastilles du haut. */
+function rendRelance(){
+  const ph = n => n > 1 ? "s" : "";
+  const figs = ordonne().filter(c=>c.lock>0);
+  const f1 = figs.filter(c=>c.lock===1).length, f2 = figs.filter(c=>c.lock===2).length;
+  const libres = vivants().filter(c=>c.lock===0);
+  const supp = cours.filter(c=>c.diff==="supp");
+  // sur un cours « tout fige » la composition part entiere : les epingles n'y
+  // ajoutent rien, et les compter deux fois ferait mentir le decompte.
+  // Un joueur garde a la main n'est vraiment garde que si son cours l'est aussi :
+  // sur un cours libre, le calcul peut supprimer le cours, et le joueur repart
+  // avec. Les deux cas ne se comptent donc pas ensemble — le second est un
+  // avertissement, pas une garantie.
+  const epinSurs = vivants().filter(c=>c.lock===1).reduce((s,c)=>s+(c.epingles||[]).length, 0);
+  const risque = vivants().filter(c=>c.lock===0 && (c.epingles||[]).length);
+  const forces = vivants().filter(c=>c.force).length;
+  const cur = scen.find(e=>e.n===vu);
+  // « Ce qui est gardé » se compte en joueurs autant qu'en cours : c'est le
+  // nombre de familles a qui on ne retelephonera pas. Sur un cours « rien ne
+  // bouge » tout le monde reste ; sur « heure et prof gardés », seuls les
+  // joueurs gardes a la main sont surs d'y etre encore apres le calcul.
+  const jGardes = figs.reduce((s,c)=>s + (c.lock===2 ? c.membres.length
+                                                     : (c.epingles||[]).length), 0);
+  const jRisque = risque.reduce((s,c)=>s+(c.epingles||[]).length, 0);
+  const jPlaces = vivants().reduce((s,c)=>s + c.membres.length, 0);
+  const jRefaits = Math.max(0, jPlaces - jGardes);
+  // Les fiches arrivees depuis le dernier calcul : elles n'apparaissent nulle
+  // part dans le planning affiche, et ce sont elles qu'on relance pour.
+  const enBase = (typeof players !== "undefined" && players.length) ? players.length : 0;
+  const nouvelles = Math.max(0, enBase - (jPlaces + annexes.enPlace.length
+                                          + attente.length + annexes.hors.length));
+
+  const garde = figs.length ? `
+    <div class="bloc garde">
+      <h4>Reposé tel quel — ${figs.length} cours gardé${ph(figs.length)}${
+        jGardes ? `, ${jGardes} joueur${ph(jGardes)}` : ""}</h4>
+      <p>${f1 ? `<b>${f1}</b> en « heure et prof gardés » : jour, heure, prof et format imposés,
+              le calcul refait seulement la composition${epinSurs
+                ? `, sauf les ${epinSurs} joueur${ph(epinSurs)} gardé${ph(epinSurs)} à la main` : ""}. ` : ""}${
+           f2 ? `<b>${f2}</b> en « rien ne bouge » : les joueurs aussi sont reposés à l'identique. ` : ""}${
+           forces ? `${forces} cours ${forces>1?"gardent":"garde"} l'effectif forcé à la main. ` : ""}${
+           jGardes ? `<b>${jGardes}</b> ${jGardes>1?"familles n'auront":"famille n'aura"} pas
+              à être ${jGardes>1?"rappelées":"rappelée"}. `
+                   : `Aucun joueur n'est assuré d'y rester : c'est le créneau qui est gardé,
+              pas le groupe. `}</p>
+      <ul>${figs.map(c=>`<li><b>${esc(c.jour)} ${gtx(c.d)}–${gtx(c.f)}</b>
+        <span>${esc(c.prof)} · ${esc(c.pal || "palier ?")}${
+          c.sexe==="F" ? " femmes" : c.sexe==="H" ? " hommes" : ""} · ${c.membres.length} joueur${
+          ph(c.membres.length)}</span>
+        <em>${c.lock===2 ? "rien ne bouge" : "heure et prof gardés"}</em></li>`).join("")}</ul>
+    </div>` : `
+    <div class="bloc rien">
+      <h4>Aucun cours n'est gardé</h4>
+      <p>Le nouvel emploi du temps peut être entièrement différent de celui-ci : les
+         ${vivants().length} cours et les ${jPlaces} joueurs placés sont tous remis en jeu.
+         Pour en garder une partie, fermez cette fenêtre et cliquez le cadenas d'un cours :
+         une fois pour garder son heure et son prof, deux fois pour garder aussi son groupe.</p>
+    </div>`;
+
+  // Le piege que l'ecran laissait passer : on garde deux eleves, on relance, et
+  // le cours entier disparait avec eux. Le dire ici, avec les noms, au moment ou
+  // c'est encore reparable.
+  const alerte = jRisque ? `
+    <div class="bloc rien">
+      <h4>À vérifier — ${jRisque} joueur${ph(jRisque)} gardé${ph(jRisque)} dans un cours libre</h4>
+      <p>${jRisque > 1 ? "Ces joueurs sont gardés" : "Ce joueur est gardé"} à la main, mais
+         ${risque.length > 1 ? "leurs cours peuvent" : "son cours peut"} être supprimé${
+         risque.length > 1 ? "s" : ""} par le calcul — et ${jRisque > 1 ? "ils repartiraient"
+         : "il repartirait"} sans groupe. Fermez cette fenêtre et passez
+         ${risque.length > 1 ? "ces cours" : "ce cours"} à « heure et prof gardés ».</p>
+      <ul>${risque.map(c=>`<li><b>${esc(c.jour)} ${gtx(c.d)}–${gtx(c.f)}</b>
+        <span>${esc(c.prof)} · ${(c.epingles||[]).map(esc).join(", ")}</span>
+        <em>cours libre</em></li>`).join("")}</ul>
+    </div>` : "";
+
+  const interdit = supp.length ? `
+    <div class="bloc supp">
+      <h4>Interdit — ${supp.length} cours supprimé${ph(supp.length)} à la main</h4>
+      <p>Le calcul ne rouvrira rien sur ${supp.length > 1 ? "ces plages" : "cette plage"} :
+         ${supp.map(c=>esc(c.jour + " " + gtx(c.d) + " " + c.prof)).join(" · ")}.</p>
+    </div>` : "";
+
+  const refait = `
+    <div class="bloc refait">
+      <h4>Recalculé — ${libres.length} cours libre${ph(libres.length)},
+        ${jRefaits} joueur${ph(jRefaits)}</h4>
+      <p>${libres.length ? `Ils peuvent changer d'heure, de prof, de palier, ou ne pas rouvrir :
+            ${jRefaits} joueur${ph(jRefaits)} ${jRefaits>1?"peuvent":"peut"} changer de groupe. `
+                         : `Aucun cours libre : le calcul n'a que les places restantes à remplir. `}Les
+         <b>${attente.length}</b> joueur${ph(attente.length)} sans groupe
+         ${attente.length > 1 ? "sont réessayés" : "est réessayé"}${
+         nouvelles ? `, avec <b>${nouvelles}</b> fiche${ph(nouvelles)} déposée${ph(nouvelles)}
+            depuis le dernier calcul` : ""}.</p>
+    </div>`;
+
+  F("grRelC").innerHTML = garde + alerte + interdit + refait +
+    `<p class="hint">L'emploi du temps affiché n'est pas perdu : il reste dans les pastilles
+       du haut${cur ? ` sous « ${esc(cur.nom)} »` : ""}, et le nouveau s'ajoutera à côté.
+       Le calcul peut être arrêté en cours de route en gardant la meilleure solution trouvée.</p>`;
+
+  // Meme garde-fou que le bouton de l'ecran de lancement : sans le sexe, il n'y
+  // a rien a calculer, et partir quand meme rendrait une erreur illisible.
+  const bloque = ctlRestants();
+  F("grRelGo").disabled = bloque > 0;
+  F("grRelH").innerHTML = bloque
+    ? `<span class="grko">${bloque} fiche${ph(bloque)} sans sexe renseigné : le calcul ne peut
+       pas partir. Complétez-les par « ← Nouveau calcul », puis « Contrôler ».</span>`
+    : "";
+  F("grRelH").style.display = bloque ? "block" : "none";
+  F("grRelT").value = F("grTemps").value;
+}
+async function relancerDepuisPlanning(){
+  const b = F("grRelGo"), lib = b.textContent;
+  b.disabled = true; b.textContent = "Lancement…";
+  F("grTemps").value = F("grRelT").value;   // une seule source pour le temps de calcul
+  const ok = await lancer();
+  b.disabled = false; b.textContent = lib;
+  if(ok) F("grRelBg").classList.remove("open");
+  else {
+    F("grRelH").innerHTML = `<span class="grko">${esc(F("grErr").textContent)}</span>`;
+    F("grRelH").style.display = "block";
   }
 }
 function ecranCalcul(t){
@@ -6243,6 +6434,7 @@ F("grVoirBg").onclick = e=>{ if(e.target === F("grVoirBg")) F("grVoirBg").classL
 document.addEventListener("keydown", e=>{
   if(e.key === "Escape"){ F("grVoirBg").classList.remove("open");
                           F("grCtlBg").classList.remove("open");
+                          F("grRelBg").classList.remove("open");
                           if(creation) creation.stop(); }
   // ⌘Z / Ctrl+Z, sauf quand on est en train de taper dans un champ
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey
@@ -6265,7 +6457,10 @@ F("grCtlL").addEventListener("click", ctlClic);
 F("grCtlL").addEventListener("input", ctlSaisie);
 F("grCtlOk").onclick = enregistrerControle;
 F("grGo").onclick = lancer;
-F("grRelance").onclick = lancer;
+F("grRelance").onclick = ()=>{ rendRelance(); F("grRelBg").classList.add("open"); };
+F("grRelX").onclick = ()=>F("grRelBg").classList.remove("open");
+F("grRelBg").onclick = e=>{ if(e.target === F("grRelBg")) F("grRelBg").classList.remove("open"); };
+F("grRelGo").onclick = relancerDepuisPlanning;
 F("grNouveau").onclick = ()=>{ ecranLance = true; rend(); };
 F("grRetour").onclick  = ()=>{ ecranLance = false; rend(); };
 F("grStop").onclick = async ()=>{
