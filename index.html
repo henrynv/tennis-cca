@@ -3255,6 +3255,12 @@ function lireResultat(wb){
         // volet. Absent des classeurs d'avant ce changement -> pas de bouton.
         id: ig["id"]!==undefined ? String(r[ig["id"]]||"").trim() : "",
         nom: [r[ig["nom"]], r[ig["prenom"]]].filter(Boolean).join(" ").trim(),
+        // Le classeur porte le nom et le prenom separement ; l'ecran les
+        // recolle pour afficher, le planning exporte les remet en deux
+        // colonnes comme sur le papier. On garde donc les deux.
+        nomF: String(r[ig["nom"]]||"").trim(),
+        prenom: String(r[ig["prenom"]]||"").trim(),
+        sexe: String(r[ig["sexe"]]||"").trim().toUpperCase(),
         email: r[ig["email"]]||"", niveau: String(r[ig["niveau"]]||"").trim(),
         // absent des classeurs d'avant ce changement : false par defaut, pas "on ne sait pas"
         ancien: ig["ancien"]!==undefined && String(r[ig["ancien"]]||"").trim().toLowerCase()==="oui",
@@ -4799,47 +4805,596 @@ function chercher(q){
   });
 }
 
-/* ---------------- sorties Excel ---------------- */
+/* ---------------- sorties Excel ----------------
+   Le classeur qui sort d'ici n'est plus une table a plat : c'est le planning
+   mural du club — une ligne par quart d'heure, une colonne par prof, les
+   joueurs empiles dans leur pave — plus les trois recapitulatifs qu'on lisait
+   jusqu'ici en croisant des onglets a la main.
+   D'ou ExcelJS pour CETTE sortie : la version libre de SheetJS n'ecrit ni fond
+   de cellule ni bordure, et un planning sans couleur ne se lit pas. Le reste du
+   fichier (lecture des classeurs, export des fiches, figeages) reste sur
+   SheetJS, qui suffit pour du texte. ExcelJS n'est charge qu'au clic : 900 ko
+   qu'on ne paie pas pour relire un planning. */
+const EXCELJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js";
+let _exceljs = null;
+function chargerExcelJS(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if(_exceljs) return _exceljs;
+  _exceljs = new Promise((ok,ko)=>{
+    const s = document.createElement("script");
+    s.src = EXCELJS_URL;
+    s.onload  = ()=> window.ExcelJS ? ok(window.ExcelJS)
+                                    : ko(new Error("bibliothèque Excel illisible"));
+    s.onerror = ()=>{ _exceljs = null;
+      ko(new Error("bibliothèque Excel non téléchargée — cet export a besoin d'internet")); };
+    document.head.appendChild(s);
+  });
+  return _exceljs;
+}
+
 function nomCours(c,i){ return "G"+String(i+1).padStart(2,"0")+" "+c.jour+" "+gtx(c.d)+" "+c.prof; }
 function ordonne(){ return vivants().slice().sort((a,b)=>
   jours().indexOf(a.jour)-jours().indexOf(b.jour) || a.d-b.d || a.prof.localeCompare(b.prof)); }
 
-function exportResultat(){
-  const L = ordonne(), wb = XLSX.utils.book_new();
-  const g = [["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","dispos","sexe","effectif","epingle","a_la_main","ancien"].concat(CH_FICHE)];
+/* NOM et prenom, separement. Les classeurs les portent en deux colonnes et
+   l'ecran les recolle pour afficher « MEUNIER Maïa » ; le planning, lui, les
+   veut dans deux colonnes comme sur le papier. On garde donc les deux champs a
+   la lecture, et on sait recouper une chaine seule pour tout ce qui n'en a
+   qu'une (non places, deja en place, etats enregistres avant ce changement).
+   Regle : les particules, puis les mots EN CAPITALES, font le nom ; le reste
+   est le prenom. Sans la ligne des particules, « de KERMABON Erwan » se coupait
+   apres « de » et le planning affichait un monsieur appele « de ». */
+const estMaj = s => s === s.toUpperCase() && s !== s.toLowerCase();
+const PARTICULE = new Set(["de","du","des","le","la","les","van","von","di","da","dos","el"]);
+function coupeNom(complet){
+  const t = String(complet||"").trim().split(/\s+/).filter(Boolean);
+  if(t.length < 2) return {nom:t[0]||"", prenom:""};
+  let k = 0;
+  while(k < t.length-1 && PARTICULE.has(t[k].toLowerCase().replace(/'$/,""))) k++;
+  if(estMaj(t[k])) while(k < t.length-1 && estMaj(t[k])) k++;
+  else k++;
+  return {nom:t.slice(0,k).join(" "), prenom:t.slice(k).join(" ")};
+}
+function nomPrenom(o){
+  if(o && (o.nomF || o.prenom)) return {nom:o.nomF||"", prenom:o.prenom||""};
+  return coupeNom(o && o.nom);
+}
+
+/* ---- petite boite a outils ExcelJS ---- */
+// "#1f7a4d" -> "FF1F7A4D" ; avec une opacite, la meme teinte melee de blanc
+// (Excel ne connait pas la transparence : on aplatit sur fond blanc).
+const ARGB = (h, a) => "FF" + [1,3,5].map(i=>{
+  const v = parseInt(h.slice(i,i+2),16), o = a===undefined ? 1 : a;
+  return Math.round(v*o + 255*(1-o)).toString(16).padStart(2,"0").toUpperCase();
+}).join("");
+const X_FOND = "FFF4F6F8", X_LIGNE = "FFDBE1E8", X_ENCRE = "FF1F2A37",
+      X_MUET = "FF6B7683", X_BLEU = "FF2F5597", X_ROUGE = "FFB3261E",
+      X_VERT = "FF1F7A4D", X_AMBRE = "FFB8721C", X_FERME = "FFE7EAEE";
+
+function cel(ws, r, c, v, st){
+  const x = ws.getCell(r,c);
+  if(v !== undefined && v !== null && v !== "") x.value = v;
+  if(st){
+    if(st.fond) x.fill = {type:"pattern", pattern:"solid", fgColor:{argb:st.fond}};
+    if(st.font) x.font = st.font;
+    if(st.al)   x.alignment = st.al;
+    if(st.fmt)  x.numFmt = st.fmt;
+  }
+  return x;
+}
+// N'ecrase que les cotes demandes : un pave pose sur une ligne d'heure garde
+// son filet, et le cadre du jour ne mange pas le cadre des cours.
+function bord(ws, r1, c1, r2, c2, coul, style){
+  const s = {style: style||"thin", color:{argb:coul}};
+  for(let r=r1; r<=r2; r++) for(let c=c1; c<=c2; c++){
+    const x = ws.getCell(r,c), b = Object.assign({}, x.border);
+    if(r===r1) b.top = s;
+    if(r===r2) b.bottom = s;
+    if(c===c1) b.left = s;
+    if(c===c2) b.right = s;
+    x.border = b;
+  }
+}
+function trait(ws, r, c1, c2, coul, style){
+  const s = {style:style||"hair", color:{argb:coul}};
+  for(let c=c1; c<=c2; c++){
+    const x = ws.getCell(r,c);
+    x.border = Object.assign({}, x.border, {top:s});
+  }
+}
+function tableau(wb, nom, entete, largeurs, lignes, sansFiltre){
+  const ws = wb.addWorksheet(nom, {views:[{state:"frozen", ySplit:1}]});
+  ws.columns = largeurs.map(w=>({width:w}));
+  ws.addRow(entete);
+  const h = ws.getRow(1);
+  h.font = {bold:true, size:10, color:{argb:"FFFFFFFF"}};
+  h.fill = {type:"pattern", pattern:"solid", fgColor:{argb:X_BLEU}};
+  h.alignment = {vertical:"middle"};
+  h.height = 20;
+  lignes.forEach(l=>ws.addRow(l));
+  if(!sansFiltre) ws.autoFilter = {from:{row:1,column:1}, to:{row:1,column:entete.length}};
+  return ws;
+}
+
+/* ---- ce que les quatre onglets ont en commun ---- */
+const PAS = 15;                     // une ligne du planning = un quart d'heure
+function bornesEdt(){
+  let d = ctr ? ctr.debut : 9*60, f = ctr ? ctr.fin : 21*60+30;
+  vivants().forEach(c=>{ d = Math.min(d, c.d); f = Math.max(f, c.f); });
+  return [Math.floor(d/60)*60, Math.ceil(f/PAS)*PAS];
+}
+function joursEdt(){
+  const J = jours();
+  return DAYS.filter(j => (J.indexOf(j)>=0 || vivants().some(c=>c.jour===j))
+                       && vivants().some(c=>c.jour===j));
+}
+const profsExport = () => [...new Set(vivants().map(c=>c.prof)
+    .concat(ctr ? Object.keys(ctr.budget) : []))].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+// Courts ouverts a cette minute : l'onglet Terrains fait foi, et sans lui on
+// retombe sur le chiffre unique plutot que de declarer tout ferme.
+const ouvertsA = (j,t) => (ctr && ctr.terrains.length) ? courtsA(j,t) : courts();
+function occupCourts(j, H0, H1){
+  const a = new Array((H1-H0)/PAS).fill(0);
+  vivants().filter(c=>c.jour===j).forEach(c=>{
+    for(let t=Math.max(c.d,H0); t<Math.min(c.f,H1); t+=PAS) a[(t-H0)/PAS] += (c.nc||1);
+  });
+  return a;
+}
+/* Une colonne par prof — deux s'il a, apres un geste a la main, deux cours qui
+   se chevauchent. Meme regle qu'a l'ecran : sans ca l'un ecraserait l'autre en
+   silence, et le planning imprime mentirait. */
+function colonnesEdt(j){
+  const L = vivants().filter(c=>c.jour===j);
+  return [...new Set(L.map(c=>c.prof))].filter(Boolean).sort((a,b)=>a.localeCompare(b))
+    .map(p=>{
+      const s = L.filter(c=>c.prof===p).sort((a,b)=>a.d-b.d || a.f-b.f);
+      const fins = [];
+      s.forEach(c=>{
+        let k = fins.findIndex(f=>f<=c.d);
+        if(k < 0) k = fins.length;
+        fins[k] = c.f; c._voie = k;
+      });
+      return {prof:p, voies:Math.max(1,fins.length), cours:s};
+    });
+}
+
+/* ================= onglet « edt » : le planning mural ================= */
+function feuilleEdt(wb){
+  const J = joursEdt(), [H0,H1] = bornesEdt(), N = (H1-H0)/PAS;
+  const ws = wb.addWorksheet("edt", {views:[{state:"frozen", xSplit:1, ySplit:2}]});
+  const R0 = 3, RL = R0 + N - 1, lig = t => R0 + (t-H0)/PAS;
+
+  // colonnes : une paire nom/prenom par voie de prof, comme sur le papier
+  const cols = [{width:7.5}], bandes = [], plan = [];
+  let C = 2;
+  J.forEach(j=>{
+    const d0 = C;
+    colonnesEdt(j).forEach(o=>{
+      plan.push({jour:j, prof:o.prof, cours:o.cours, voies:o.voies, c1:C, c2:C+o.voies*2-1});
+      for(let k=0;k<o.voies;k++) cols.push({width:15},{width:12});
+      C += o.voies*2;
+    });
+    bandes.push({jour:j, c1:d0, c2:C-1});
+  });
+  ws.columns = cols;
+  const CF = C-1;                                   // derniere colonne ecrite
+  const RB = RL + 2;                                // premiere ligne de totaux
+
+  // ---- en-tete : les jours, puis les profs et leur budget du jour
+  ws.mergeCells(1,1,2,1);
+  cel(ws,1,1,"heure",{fond:X_FOND, font:{bold:true,size:10,color:{argb:X_MUET}},
+    al:{vertical:"middle",horizontal:"center"}});
+  bandes.forEach(b=>{
+    ws.mergeCells(1,b.c1,1,b.c2);
+    cel(ws,1,b.c1,b.jour,{fond:"FFEDF1F6",
+      font:{bold:true,size:12,color:{argb:X_ENCRE}},
+      al:{vertical:"middle",horizontal:"center"}});
+    bord(ws,1,b.c1,RB+1,b.c2,"FF9AA6B2","medium");
+  });
+  plan.forEach(o=>{
+    ws.mergeCells(2,o.c1,2,o.c2);
+    const b = budget(o.prof,o.jour);
+    cel(ws,2,o.c1, o.prof + (b===null||b===0 ? "" : " · " + hh(b)),
+      {fond:ARGB(teinte(o.prof)), font:{bold:true,size:10,color:{argb:"FFFFFFFF"}},
+       al:{vertical:"middle",horizontal:"center"}});
+  });
+  ws.getRow(1).height = 20; ws.getRow(2).height = 18;
+
+  // ---- la reglure : un quart d'heure par ligne, l'heure ecrite a gauche
+  for(let t=H0; t<H1; t+=PAS){
+    const r = lig(t), pleine = t%60===0;
+    ws.getRow(r).height = 13;
+    cel(ws,r,1, t%30===0 ? gtx(t) : null, {fond:X_FOND,
+      font:{bold:pleine, size:pleine?10:8, color:{argb:pleine?X_ENCRE:X_MUET}},
+      al:{vertical:"top", horizontal:"right"}});
+    if(pleine) trait(ws,r,1,CF,"FFC4CDD8");
+  }
+  // ---- ce qui n'est pas ouvert : gris, comme les zones grisees de l'ecran
+  bandes.forEach(b=>{
+    for(let t=H0; t<H1; t+=PAS){
+      if(ouvertsA(b.jour,t) > 0) continue;
+      for(let c=b.c1;c<=b.c2;c++) cel(ws,lig(t),c,null,{fond:X_FERME});
+    }
+  });
+
+  // ---- les cours : un pave par cours, ses joueurs empiles dedans
+  plan.forEach(o=>{
+    const teint = teinte(o.prof), pale = ARGB(teint,.13), plein = ARGB(teint);
+    o.cours.forEach(k=>{
+      const c1 = o.c1 + (k._voie||0)*2, c2 = c1+1;
+      const r1 = lig(Math.max(k.d,H0)), r2 = lig(Math.min(k.f,H1)) - 1;
+      if(r2 < r1) return;
+      const n = r2 - r1 + 1;
+      const gens = k.membres.slice().sort((a,b)=>a.nom.localeCompare(b.nom))
+                    .map(m=>Object.assign(nomPrenom(m), {en:false}));
+      // les joueurs deja en place (groupes competition) sont sur le court : les
+      // omettre ferait lire « 1 joueur » un cours ou ils sont sept
+      (k.enPlace||[]).forEach(x=>gens.push(Object.assign(coupeNom(x), {en:true})));
+      for(let r=r1;r<=r2;r++){ cel(ws,r,c1,null,{fond:pale}); cel(ws,r,c2,null,{fond:pale}); }
+      bord(ws,r1,c1,r2,c2,plein);
+      // un nom par quart d'heure ; s'il y a plus de joueurs que de lignes
+      // (competition), les derniers se serrent sur la derniere plutot que de
+      // deborder sur le cours suivant
+      const par = [];
+      if(gens.length <= n) gens.forEach(g=>par.push([g]));
+      else { for(let i=0;i<n-1;i++) par.push([gens[i]]); par.push(gens.slice(n-1)); }
+      par.forEach((l,i)=>{
+        const r = r1+i, gris = l[0].en;
+        if(l.length === 1){
+          const f = {size:9, italic:gris, color:{argb:gris?X_MUET:X_ENCRE}};
+          cel(ws,r,c1,l[0].nom,   {font:f, al:{vertical:"middle"}});
+          cel(ws,r,c2,l[0].prenom,{font:f, al:{vertical:"middle"}});
+        } else {
+          cel(ws,r,c1, l.map(g=>(g.nom+" "+g.prenom).trim()).join(" · "),
+            {font:{size:8, color:{argb:X_ENCRE}}, al:{vertical:"middle"}});
+        }
+      });
+      // reste une ligne libre dans le pave : elle dit le groupe. Un cours plein
+      // d'un type A n'en a pas — exactement le papier.
+      if(par.length < n)
+        cel(ws, r1+par.length, c1, (k.pal||"palier ?") + " · " + k.membres.length + "/" + k.max,
+          {font:{size:8, italic:true, color:{argb:X_MUET}}, al:{vertical:"middle"}});
+    });
+  });
+
+  // ---- la bande du bas : remplissage, puis temps de travail
+  // Libelles courts : la colonne des heures fait sept caracteres, « joueurs /
+  // places » y rentrait coupe. Le detail est dans la legende, deux lignes plus bas.
+  cel(ws,RB,1,"joueurs",{fond:X_FOND,
+    font:{bold:true,size:8,color:{argb:X_MUET}}, al:{horizontal:"right",vertical:"middle"}});
+  cel(ws,RB+1,1,"heures",{fond:X_FOND,
+    font:{bold:true,size:8,color:{argb:X_MUET}}, al:{horizontal:"right",vertical:"middle"}});
+  ws.getRow(RB).height = 16; ws.getRow(RB+1).height = 16;
+  plan.forEach(o=>{
+    const pris = o.cours.reduce((s,k)=>s+k.membres.length,0),
+          off  = o.cours.reduce((s,k)=>s+k.max,0),
+          use  = utilise(o.prof,o.jour), bud = budget(o.prof,o.jour);
+    const st = f => ({fond:f, font:{bold:true,size:9,color:{argb:"FFFFFFFF"}},
+                      al:{horizontal:"center",vertical:"middle"}});
+    cel(ws,RB,  o.c1,   pris, st(ARGB(teinte(o.prof),.85)));
+    cel(ws,RB,  o.c1+1, off,  st(pris>off ? X_ROUGE : "FFA6B0BC"));
+    cel(ws,RB+1,o.c1,   hh(use), st(ARGB(teinte(o.prof),.85)));
+    cel(ws,RB+1,o.c1+1, bud===null ? "?" : hh(bud),
+        st(bud!==null && use > bud+1e-9 ? X_ROUGE : "FFA6B0BC"));
+  });
+
+  cel(ws,RB+3,1,"Une ligne = un quart d'heure. Un pavé = un cours, ses joueurs empilés dedans. "
+    + "Gris = aucun court ouvert. Sous chaque prof : joueurs placés / places offertes, "
+    + "puis heures posées / budget du jour. Un chiffre en rouge est un dépassement.",
+    {font:{size:8, italic:true, color:{argb:X_MUET}}});
+
+  ws.pageSetup = {orientation:"landscape", fitToPage:true, fitToWidth:1, fitToHeight:0,
+    paperSize:8, printTitlesRow:"1:2", printTitlesColumn:"A:A",
+    margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}};
+  return ws;
+}
+
+/* ================= onglet « prof » ================= */
+/* Les heures posees jour par jour, le total de la semaine face au budget, et
+   la liste de ce qui reste — c'est la question qu'on posait a la pastille de
+   l'ecran, un prof a la fois, et qu'on ne pouvait pas emporter. */
+function feuilleProfs(wb){
+  const J = jours(), P = profsExport(), [H0,H1] = bornesEdt();
+  const ws = wb.addWorksheet("prof", {views:[{state:"frozen", xSplit:1, ySplit:2}]});
+  const cols = [{width:16}];
+  J.forEach(()=>cols.push({width:9},{width:9}));
+  cols.push({width:11},{width:11},{width:11});
+  ws.columns = cols;
+
+  ws.mergeCells(1,1,2,1);
+  cel(ws,1,1,"prof",{fond:X_BLEU, font:{bold:true,size:11,color:{argb:"FFFFFFFF"}},
+    al:{vertical:"middle",horizontal:"center"}});
+  J.forEach((j,i)=>{
+    const c = 2+i*2;
+    ws.mergeCells(1,c,1,c+1);
+    cel(ws,1,c,j,{fond:X_BLEU, font:{bold:true,size:11,color:{argb:"FFFFFFFF"}},
+      al:{vertical:"middle",horizontal:"center"}});
+  });
+  const CS = 2 + J.length*2;
+  ws.mergeCells(1,CS,1,CS+2);
+  cel(ws,1,CS,"semaine",{fond:"FF1F3A6B", font:{bold:true,size:11,color:{argb:"FFFFFFFF"}},
+    al:{vertical:"middle",horizontal:"center"}});
+  const sous = (c, t) => cel(ws,2,c,t,{fond:"FFE8EEF8",
+    font:{bold:true,size:9,color:{argb:X_BLEU}}, al:{horizontal:"center"}});
+  J.forEach((j,i)=>{ sous(2+i*2,"posées"); sous(3+i*2,"budget"); });
+  sous(CS,"posées"); sous(CS+1,"budget"); sous(CS+2,"reste");
+  ws.getRow(1).height = 18;
+
+  const HFMT = '0.##" h"';
+  P.forEach((p,k)=>{
+    const r = 3+k;
+    cel(ws,r,1,p,{font:{bold:true,size:10,color:{argb:ARGB(teinte(p))}}});
+    let tu = 0, tb = 0;
+    J.forEach((j,i)=>{
+      const u = utilise(p,j), b = budget(p,j);
+      tu += u; tb += (b||0);
+      const coul = b===null ? X_MUET
+                 : u > b+1e-9 ? X_ROUGE
+                 : b===0 ? X_MUET
+                 : Math.abs(u-b)<1e-9 ? X_VERT : X_AMBRE;
+      cel(ws,r,2+i*2, u||null, {fmt:HFMT, al:{horizontal:"center"},
+        font:{size:10, bold:u>0, color:{argb:coul}}});
+      cel(ws,r,3+i*2, b===null?"?":(b||null), {fmt:HFMT, al:{horizontal:"center"},
+        font:{size:10, color:{argb:X_MUET}}});
+    });
+    const reste = tb - tu;
+    cel(ws,r,CS,   tu, {fmt:HFMT, al:{horizontal:"center"}, font:{size:10,bold:true}});
+    cel(ws,r,CS+1, tb, {fmt:HFMT, al:{horizontal:"center"}, font:{size:10,color:{argb:X_MUET}}});
+    cel(ws,r,CS+2, reste, {fmt:HFMT, al:{horizontal:"center"},
+      font:{size:10, bold:true, color:{argb: reste < -1e-9 ? X_ROUGE
+                                           : reste > 1e-9 ? X_AMBRE : X_VERT}}});
+  });
+  const RT = 3 + P.length;
+  cel(ws,RT,1,"total",{fond:X_FOND, font:{bold:true,size:10}});
+  J.forEach((j,i)=>{
+    cel(ws,RT,2+i*2, P.reduce((s,p)=>s+utilise(p,j),0), {fond:X_FOND, fmt:HFMT,
+      al:{horizontal:"center"}, font:{bold:true,size:10}});
+    cel(ws,RT,3+i*2, P.reduce((s,p)=>s+(budget(p,j)||0),0), {fond:X_FOND, fmt:HFMT,
+      al:{horizontal:"center"}, font:{size:10,color:{argb:X_MUET}}});
+  });
+  const TU = J.reduce((s,j)=>s+P.reduce((t,p)=>t+utilise(p,j),0),0),
+        TB = J.reduce((s,j)=>s+P.reduce((t,p)=>t+(budget(p,j)||0),0),0);
+  cel(ws,RT,CS,  TU,    {fond:X_FOND, fmt:HFMT, al:{horizontal:"center"}, font:{bold:true,size:10}});
+  cel(ws,RT,CS+1,TB,    {fond:X_FOND, fmt:HFMT, al:{horizontal:"center"}, font:{size:10,color:{argb:X_MUET}}});
+  cel(ws,RT,CS+2,TB-TU, {fond:X_FOND, fmt:HFMT, al:{horizontal:"center"}, font:{bold:true,size:10}});
+  bord(ws,1,1,RT,CS+2,X_LIGNE);
+
+  // ---- deuxieme bloc : ou il reste des heures, et quand exactement
+  let r = RT + 3;
+  cel(ws,r,1,"Jours où un prof a encore des heures",{font:{bold:true,size:12}});
+  cel(ws,r+1,1,"« Créneaux libres » : les plages d'au moins une heure où ce prof n'a pas cours "
+    + "ET où il reste un court ouvert. Ailleurs, ses heures restantes ne sont pas posables.",
+    {font:{size:9, italic:true, color:{argb:X_MUET}}});
+  r += 3;
+  const ENT = ["prof","jour","posées","budget","reste","créneaux libres (court disponible)"];
+  ENT.forEach((t,i)=>cel(ws,r,1+i,t,{fond:X_BLEU,
+    font:{bold:true,size:10,color:{argb:"FFFFFFFF"}}, al:{vertical:"middle"}}));
+  ws.getRow(r).height = 18;
+  let n = 0;
+  J.forEach(j=>P.forEach(p=>{
+    const b = budget(p,j), u = utilise(p,j);
+    if(b===null || b-u <= 1e-9) return;
+    const l = ++n + r;
+    cel(ws,l,1,p,{font:{bold:true,size:10,color:{argb:ARGB(teinte(p))}}});
+    cel(ws,l,2,j,{font:{size:10}});
+    cel(ws,l,3,u,{fmt:HFMT, al:{horizontal:"center"}, font:{size:10}});
+    cel(ws,l,4,b,{fmt:HFMT, al:{horizontal:"center"}, font:{size:10,color:{argb:X_MUET}}});
+    cel(ws,l,5,b-u,{fmt:HFMT, al:{horizontal:"center"},
+      font:{size:10,bold:true,color:{argb:X_AMBRE}}});
+    const libres = libresProf(p,j,H0,H1);
+    cel(ws,l,6, libres.length ? libres.join(" · ") : "aucune — les courts sont pris",
+      {font:{size:10, italic:!libres.length, color:{argb:libres.length?X_ENCRE:X_MUET}}});
+  }));
+  if(!n) cel(ws,r+1,1,"Aucun prof n'a d'heure en réserve : tous les budgets sont posés.",
+    {font:{size:10, italic:true, color:{argb:X_VERT}}});
+  else bord(ws,r,1,r+n,6,X_LIGNE);
+  return ws;
+}
+
+/* Les plages ou ce prof pourrait encore poser un cours : il n'y est pas deja,
+   et il reste un court. Moins d'une heure ne sert a rien — le plus court des
+   formats dure soixante minutes. */
+function libresProf(p, j, H0, H1){
+  const occ = occupCourts(j,H0,H1), out = [];
+  let deb = null;
+  for(let t=H0; t<=H1; t+=PAS){
+    const ok = t < H1
+      && ouvertsA(j,t) - occ[(t-H0)/PAS] > 0
+      && !vivants().some(c=>c.jour===j && c.prof===p && c.d<=t && t<c.f);
+    if(ok){ if(deb===null) deb = t; }
+    else if(deb!==null){ if(t-deb >= 60) out.push(gtx(deb)+"–"+gtx(t)); deb = null; }
+  }
+  return out;
+}
+
+/* ================= onglet « terrains » ================= */
+function feuilleTerrains(wb){
+  const J = joursEdt().length ? joursEdt() : jours();
+  const [H0,H1] = bornesEdt(), P = profsExport();
+  const ws = wb.addWorksheet("terrains", {views:[{state:"frozen", ySplit:1}]});
+  ws.columns = [{width:11},{width:8},{width:8},{width:8},{width:9},{width:9},{width:9},{width:52}];
+
+  cel(ws,1,1,"Ce qu'il reste de courts, heure par heure",{font:{bold:true,size:12}});
+  cel(ws,2,1,"Un court « libre » l'est vraiment : les cours posés sont déduits, y compris ceux "
+    + "qui prennent deux ou trois courts. La dernière colonne dit qui pourrait les prendre.",
+    {font:{size:9, italic:true, color:{argb:X_MUET}}});
+
+  // ---- resume par jour, en heures-court
+  let r = 4;
+  ["jour","courts ouverts","posés","libres","taux"].forEach((t,i)=>
+    cel(ws,r,1+i,t,{fond:X_BLEU, font:{bold:true,size:10,color:{argb:"FFFFFFFF"}}}));
+  J.forEach((j,k)=>{
+    const occ = occupCourts(j,H0,H1);
+    let ouv = 0, pris = 0;
+    for(let t=H0;t<H1;t+=PAS){ ouv += ouvertsA(j,t)*PAS/60; pris += Math.min(occ[(t-H0)/PAS], ouvertsA(j,t))*PAS/60; }
+    const l = r+1+k;
+    cel(ws,l,1,j,{font:{bold:true,size:10}});
+    cel(ws,l,2,ouv, {fmt:'0.##" h"', al:{horizontal:"center"}});
+    cel(ws,l,3,pris,{fmt:'0.##" h"', al:{horizontal:"center"}});
+    cel(ws,l,4,ouv-pris,{fmt:'0.##" h"', al:{horizontal:"center"},
+      font:{bold:true, color:{argb: ouv-pris > .01 ? X_AMBRE : X_VERT}}});
+    cel(ws,l,5, ouv ? pris/ouv : 0, {fmt:"0 %", al:{horizontal:"center"},
+      font:{color:{argb:X_MUET}}});
+  });
+  bord(ws,r,1,r+J.length,5,X_LIGNE);
+
+  // ---- le detail : chaque plage ou il reste au moins un court
+  r += J.length + 3;
+  cel(ws,r,1,"Créneaux où un court reste libre",{font:{bold:true,size:12}});
+  cel(ws,r+1,1,"Une ligne par plage d'au moins trente minutes. Les trous plus courts entre "
+    + "deux cours comptent dans le résumé ci-dessus, mais ne sont pas des places à prendre.",
+    {font:{size:9, italic:true, color:{argb:X_MUET}}});
+  r += 3;
+  ["jour","de","à","durée","ouverts","pris","libres","profs sans cours à ce moment (heures restantes)"]
+    .forEach((t,i)=>cel(ws,r,1+i,t,{fond:X_BLEU,
+      font:{bold:true,size:10,color:{argb:"FFFFFFFF"}}, al:{vertical:"middle"}}));
+  ws.getRow(r).height = 18;
+  let n = 0;
+  J.forEach(j=>{
+    const occ = occupCourts(j,H0,H1);
+    let deb = null, etat = null;
+    const clore = fin => {
+      // Sous la demi-heure, un court libre n'est pas une place a prendre mais
+      // un trou entre deux cours : le lister noierait les vraies ouvertures.
+      if(deb===null || !etat || etat.libre <= 0 || fin-deb < 30){ deb = null; return; }
+      const l = r + (++n);
+      const qui = P.filter(p => budget(p,j) !== null && budget(p,j) - utilise(p,j) > 1e-9
+          && !vivants().some(c=>c.jour===j && c.prof===p && c.d < fin && deb < c.f))
+        .map(p => p + " (" + hh(budget(p,j)-utilise(p,j)) + ")");
+      cel(ws,l,1,j,{font:{size:10,bold:true}});
+      cel(ws,l,2,gtx(deb),{al:{horizontal:"center"},font:{size:10}});
+      cel(ws,l,3,gtx(fin),{al:{horizontal:"center"},font:{size:10}});
+      cel(ws,l,4,hh((fin-deb)/60),{al:{horizontal:"center"},font:{size:10,color:{argb:X_MUET}}});
+      cel(ws,l,5,etat.ouv,{al:{horizontal:"center"},font:{size:10,color:{argb:X_MUET}}});
+      cel(ws,l,6,etat.pris,{al:{horizontal:"center"},font:{size:10,color:{argb:X_MUET}}});
+      cel(ws,l,7,etat.libre,{al:{horizontal:"center"},font:{size:10,bold:true,color:{argb:X_AMBRE}}});
+      cel(ws,l,8, qui.length ? qui.join(" · ") : "aucun prof n'a d'heures ici",
+        {font:{size:10, italic:!qui.length, color:{argb:qui.length?X_ENCRE:X_MUET}}});
+      deb = null;
+    };
+    for(let t=H0; t<H1; t+=PAS){
+      const ouv = ouvertsA(j,t), pris = occ[(t-H0)/PAS], libre = ouv - pris;
+      if(deb!==null && etat && (etat.ouv!==ouv || etat.pris!==pris)) clore(t);
+      if(libre > 0){ if(deb===null){ deb = t; etat = {ouv, pris, libre}; } }
+      else if(deb!==null) clore(t);
+    }
+    clore(H1);
+  });
+  if(!n) cel(ws,r+1,1,"Aucun court libre : tout ce qui est ouvert est occupé.",
+    {font:{size:10, italic:true, color:{argb:X_VERT}}});
+  else bord(ws,r,1,r+n,8,X_LIGNE);
+  return ws;
+}
+
+/* ================= onglet « joueurs » ================= */
+/* Tout le monde sur une seule liste, places ou non : c'est la feuille qu'on
+   ouvre quand un adherent telephone. « a un cours » repond en un coup d'oeil,
+   les colonnes suivantes disent lequel, et sinon pourquoi pas. */
+function feuilleJoueurs(wb){
+  const L = [];
+  ordonne().forEach(c=>c.membres.forEach(m=>{
+    const np = nomPrenom(m);
+    L.push({nom:np.nom, prenom:np.prenom, sexe:m.sexe || c.sexe || "",
+      cours:"oui", jour:c.jour, horaire:gtx(c.d)+"–"+gtx(c.f), prof:c.prof, pal:c.pal||"",
+      niveau:m.niveau||"", dispos:m.dispos||"", obs:m.obs||"", hors:"", motif:"",
+      ancien:m.ancien?"oui":"non"});
+  }));
+  (annexes.enPlace||[]).forEach(p=>{
+    const np = nomPrenom(p), q = String(p.quoi||"").match(/^(\S+)\s+(\S+)\s*(.*)$/);
+    L.push({nom:np.nom, prenom:np.prenom, sexe:p.sexe||"",
+      cours:"oui (hors CCA)", jour:q?q[1]:"", horaire:q?q[2]:p.quoi||"", prof:q?q[3]:"",
+      pal:"", niveau:p.niveau||"", dispos:"", obs:"", hors:"",
+      motif:"déjà dans un groupe avant le calcul", ancien:p.ancien?"oui":"non"});
+  });
+  attente.forEach(p=>{
+    const np = nomPrenom(p);
+    L.push({nom:np.nom, prenom:np.prenom, sexe:p.sexe||"", cours:"non",
+      jour:"", horaire:"", prof:"", pal:"", niveau:p.niveau||"", dispos:p.dispos||"",
+      obs:p.obs||"", hors:"", motif:p.raison||"", ancien:p.ancien?"oui":"non"});
+  });
+  (annexes.hors||[]).forEach(p=>{
+    const np = nomPrenom(p);
+    L.push({nom:np.nom, prenom:np.prenom, sexe:p.sexe||"", cours:"non",
+      jour:"", horaire:"", prof:"", pal:"", niveau:p.niveau||"", dispos:"", obs:"",
+      hors:"oui", motif:p.quoi||"pas soumis au calcul", ancien:p.ancien?"oui":"non"});
+  });
+  L.sort((a,b)=> a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom));
+
+  const ws = tableau(wb, "joueurs",
+    ["nom","prénom","sexe","a un cours","jour","horaire","prof","palier","niveau club",
+     "disponibilités","observation","hors champ","motif (si sans cours)","ancien"],
+    [20,16,6,13,11,13,12,8,11,46,46,10,46,8],
+    L.map(p=>[p.nom,p.prenom,p.sexe,p.cours,p.jour,p.horaire,p.prof,p.pal,p.niveau,
+              p.dispos,p.obs,p.hors,p.motif,p.ancien]));
+  // sans cours : la ligne entiere en ambre, hors champ : en gris. La liste se
+  // trie a l'oeil avant meme d'ouvrir le filtre.
+  L.forEach((p,i)=>{
+    const f = p.hors ? X_FERME : p.cours==="non" ? "FFFDF3E2" : null;
+    if(!f) return;
+    for(let c=1;c<=14;c++) cel(ws,2+i,c,null,{fond:f});
+  });
+  ws.getColumn(10).alignment = {wrapText:false};
+  return ws;
+}
+
+/* ================= le classeur ================= */
+async function exportResultat(){
+  const b = F("grExport"), lib = b.textContent;
+  b.disabled = true; b.textContent = "…";
+  try{
+    const E = await chargerExcelJS();
+    const wb = new E.Workbook();
+    wb.creator = "Groupes et EDT"; wb.created = new Date();
+    feuilleEdt(wb); feuilleProfs(wb); feuilleTerrains(wb); feuilleJoueurs(wb);
+    feuillesDetail(wb);
+    const buf = await wb.xlsx.writeBuffer();
+    dl(new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),
+       "groupes-cca.xlsx");
+  }catch(e){
+    console.error(e);
+    alert("Export impossible : " + (e.message || e));
+  }finally{ b.disabled = false; b.textContent = lib; }
+}
+
+/* Les quatre onglets d'avant, intacts : ce sont eux qui portent le detail
+   (emails, demandes ecrites sur la fiche, figeages). Les quatre nouveaux se
+   lisent, ceux-ci se fouillent. */
+function feuillesDetail(wb){
+  const L = ordonne();
+  const g = [];
   L.forEach((c,i)=>c.membres.forEach(m=>g.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,
-    m.nom,m.email||"",m.niveau||"",m.dispos||"",c.sexe,c.membres.length,
+    m.nom,m.email||"",m.niveau||"",m.dispos||"",m.sexe||c.sexe,c.membres.length,
     (c.lock===2||c.epingles.indexOf(m.nom)>=0)?"oui":"",c.manuel?"oui":"",
     m.ancien?"oui":""].concat(CH_FICHE.map(k=>m[k]||"")))));
-  const gws = XLSX.utils.aoa_to_sheet(g);
-  gws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:26},{wch:28},
-                {wch:8},{wch:44},{wch:6},{wch:9},{wch:9},{wch:10},{wch:8},
-                {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, gws, "Groupes");
+  tableau(wb,"Groupes",
+    ["groupe","jour","debut","fin","prof","type","palier","nom","email","niveau","dispos",
+     "sexe","effectif","epingle","a_la_main","ancien"].concat(CH_FICHE),
+    [26,11,8,8,11,6,8,26,28,8,44,6,9,9,10,8,15,60,26,26,16,16], g);
 
-  const co = [["groupe","jour","debut","fin","prof","type","palier","effectif","max","sexe","figeage","a_la_main","joueurs"]];
-  L.forEach((c,i)=>co.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,c.membres.length,c.max,c.sexe,
-    ["libre","creneau","tout"][c.lock], c.manuel?"oui":"", c.membres.map(m=>m.nom).join(" · ")]));
-  const cws = XLSX.utils.aoa_to_sheet(co);
-  cws["!cols"]=[{wch:26},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:6},{wch:6},{wch:9},{wch:10},{wch:70}];
-  XLSX.utils.book_append_sheet(wb, cws, "Cours");
+  const co = [];
+  L.forEach((c,i)=>co.push([nomCours(c,i),c.jour,gtx(c.d),gtx(c.f),c.prof,c.type,c.pal,
+    c.membres.length,c.max,c.sexe,["libre","creneau","tout"][c.lock], c.manuel?"oui":"",
+    c.membres.map(m=>m.nom).join(" · ")]));
+  tableau(wb,"Cours",
+    ["groupe","jour","debut","fin","prof","type","palier","effectif","max","sexe",
+     "figeage","a_la_main","joueurs"],
+    [26,11,8,8,11,6,8,9,6,6,9,10,70], co);
 
-  const np = [["nom","sexe","ancien","niveau","email","dispos","raison"].concat(CH_FICHE)];
-  attente.forEach(p=>np.push([p.nom,p.sexe,p.ancien?"oui":"",p.niveau,p.email||"",p.dispos||"",p.raison||""]
-    .concat(CH_FICHE.map(k=>p[k]||""))));
-  const nws = XLSX.utils.aoa_to_sheet(np);
-  nws["!cols"]=[{wch:26},{wch:6},{wch:8},{wch:8},{wch:30},{wch:46},{wch:60},
-                {wch:15},{wch:60},{wch:26},{wch:26},{wch:16},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, nws, "Non places");
+  const np = [];
+  attente.forEach(p=>np.push([p.nom,p.sexe,p.ancien?"oui":"",p.niveau,p.email||"",p.dispos||"",
+    p.raison||""].concat(CH_FICHE.map(k=>p[k]||""))));
+  tableau(wb,"Non places",
+    ["nom","sexe","ancien","niveau","email","dispos","raison"].concat(CH_FICHE),
+    [26,6,8,8,30,46,60,15,60,26,26,16,16], np);
 
-  XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
-  XLSX.writeFile(wb, "groupes-cca.xlsx");
+  const f = lignesFigeages();
+  tableau(wb,"Figeages", f[0], [30,11,8,8,11,6,8,9,14,70], f.slice(1), true);
 }
 
 /* La feuille que la relance suivante consomme. La cle est stable d'un essai
    a l'autre — jour, heure, prof, type — la ou « G01 » est un rang d'affichage
    qui change des qu'un cours s'ouvre plus tot dans la semaine. */
-function feuilleFigeages(){
+function lignesFigeages(){
   const a = [["cle","jour","debut","fin","prof","type","palier","mode","effectif_force","joueurs_epingles"]];
   ordonne().filter(c=>c.lock>0 || c.epingles.length || c.force).forEach(c=>{
     a.push([c.cle, c.jour, gtx(c.d), gtx(c.f), c.prof, c.type, c.pal,
@@ -4856,6 +5411,10 @@ function feuilleFigeages(){
   a.push(["mode : creneau = jour, heure et prof imposes, composition libre — tout = composition imposee aussi."]);
   a.push(["interdit : cours supprime a la main. Ce prof n'ouvre aucun cours sur cette plage horaire, quel que soit le format."]);
   a.push(["effectif_force : effectif au-dessus du plafond, assume a la main. Le modele doit l'accepter sur ce cours."]);
+  return a;
+}
+function feuilleFigeages(){
+  const a = lignesFigeages();
   const ws = XLSX.utils.aoa_to_sheet(a);
   ws["!cols"]=[{wch:30},{wch:11},{wch:8},{wch:8},{wch:11},{wch:6},{wch:8},{wch:9},{wch:14},{wch:70}];
   return ws;
