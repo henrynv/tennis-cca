@@ -1017,14 +1017,15 @@
         <select id="grTemps">
           <option value="60">1 minute</option>
           <option value="120">2 minutes</option>
-          <option value="300" selected>5 minutes</option>
+          <option value="300">5 minutes</option>
+          <option value="600" selected>10 minutes</option>
           <option value="900">15 minutes</option>
         </select>
         <button class="primary" id="grGo">Lancer le calcul</button>
       </div>
       <div class="grfile" id="grFiles"></div>
       <p class="grerr" id="grErr"></p>
-      <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
+      <p class="hint" id="grAide">Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=600</code>,
         puis déposez <b>resultat-cca.xlsx</b> ci-dessus.</p>
       <p style="margin-top:12px"><button class="mini" id="grRetour"
         style="display:none">← Revenir aux groupes</button></p>
@@ -4835,7 +4836,7 @@ function majLance(){
   F("grAide").innerHTML = agent
     ? `Agent local détecté. Le calcul tourne sur cette machine ; ces fichiers sont ceux
        qu'il lit à côté de <code>solve_cca.py</code>.`
-    : `Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=300</code>,
+    : `Sur le poste : <code>./.venv/bin/python solve_cca.py --temps=600</code>,
        puis déposez <b>resultat-cca.xlsx</b> ci-dessus. Ou lancez
        <code>python agent.py</code> pour calculer depuis cette page.`;
   const dejaLa = cours.length > 0;
@@ -5143,7 +5144,7 @@ async function lancer(){
       XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
       await jsonAgent("/figeages", {contenu: XLSX.write(wb, {bookType:"xlsx", type:"base64"})});
     }
-    const t = +F("grTemps").value || 300;
+    const t = +F("grTemps").value || 600;
     await jsonAgent("/lancer", {temps:t});
     ecranCalcul(t);
     reprendreSuivi();
@@ -5174,7 +5175,7 @@ function reprendreSuivi(){
     try{ d = await jsonAgent("/progres"); }
     catch(e){ clearInterval(suivi); enCalcul = false; F("grErr").textContent =
       "Agent injoignable pendant le calcul."; rend(); return; }
-    const t = d.temps || 300;
+    const t = d.temps || 600;
     F("grProgB").style.width = Math.min(100, (d.ecoule||0)/t*100).toFixed(0) + "%";
     // CP-SAT ameliore son objectif des dizaines de fois pour un meme nombre de
     // joueurs places : on ne montre que les paliers qui changent quelque chose
