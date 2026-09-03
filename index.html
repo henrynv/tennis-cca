@@ -354,6 +354,14 @@
   .grpill.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
   .grpill.val{border-color:var(--accent);background:var(--accent-soft);color:#14512f;font-weight:600}
   .grpill.on.val{background:#14512f;border-color:#14512f;color:#fff}
+  /* La croix vit dans la pastille, pas a cote : trois calculs et trois croix
+     alignes prendraient toute la barre. Elle n'apparait qu'au survol du groupe. */
+  .grpg{display:flex;align-items:center;position:relative;flex:none}
+  .grpg .grpillx{position:absolute;right:-2px;top:-4px;width:15px;height:15px;padding:0;
+    border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--muted);
+    font-size:10px;line-height:1;display:none;align-items:center;justify-content:center}
+  .grpg:hover .grpillx,.grpg:focus-within .grpillx{display:flex}
+  .grpg .grpillx:hover{border-color:var(--warn);color:var(--warn)}
   .grpills input{font:inherit;font-size:12.5px;height:26px;width:140px;padding:0 8px;
     border:1px solid var(--accent);border-radius:20px}
 
@@ -409,6 +417,17 @@
   .grchip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
   .grfil select{font-size:12px;padding:3px 6px;height:26px;width:auto}
   .grfil .cnt{margin-left:auto;color:var(--muted);font-size:12px}
+  /* Sept profs passaient a la ligne des le sixieme, et la deuxieme ligne poussait
+     la grille vers le bas. Ils tiennent desormais sur une seule ligne, qui defile
+     si l'ecran est trop etroit. */
+  .grfil .g.profs{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+    padding-bottom:2px;scrollbar-width:thin}
+  .grfil .g.profs .grpb{flex:none}
+  /* Quand les pastilles depassent, le bord droit s'estompe : sans ce signe, une
+     ligne coupee net se lit comme une liste complete, et on ne cherche pas les
+     profs qui manquent. */
+  .grfil .g.profs.defile{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+    mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
 
   .grwrap{flex:1;min-height:0;overflow:auto;padding:0 12px 12px}
   .grweek{display:grid}
@@ -442,7 +461,14 @@
   .grc.grab{cursor:grab}
   .grc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);z-index:6}
   .grc b{display:block;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .grc .l2{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* L'effectif ne se laisse plus couper : c'est lui qu'on cherche du regard pour
+     savoir ou poser quelqu'un. Le palier retrecit avant lui, et disparait avant
+     lui si la carte est vraiment etroite. */
+  .grc .l2{color:var(--muted);display:flex;gap:4px;align-items:baseline;line-height:1.25}
+  .grc .l2 .pl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grc .l2 .nb{flex:none;margin-left:auto;font-weight:600;color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  .grc .l2 .nb.inc{color:#96600d}
   .grc .lk{position:absolute;top:2px;right:3px;font-size:11px;opacity:0;line-height:1}
   .grc:hover .lk{opacity:.4}
   .grc.f1,.grc.f2{background:#e8eef8;border-color:#b9c9e3}
@@ -501,15 +527,18 @@
   /* Une pastille de prof = un filtre ET sa jauge d'heures. Les deux etaient
      deux bandeaux distincts qui listaient les memes six noms : la moitie de la
      hauteur perdue sous la grille servait a repeter « Loic, Lucas, Max… ». */
-  .grpb{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;
-    padding:3px 9px;background:#fff;font-size:12px;line-height:1.3;cursor:pointer;height:auto}
+  /* Sept pastilles doivent tenir dans la largeur d'un portable : ecartements,
+     jauge et chiffres sont regles pour ca, sans rien retirer de ce qu'elles
+     disent. La ligne defile si l'ecran est vraiment etroit. */
+  .grpb{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;
+    padding:3px 7px;background:#fff;font-size:12px;line-height:1.3;cursor:pointer;height:auto}
   .grpb:hover{border-color:var(--accent)}
   .grpb.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);background:#f2f5f8}
   .grpb b{font-size:12.5px;font-weight:600}
   .grpb .pt{width:8px;height:8px;border-radius:50%;flex:none}
-  .grpb .gg{width:34px;height:5px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
+  .grpb .gg{width:20px;height:5px;border-radius:3px;background:#e7ebf0;overflow:hidden;flex:none}
   .grpb .gg s{display:block;height:100%;background:var(--accent);text-decoration:none}
-  .grpb .v{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;font-size:11.5px}
+  .grpb .v{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;font-size:11px}
   .grpb.plein .gg s{background:#c79014}
   .grpb.over{border-color:var(--warn);background:#fdeaea}
   .grpb.over .gg s{background:var(--warn)}
@@ -1223,7 +1252,8 @@
         <div class="tx" id="grBarTx"></div>
         <button class="mini" id="grUndo" style="display:none">↶ Annuler</button>
         <button class="mini" id="grNew">+ Nouveau cours</button>
-        <button class="mini" id="grAll">Tout garder</button>
+        <button class="mini" id="grAll"
+          title="Reposer tous les cours tels quels au prochain calcul">Garder tous les cours</button>
         <button class="mini" id="grImp">🖨 Imprimer le planning</button>
         <button class="primary big" id="grRelance" style="display:none"
           title="Repart du calcul en reposant les cours gardés tels quels">↻ Régénérer l'emploi du temps</button>
@@ -3727,6 +3757,8 @@ function rendPills(){
   w.innerHTML = "";
   if(!cours.length) return;
   scen.forEach(e=>{
+    const g = document.createElement("span");
+    g.className = "grpg";
     const b = document.createElement("button");
     b.className = "grpill" + (e.n===vu?" on":"") + (e.valide?" val":"");
     b.textContent = (e.valide?"★ ":"") + e.nom;
@@ -3737,7 +3769,34 @@ function rendPills(){
       vu = e.n; sel = null; selAtt = null; moving = null; trouve = null;
       sauver(); rend();
     };
-    w.appendChild(b);
+    g.appendChild(b);
+    // Un calcul depasse encombre la barre et n'aide plus a comparer. On peut
+    // l'enlever — sauf le dernier, sinon l'ecran perdrait le planning affiche.
+    if(scen.length > 1){
+      const x = document.createElement("button");
+      x.className = "grpillx"; x.textContent = "✕";
+      x.title = "Supprimer « " + e.nom + " »";
+      x.setAttribute("aria-label", "Supprimer " + e.nom);
+      x.onclick = ev=>{
+        ev.stopPropagation();
+        if(!confirm("Supprimer « " + e.nom + " » ?\n\nCe planning ne sera plus consultable. "
+          + "Les autres calculs et l'emploi du temps affiché ne changent pas.")) return;
+        const i = scen.findIndex(x2=>x2.n===e.n);
+        if(i < 0) return;
+        scen.splice(i, 1);
+        // Supprimer celui qu'on regarde : on bascule sur le plus recent restant,
+        // sinon l'ecran afficherait un planning qui n'appartient plus a rien.
+        if(e.n === vu){
+          const suiv = scen[scen.length-1];
+          cours = JSON.parse(JSON.stringify(suiv.cours));
+          attente = JSON.parse(JSON.stringify(suiv.attente));
+          vu = suiv.n; sel = null; selAtt = null; moving = null; trouve = null;
+        }
+        sauver(); rend();
+      };
+      g.appendChild(x);
+    }
+    w.appendChild(g);
   });
   const cur = scen.find(e=>e.n===vu);
   if(!cur) return;
@@ -3887,6 +3946,10 @@ function passe(c){
   if(filtre.etat==="fige"  && c.lock===0) return false;
   if(filtre.etat==="libre" && c.lock>0)   return false;
   if(filtre.etat==="chg"   && !c.manuel)  return false;
+  // « incomplets » : les cours ou il reste une place. C'est la ou on peut poser
+  // quelqu'un sans rien deranger, donc le premier filtre qu'on cherche quand on
+  // a vingt joueurs sur les bras.
+  if(filtre.etat==="incomplet" && c.membres.length >= c.max) return false;
   return true;
 }
 function rendFil(){
@@ -3896,8 +3959,9 @@ function rendFil(){
   // `.filter(Boolean)` : un cours cree a la main n'a pas encore de palier, et
   // une option vide viendrait se selectionner a la place de « tous les paliers ».
   const pals  = [...new Set(vivants().map(c=>c.pal))].filter(Boolean).sort();
+  const nInc  = vivants().filter(c=>c.membres.length < c.max).length;
   F("grFil").innerHTML =
-    `<span class="g"><span class="lb">Prof</span>${profs.map(p=>{
+    `<span class="g profs"><span class="lb">Prof</span>${profs.map(p=>{
        const sem = J.reduce((t,j)=>t+(budget(p,j)||0), 0);
        const use = J.reduce((t,j)=>t+utilise(p,j), 0);
        const dep = J.filter(j=>budget(p,j)!==null && utilise(p,j) > (budget(p,j)||0)+1e-9);
@@ -3907,18 +3971,24 @@ function rendFil(){
          title="Cliquer : ne montrer que ${esc(p)}. Survoler : ses heures jour par jour.">
          <i class="pt" style="background:${teinte(p)}"></i>
          <b>${esc(p)}</b>${sem?`<i class="gg"><s style="width:${Math.min(100,use/sem*100)}%"></s></i>`:""}
-         <span class="v">${hh(use)}${sem?" / "+hh(sem):""}${dep.length?" ⚠":pl.length?" ●":""}</span></button>`;
+         <span class="v">${hh(use)}${sem?"/"+hh(sem):""}${dep.length?" ⚠":pl.length?" ●":""}</span></button>`;
      }).join("")}</span>
      <span class="g"><span class="lb">Niveau</span><select id="grPal">
        <option value="">tous les paliers</option>
        ${pals.map(p=>`<option ${filtre.pal===p?"selected":""}>${esc(p)}</option>`).join("")}</select></span>
      <span class="g"><span class="lb">État</span>
-       <button class="grchip ${filtre.etat==="fige"?"on":""}" data-e="fige">figés</button>
+       <button class="grchip ${filtre.etat==="incomplet"?"on":""}" data-e="incomplet"
+         title="Les cours où il reste au moins une place">incomplets${
+         nInc ? ` <b>${nInc}</b>` : ""}</button>
+       <button class="grchip ${filtre.etat==="fige"?"on":""}" data-e="fige">gardés</button>
        <button class="grchip ${filtre.etat==="libre"?"on":""}" data-e="libre">libres</button>
        <button class="grchip ${filtre.etat==="chg"?"on":""}" data-e="chg">retouchés</button></span>
      <span class="cnt">${actif()
        ? `<b>${vivants().filter(passe).length}</b> cours sur ${vivants().length} · <button class="grchip" id="grClr">effacer</button>`
        : ctr ? "" : "contraintes non déposées : plafonds inconnus"}</span>`;
+  // le bord droit ne s'estompe que s'il y a vraiment quelque chose derriere
+  const gp = F("grFil").querySelector(".g.profs");
+  if(gp) gp.classList.toggle("defile", gp.scrollWidth > gp.clientWidth + 2);
   F("grFil").querySelectorAll(".grpb").forEach(b=>{
     const p = b.dataset.p;
     b.onmouseenter = b.onfocus = ()=>popProf(p, b);
@@ -4126,8 +4196,21 @@ function bornes(){
 }
 function rendWeek(){
   const w = F("grWeek"), J = jours(), [H0,H1] = bornes();
-  w.style.gridTemplateColumns = "46px repeat(" + J.length + ",1fr)";
-  w.style.minWidth = (46 + 120*J.length) + "px";   // plancher de lisibilite, pas une largeur
+  // Six colonnes egales donnaient la meme largeur au samedi, qui porte un cours
+  // a la fois, qu'au lundi, qui en empile quatre. Chaque jour recoit desormais
+  // une part proportionnelle a son heure la plus chargee : le soir des jours
+  // pleins y gagne un quart de largeur, et les noms des profs cessent d'etre
+  // coupes.
+  const poids = J.map(j=>{
+    let m = 1;
+    for(let t=H0; t<H1; t+=15){
+      const n = cours.filter(c=>c.jour===j && c.d<=t && t<c.f).length;
+      if(n > m) m = n;
+    }
+    return m;
+  });
+  w.style.gridTemplateColumns = "46px " + poids.map(p=>`minmax(60px,${p}fr)`).join(" ");
+  w.style.minWidth = (46 + poids.reduce((s,p)=>s + Math.max(60, 52*p), 0)) + "px";
   w.innerHTML = "";
   const vide = document.createElement("div"); vide.className = "grhead"; vide.style.cursor = "default";
   vide.innerHTML = "<b></b><em></em>"; w.appendChild(vide);
@@ -4257,7 +4340,8 @@ function rendWeek(){
       el.style.width = "calc("+(100/n)+"% - 3px)";
       el.innerHTML = mort
         ? `<b>${esc(c.prof)}</b><div class="l2">supprimé</div>`
-        : `<b>${esc(c.prof)}</b><div class="l2">${esc(c.pal || "palier ?")} · ${c.membres.length}/${c.max}</div>`
+        : `<b>${esc(c.prof)}</b><div class="l2"><span class="pl">${esc(c.pal || "palier ?")}</span>`
+          + `<span class="nb ${c.membres.length < c.max ? "inc" : ""}">${c.membres.length}/${c.max}</span></div>`
         + `<span class="lk" role="img" aria-label="${
              c.lock===2?"tout figé":c.lock===1?"créneau figé":"libre"}" title="${
              c.lock===2?"Tout figé — cliquer pour libérer"
@@ -5099,7 +5183,13 @@ function rendBar(){
          : `Rien n'est gardé.<em>Le prochain calcul repartira d'une page blanche : les ${
            vivants().length} cours peuvent tous changer.</em>`);
   F("grNew").textContent = creation ? "Annuler" : "+ Nouveau cours";
-  F("grAll").textContent = n===vivants().length && n>0 ? "Tout libérer" : "Tout garder";
+  // « Tout garder » se lisait comme « tout sauvegarder ». Nommer l'objet leve
+  // l'ambiguite : ce qu'on garde, ce sont les cours, et c'est pour la relance.
+  const gAll = F("grAll"), tout = n===vivants().length && n>0;
+  gAll.textContent = tout ? "Libérer tous les cours" : "Garder tous les cours";
+  gAll.title = tout
+    ? "Rendre les " + n + " cours au calcul : il pourra tous les refaire"
+    : "Reposer les " + vivants().length + " cours tels quels au prochain calcul";
   const u = F("grUndo");
   u.style.display = d ? "block" : "none";
   if(d){ u.title = "Annuler : " + d.nom + "  (⌘Z)"; }
@@ -6424,7 +6514,7 @@ F("grImp").onclick = imprimer;
 F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
   if(!v.length) return;
-  avant(tout ? "tout libérer" : "tout garder");
+  avant(tout ? "libération de tous les cours" : "garde de tous les cours");
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
 F("grNew").onclick = armerCrea;
