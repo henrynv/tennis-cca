@@ -3048,6 +3048,12 @@ function pousserEcran(o){
 function adopter(o){
   cours = o.cours||[]; attente = o.attente||[]; ctr = o.ctr||null;
   resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0; majEtat = o.maj||0;
+  // Un etat sauvegarde par une version anterieure n'a pas forcement tous les
+  // champs que le code d'aujourd'hui attend : `terrains` par exemple est arrive
+  // apres les premiers enregistrements. On les remet ici, une fois, plutot que
+  // de tester leur presence aux quatre endroits qui les lisent — un seul oubli
+  // et c'est `rend()` qui casse, donc l'ecran entier.
+  if(ctr){ ctr.terrains = ctr.terrains||[]; ctr.budget = ctr.budget||{}; ctr.jours = ctr.jours||[]; }
 }
 function relire(){
   try{
@@ -4638,7 +4644,14 @@ const tuile = F("tGroupes");
 if(tuile) tuile.onclick = ()=>{ showScreen("groupes"); rend(); pingAgent(); };
 
 relire();
-rend();
+// `rend()` dessine a partir de l'etat relu, donc de donnees qui peuvent venir
+// d'une version anterieure ; `pingAgent()` ne depend, lui, que de la machine.
+// Les enchainer sans filet a coute cher : un champ manquant dans l'etat faisait
+// echouer le dessin, l'agent n'etait alors jamais interroge, et l'ecran
+// annoncait « le solveur tourne sur l'ordinateur du club » — un probleme
+// d'affichage qui se lisait comme une panne de connexion.
+try{ rend(); }
+catch(e){ console.error("affichage initial impossible (etat illisible ?) :", e); }
 pingAgent();
 })();
 </script>
