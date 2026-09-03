@@ -571,6 +571,8 @@
   .grm{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #f0f2f5}
   .grm:last-child{border-bottom:none}
   .grm.ep{background:#e8eef8;border-radius:6px}
+  .grm.hors{background:#f6f7f9;border-radius:6px;color:var(--muted)}
+  .grm .cad{flex:none;font-size:12px;color:var(--muted)}
   .grm .nm{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grm .act{opacity:0;display:flex;gap:4px}
   .grm:hover .act,.grm.ep .act{opacity:1}
@@ -2910,7 +2912,7 @@ sb.auth.onAuthStateChange((evt, session) => {
 "use strict";
 
 const CLE = "cca_groupes_v1";
-let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],epingles[],lock,manuel,force,diff}
+let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],enPlace[],epingles[],lock,manuel,force,diff}
 let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
 let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
@@ -3063,6 +3065,7 @@ function adopter(o){
   // de tester leur presence aux quatre endroits qui les lisent — un seul oubli
   // et c'est `rend()` qui casse, donc l'ecran entier.
   if(ctr){ ctr.terrains = ctr.terrains||[]; ctr.budget = ctr.budget||{}; ctr.jours = ctr.jours||[]; }
+  cours.forEach(c=>{ c.enPlace = c.enPlace||[]; });
 }
 function relire(){
   try{
@@ -3108,7 +3111,13 @@ function lireResultat(wb){
       // `figeage` est ce que la relance precedente a recu et respecte. Le relire
       // rend ses cadenas a l'ecran : sans lui, chaque calcul renverrait un
       // planning ou plus rien n'est fige, et il faudrait tout refigier a la main.
-      lock: ({creneau:1, tout:2})[String(r[ic["figeage"]]||"").trim().toLowerCase()] || 0
+      lock: ({creneau:1, tout:2})[String(r[ic["figeage"]]||"").trim().toLowerCase()] || 0,
+      // Les membres que le cours a deja hors CCA : les groupes competition
+      // existent avant le calcul, avec cinq joueurs dedans. Le solveur ne les
+      // place pas et ils ne comptent pas dans l'effectif — celui-ci ne chiffre
+      // que les places vacantes — mais sans eux le volet montre un groupe a
+      // deux joueurs sur trois courts, ce qui n'est pas ce qui se passera.
+      enPlace: String(r[ic["en_place"]]||"").split("·").map(x=>x.trim()).filter(Boolean)
     };
     c.cle = cleDe(c);
     par[String(r[ic["groupe"]]||"").trim()] = c;
@@ -3892,7 +3901,8 @@ function rendSide(){
     const dep = b !== null && (b === 0 || u > b + 1e-9);
     head.innerHTML = `<button class="mini" id="grBack">←</button>
       <div><b>${esc(c.prof)} · ${gtx(c.d)}–${gtx(c.f)}</b>
-      <div class="sub">${esc(c.jour)} · palier ${esc(c.pal)} · ${c.sexe==="F"?"féminin":c.sexe==="H"?"masculin":"—"} · ${c.membres.length}/${c.max}</div></div>`;
+      <div class="sub">${esc(c.jour)} · palier ${esc(c.pal)} · ${c.sexe==="F"?"féminin":c.sexe==="H"?"masculin":"—"} · ${c.membres.length}/${c.max}${
+        c.enPlace.length ? ` + ${c.enPlace.length} hors CCA` : ""}</div></div>`;
     F("grBack").onclick = ()=>{ sel = null; rend(); };
     const profs = [...new Set(PROFS.concat(cours.map(x=>x.prof)))].filter(Boolean);
     body.innerHTML =
@@ -3913,7 +3923,11 @@ function rendSide(){
              ${b===null ? "budget inconnu" : b===0 ? "indisponible" : hh(u)+" / "+hh(b)}${dep?" ⚠":""}</div></div>
        </div>
        <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change le prof. Les deux figent le créneau.</p>
-       <div style="margin-top:12px">${c.membres.map((m,i)=>{
+       ${c.enPlace.length ? `<div style="margin-top:12px">
+         <p class="grnote" style="margin:0 0 4px">Déjà dans ce groupe hors CCA — le calcul ne peut ni les retirer, ni les déplacer, ni compter leur place.</p>
+         ${c.enPlace.map(n=>`<div class="grm hors"><span class="nm">${esc(n)}</span><span class="cad" title="Membre du groupe hors CCA">🔒 en place</span></div>`).join("")}
+       </div>` : ""}
+       <div style="margin-top:12px">${c.enPlace.length ? `<p class="grnote" style="margin:0 0 4px">Places CCA</p>` : ""}${c.membres.map((m,i)=>{
          const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
          return `<div class="grm ${ep?"ep":""}">
            <button class="nm lien" data-fi="${i}" title="Ouvrir sa fiche">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
@@ -3922,7 +3936,7 @@ function rendSide(){
              aria-pressed="${ep}" title="${ep?"Épinglé : le calcul le laissera ici"
              :"Épingler dans ce cours"}"><span aria-hidden="true">📌</span></button></div>`;
        }).join("")}
-       ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
+       ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""}${c.enPlace.length?" CCA":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
        </div>
        <p class="grnote">Un joueur déplacé à la main est épinglé d'office : sans ça le calcul suivant déferait le déplacement.</p>`;
     body.querySelectorAll(".grseg button").forEach(b2=>b2.onclick = ()=>{
