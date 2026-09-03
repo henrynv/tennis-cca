@@ -364,21 +364,29 @@
   .grk.man b{color:#7a4fb5}
   /* La barre des fiches recues. Elle occupe toute la largeur AVANT les tuiles :
      sa longueur pleine est le message — chaque fiche deposee est quelque part.
-     Les trois segments s'additionnent au total affiche a sa gauche. */
-  .grtot{flex:1 1 100%;display:flex;align-items:center;gap:14px;padding:2px 0 1px}
+     Aucun chiffre DANS la barre : a 16 px de haut ils se faisaient rogner, et
+     les repeter la ou la legende les donne deja n'apportait rien. La barre ne
+     porte que des proportions ; le fond gris qui depasse a droite est la part
+     que le calcul ne sait pas nommer, et il se voit sans legende. */
+  .grtot{flex:1 1 100%;display:flex;align-items:center;gap:8px 14px;
+    padding:3px 0 2px;flex-wrap:wrap}
   .grtot .n{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
-  .grtot .lb{font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .grbar{flex:1;display:flex;height:16px;min-width:180px;border-radius:4px;overflow:hidden;
-    background:var(--line)}
-  .grbar b{font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;
-    font-variant-numeric:tabular-nums;overflow:hidden}
-  .grbar .pl{background:#cfe8dd;color:#0f6e56}
-  .grbar .at{background:#f7e3bd;color:#7a4a0a}
-  .grbar .hc{background:#dcdad2;color:#4d4b45}
-  .grleg{display:flex;gap:14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .grtot .lb{font-size:11.5px;color:var(--muted);white-space:nowrap;line-height:1.25}
+  .grbar{flex:1 1 240px;min-width:150px;display:flex;height:10px;border-radius:5px;
+    overflow:hidden;background:var(--line)}
+  .grbar b{display:block;height:100%}
+  /* memes teintes que les pastilles de la legende : deux nuances pour une seule
+     idee, c'etait a l'oeil de faire le rapprochement */
+  .grbar .pl{background:#5dcaa5}
+  .grbar .at{background:#ef9f27}
+  .grbar .hc{background:#b4b2a9}
+  .grleg{display:flex;gap:6px 14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;
+    align-items:center}
   .grleg span{display:flex;align-items:center;gap:5px}
   .grleg i{width:9px;height:9px;border-radius:2px;flex:none}
   .grleg em{font-style:normal;opacity:.75}
+  .grleg a{color:inherit;text-decoration-style:dotted;text-underline-offset:2px}
+  .grleg .rst{color:#96600d}
   .grkeys{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
   .grkeys span{display:flex;align-items:center;gap:5px}
   .grkeys i{width:9px;height:9px;border-radius:2px;flex:none}
@@ -3626,24 +3634,32 @@ function rendSum(){
   // a l'autre.
   const solv = vivants().reduce((s,c)=>s+c.membres.length,0);
   const deja = annexes.enPlace.length, horsC = annexes.hors.length;
-  const pl = solv + deja, att = attente.length, tot = pl + att + horsC;
+  const pl = solv + deja, att = attente.length;
+  const somme = pl + att + horsC;
+  // Le total ne se DEDUIT pas du calcul, il vient de la base : c'est le nombre
+  // que le club connait, et un calcul qui ignore des fiches ne doit pas pouvoir
+  // redefinir le denominateur a la baisse. `players` est charge a l'ouverture de
+  // session ; s'il manque, on retombe sur la somme faute de mieux.
+  const enBase = (typeof players !== "undefined" && players.length) ? players.length : 0;
+  const tot = Math.max(enBase, somme);
+  // Ce que ce calcul-la ne range nulle part : des fiches deposees depuis, ou un
+  // classeur d'avant les onglets annexes. La barre le laisse en gris, non rempli.
+  const reste = tot - somme;
   const nMan = cours.filter(c=>c.manuel && c.diff!=="supp").length;
   const nFig = cours.filter(c=>c.lock>0 && c.diff!=="supp").length;
   const nAncAtt = attente.filter(p=>p.ancien).length;
-  // Un segment sous ~7 % n'a pas la place d'afficher son nombre : il reste
-  // visible comme filet colore, et la legende en dessous le nomme.
-  const seg = (n, cl) => n ? `<b class="${cl}" style="flex:${n}">${
-    n / tot > 0.07 ? n : ""}</b>` : "";
+  const seg = (n, cl) => n ? `<b class="${cl}" style="width:${(n/tot*100).toFixed(2)}%"></b>` : "";
   const barre = tot ? `<div class="grtot">
       <span class="n">${tot}</span>
-      <span class="lb">fiches reçues,<br>toutes tranchées</span>
+      <span class="lb">fiches reçues${reste ? "" : ",<br>toutes tranchées"}</span>
       <div class="grbar">${seg(pl,"pl")}${seg(att,"at")}${seg(horsC,"hc")}</div>
       <div class="grleg">
         <span><i style="background:#5dcaa5"></i>${pl} placés${
           deja ? ` <em>· dont ${deja} déjà en compétition</em>` : ""}</span>
         <span><i style="background:#ef9f27"></i>${att} sans groupe</span>
-        ${horsC ? `<span><i style="background:#b4b2a9"></i><a href="#" id="grHorsC"
-           style="color:inherit">${horsC} hors calcul</a></span>` : ""}
+        ${horsC ? `<span><i style="background:#b4b2a9"></i><a href="#"
+           id="grHorsC">${horsC} hors calcul</a></span>` : ""}
+        ${reste ? `<span class="rst" title="Ce calcul ne dit rien de ces fiches : soit il date d'avant, soit elles ont été déposées depuis. Relancez pour les prendre en compte."><i style="background:var(--line)"></i>${reste} hors de ce calcul</span>` : ""}
       </div>
     </div>` : "";
   F("grSum").innerHTML = barre +
