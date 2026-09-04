@@ -905,6 +905,31 @@
   .grfile .fic{display:block;color:var(--muted);font-size:12px;margin-top:2px}
   .grfile .acts{flex:none;margin-left:auto}
   .grfile .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
+  .grsims{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .grsimh{padding:10px 12px;border-bottom:1px solid var(--line);background:#fafbfc}
+  .grsimh b{display:block;font-size:13px}
+  .grsimh span{display:block;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.4}
+  .grsim{display:flex;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);
+    align-items:center;flex-wrap:wrap;font-size:13.5px}
+  .grsim.on{background:#f6fbf7}
+  .grsim .num{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .grsim .tx{flex:1 1 240px;min-width:0}
+  .grsim .tx b{display:block;font-size:13.5px}
+  .grsim .tags{display:inline-flex;gap:6px;margin-top:3px}
+  .grtag{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:1px 8px;color:var(--muted)}
+  .grtag.on{border-color:#bfe0c4;background:#f2f9f4;color:var(--accent);font-weight:600}
+  .grsim .fic{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+  .grsim .acts{flex:none;margin-left:auto}
+  .grsim .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
+  .grsimt{padding:10px 12px;overflow:auto}
+  .grsimt .grtable td:first-child{white-space:nowrap;color:var(--muted)}
+  /* Quatre colonnes de valeurs plus le libelle tiennent dans la carte : sans
+     cette largeur bridee et ces en-tetes sur deux lignes, la quatrieme
+     simulation sortait du cadre et il fallait deviner qu'on pouvait defiler. */
+  .grsimt .grtable th{white-space:normal;letter-spacing:.02em}
+  .grsimt .grtable th:first-child{width:168px}
+  .grsimt .grtable td{max-width:none}
   .grok{color:var(--accent);font-size:12px;font-weight:600;margin-right:8px}
   .grtabs{display:flex;gap:4px;flex-wrap:wrap}
   .grtab{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 10px;
@@ -1259,6 +1284,7 @@
         <button class="primary" id="grGo">Lancer le calcul</button>
       </div>
       <div class="grfile" id="grFiles"></div>
+      <div class="grsims" id="grSims"></div>
       <p class="grerr" id="grErr"></p>
       <p class="hint" id="grAide">Le calcul tourne sur l'ordinateur du club ;
         son résultat arrive ici par la base partagée.</p>
@@ -3777,6 +3803,159 @@ function rendFichiers(){
       choisir(f.k, !!agent && f.remplacable);
     };
   });
+  rendSims();
+}
+
+/* ---------------- les quatre simulations ----------------
+   Le club veut savoir ce que lui coutent — ou lui rapportent — deux apports de
+   l'annee passee : l'emploi du temps 2026 reconduit, et les affinites que Loic
+   a relevees joueur par joueur. Quatre calculs suffisent a le dire, puisque les
+   deux apports se combinent : avec les deux, avec l'un, avec l'autre, sans
+   rien. `simulations.command`, a cote du solveur, les produit dans cet ordre.
+
+   Ces classeurs restent dans CE navigateur, sous une cle a part. L'etat de
+   travail, lui, part dans la base a chaque geste : y joindre quatre resultats
+   de 80 ko l'aurait fait grossir de quatre fois, a chaque deplacement de
+   joueur, pour une comparaison qui ne regarde qu'une personne a la fois. Ce
+   qu'on retient d'une simulation, on l'ouvre — et c'est ce planning-la, un
+   seul, qui devient l'etat partage. */
+const CLE_SIMS = "cca_simulations_v1";
+const SIMS = [
+  {n:1, titre:"EDT 2026 + affinités de Loïc", court:"EDT + affinités",  edt:true,  aff:true,
+   fic:"resultat-1-edt-affinites.xlsx"},
+  {n:2, titre:"EDT 2026 seul",                court:"EDT seul",         edt:true,  aff:false,
+   fic:"resultat-2-edt-seul.xlsx"},
+  {n:3, titre:"Affinités de Loïc seules",     court:"Affinités seules", edt:false, aff:true,
+   fic:"resultat-3-affinites-seules.xlsx"},
+  {n:4, titre:"Ni l'un ni l'autre",           court:"Aucun des deux",   edt:false, aff:false,
+   fic:"resultat-4-aucun.xlsx"},
+];
+// Les lignes de l'onglet Synthese qui font la comparaison. Le classeur les
+// ecrit sans accent : la cle est celle du fichier, le libelle celui de l'ecran.
+const IND_SIM = [
+  ["joueurs places", "Joueurs placés"],
+  ["joueurs sans groupe", "Sans groupe"],
+  ["dont anciens adherents", "dont anciens adhérents"],
+  ["cours ouverts", "Cours ouverts"],
+  ["heures prof consommees", "Heures de prof"],
+  ["joueurs avec toutes leurs preferences tenues", "Toutes préférences tenues"],
+  ["joueurs avec au moins une preference ratee", "Au moins une préférence ratée"],
+  ["statut du solveur", "Statut du solveur"],
+  ["temps de resolution (s)", "Temps de calcul (s)"],
+];
+let sims = {};
+try{ sims = JSON.parse(localStorage.getItem(CLE_SIMS) || "{}") || {}; }catch(e){ sims = {}; }
+
+function sauverSims(){
+  try{ localStorage.setItem(CLE_SIMS, JSON.stringify(sims)); return ""; }
+  catch(e){ return "Le navigateur a refusé d'enregistrer cette simulation — retirez-en une avant d'en déposer une autre."; }
+}
+function lireSynthese(wb){
+  const a = aoa(wb, "Synthese"), o = {};
+  if(a) a.slice(1).forEach(r=>{ const k = String(r[0]||"").trim().toLowerCase(); if(k) o[k] = r[1]; });
+  return o;
+}
+function resumeSim(syn, wb){
+  const v = k => syn[k];
+  if(v("cours ouverts") != null)
+    return `${v("cours ouverts")} cours · ${v("joueurs places")} placés · ${v("joueurs sans groupe")} sans groupe`;
+  // Classeur sans onglet Synthese : on compte les lignes plutot que de ne rien dire.
+  const co = aoa(wb, "Cours"), np = aoa(wb, "Non places");
+  return `${co ? co.length-1 : "?"} cours` + (np ? ` · ${np.length-1} sans groupe` : "");
+}
+
+function rendSims(){
+  const w = F("grSims"); if(!w) return;
+  const pretes = SIMS.filter(s=>sims[s.n]);
+  const tag = (on, txt) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${txt}</span>`;
+  w.innerHTML =
+    `<div class="grsimh"><b>Quatre simulations à comparer</b>
+       <span>Le même calcul quatre fois, avec ou sans l'emploi du temps 2026 reconduit,
+       avec ou sans les affinités relevées par Loïc. Déposez en face de chacune le classeur
+       que <code>simulations.command</code> a produit ; « Ouvrir » amène celle-là sur l'écran
+       des groupes, sans toucher aux trois autres.</span></div>` +
+    SIMS.map(s=>{
+      const d = sims[s.n];
+      return `<div class="grsim${d && resFic && resFic.fichier === d.fichier ? " on" : ""}" data-n="${s.n}">
+        <span class="num">${s.n}</span>
+        <span class="tx"><b>${esc(s.titre)}</b>
+          <span class="tags">${tag(s.edt, "EDT 2026")}${tag(s.aff, "affinités Loïc")}</span>
+          <span class="fic">${d ? esc(d.fichier) + " — déposé " + esc(d.date)
+                                   + (d.resume ? " · " + esc(d.resume) : "")
+                                : "aucun classeur — attendu : " + esc(s.fic)}</span></span>
+        <span class="acts">${d
+          ? `<button class="mini" data-a="ouvrir">Ouvrir</button>
+             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`
+          : `<button class="mini" data-a="deposer">Déposer…</button>`}</span>
+      </div>`;
+    }).join("") + tableauSims(pretes);
+  w.querySelectorAll("[data-a]").forEach(b=>{
+    const n = +b.closest("[data-n]").dataset.n;
+    b.onclick = ()=> b.dataset.a === "deposer" ? deposerSim(n)
+                   : b.dataset.a === "ouvrir"  ? ouvrirSim(n) : retirerSim(n);
+  });
+}
+function tableauSims(pretes){
+  // A une seule simulation il n'y a rien a comparer, et un tableau d'une colonne
+  // se lirait comme un resultat alors que c'en est un parmi quatre.
+  if(pretes.length < 2) return "";
+  const val = (s, k) => { const v = (sims[s.n].syn || {})[k]; return (v == null || v === "") ? "—" : esc(v); };
+  return `<div class="grsimt"><table class="grtable">
+    <thead><tr><th>Indicateur</th>${pretes.map(s=>`<th>${s.n}. ${esc(s.court)}</th>`).join("")}</tr></thead>
+    <tbody>${IND_SIM.map(([k, lab])=>
+      `<tr><td>${lab}</td>${pretes.map(s=>`<td class="n">${val(s, k)}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table></div>`;
+}
+
+function deposerSim(n){
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = ".xlsx,.xls";
+  i.onchange = async ()=>{
+    const f = i.files[0]; if(!f) return;
+    F("grErr").textContent = "";
+    try{
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, {type:"array"});
+      if(!aoa(wb, "Cours"))
+        throw new Error("onglet « Cours » introuvable. Est-ce bien un résultat du solveur ?");
+      // On garde le classeur, pas sa lecture : c'est lui qu'on relit a
+      // l'ouverture, et il reste le fichier que Loic peut rouvrir dans Excel.
+      let b = ""; const u = new Uint8Array(buf);
+      for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
+      const syn = lireSynthese(wb);
+      const garde = sims[n];
+      sims[n] = {fichier: f.name, b64: btoa(b), syn, resume: resumeSim(syn, wb),
+        date: new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
+      const err = sauverSims();
+      if(err){ if(garde) sims[n] = garde; else delete sims[n]; F("grErr").textContent = err; }
+      rendSims();
+    }catch(e){ F("grErr").textContent = "Fichier refusé : " + e.message; }
+  };
+  i.click();
+}
+function ouvrirSim(n){
+  const d = sims[n]; if(!d) return;
+  F("grErr").textContent = "";
+  try{
+    lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
+    resFic = {fichier: d.fichier, date: d.date};
+    // La barre des calculs repart a une seule pastille, a son nom : sinon les
+    // « Calcul 3 » de la simulation d'avant y resteraient, et un clic ramenerait
+    // un planning qui n'est plus celui qu'on regarde.
+    scen = [{n:1, nom: "Simulation " + n,
+             cours: JSON.parse(JSON.stringify(cours)),
+             attente: JSON.parse(JSON.stringify(attente))}];
+    vu = 1;
+    sel = null; selAtt = null; moving = null; forcing = null;
+    ecranLance = false; sauver(); rend();
+  }catch(e){ F("grErr").textContent = "Simulation illisible : " + e.message; }
+}
+function retirerSim(n){
+  const d = sims[n];
+  if(!d || !confirm(`Retirer « ${d.fichier} » de la simulation ${n} ?\nLe fichier reste sur l'ordinateur.`)) return;
+  delete sims[n];
+  sauverSims();
+  rendSims();
 }
 
 async function reprendreResultat(b){
