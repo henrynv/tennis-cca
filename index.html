@@ -522,7 +522,17 @@
   .grc.f1,.grc.f2{background:#e8eef8;border-color:#b9c9e3}
   .grc.f1 .lk,.grc.f2 .lk{opacity:1}
   .grc.f2{box-shadow:inset 0 0 0 1px #b9c9e3}
-  .grc.dim{opacity:.22}
+  /* Eteinte, mais plus muette : elle reste cliquable et son infobulle dit ce
+     qui s'oppose. A .22 elle se lisait comme desactivee. */
+  .grc.dim{opacity:.38}
+  .grc.dim:hover{opacity:.75;border-color:#b23b3b}
+  /* Un souhait de la fiche satisfait ici, ou un refus contredit ici. Deux
+     signes, deux couleurs, au meme endroit : le coin bas-gauche. */
+  .grc .aff{position:absolute;bottom:2px;left:3px;font-size:10px;font-weight:700;
+    line-height:1;color:#14512f}
+  .grc .aff.ko{color:#b23b3b}
+  .grc.voulu{box-shadow:inset 3px 0 0 var(--accent)}
+  .grc.refuse{box-shadow:inset 3px 0 0 #b23b3b}
   .grc.cible{border-color:var(--accent);box-shadow:0 0 0 2px #9ed3b7;background:var(--accent-soft)}
   .grc.plein{border-color:#e0a000;box-shadow:0 0 0 2px #f2ddaa}
   .grc.trouve{border-color:var(--ink);box-shadow:0 0 0 3px #ffd66e}
@@ -563,6 +573,9 @@
     padding:6px 10px;border-radius:7px;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.3)}
   .grhint.ko{background:#7a2020}
   .grhint em{font-style:normal;color:#9aa79e;margin-left:6px}
+  /* L'avertissement « ils ne suivent pas » passe a la ligne : il ne concurrence
+     pas la ligne des courts, il s'ajoute a elle. */
+  .grhint em.ko{display:block;margin:2px 0 0;color:#ffc9a8}
   .grzone{position:absolute;left:0;right:3px;border:2px dashed var(--accent);border-radius:6px;
     background:rgba(31,122,77,.09);pointer-events:none;z-index:3}
   .grzone.ko{border-color:var(--warn);background:rgba(178,59,59,.09)}
@@ -763,6 +776,34 @@
   .tag.bleu{background:#e8eef8;color:#2a4a85}
   .tag.violet{background:#efe7f8;color:#5c3a8c}
   .tag.gris{background:#eef1f4;color:#4a545f}
+  /* Le rouge ne dit pas « attention », il dit « le solveur s'interdit ca » :
+     un refus ecrit sur la fiche est une contrainte dure de son cote. */
+  .tag.rouge{background:#fbe4e4;color:#8c2020}
+
+  /* ---- une option de placement ----
+     Deux lignes : QUOI (le creneau, et le mot du bouton), puis CE QUE CA VAUT
+     pour ce joueur-la. Toute la ligne est le bouton : viser une petite cible a
+     droite n'a jamais aide personne. */
+  .grop{display:block;width:100%;text-align:left;border:1px solid var(--line);
+    background:#fff;border-radius:9px;padding:6px 9px 7px;margin-bottom:5px;height:auto;
+    cursor:pointer}
+  .grop:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(31,42,55,.10)}
+  .grop.dur{border-color:#e9c4c4;background:#fffafa}
+  .grop.dur:hover{border-color:#b23b3b}
+  .grop .l1{display:flex;align-items:baseline;gap:8px}
+  .grop .l1 b{font-size:12.5px;font-weight:650;color:var(--ink);
+    font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .grop .go{flex:none;margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent)}
+  .grop.dur .go{color:#b23b3b}
+  .grop .l2{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:3px}
+  .grop .l2 .qd{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  /* Le compte a cote du titre de section : « ou le deplacer 6 » se lit avant
+     d'avoir a compter les lignes. */
+  .grh4n{background:#eef1f4;color:#4a545f;border-radius:5px;padding:0 5px;
+    font-size:10.5px;font-weight:700}
+  .grmelko{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);
+    border:1px dashed var(--line);border-radius:8px;padding:4px 9px;max-width:100%;min-width:0}
 
   .grd .hs{font-variant-numeric:tabular-nums}
   .grd .dl{flex:none;min-width:92px;color:var(--muted);font-size:11.5px;
@@ -803,6 +844,11 @@
   .grfamh .n{font-size:14px;font-weight:700;color:var(--fct);font-variant-numeric:tabular-nums;
     background:var(--fcs);border-radius:6px;padding:1px 7px;min-width:26px;text-align:center}
   .grfama{font-size:11.5px;color:var(--muted);line-height:1.4;margin:2px 0 7px;padding:0 5px}
+  /* Deux signes muets par ligne — la pastille et les six lettres. La legende les
+     nomme une fois par famille, avec la forme exacte qu'ils ont en dessous. */
+  .grleg{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:10.5px;
+    color:var(--muted);margin:0 0 7px;padding:0 5px}
+  .grleg .niv{flex:none}
   .grfamh .s2{font-size:11px;color:var(--muted);line-height:1.3;
     overflow:hidden;text-overflow:ellipsis}
   .grfamh .chev{font-size:10px;color:var(--muted);transition:transform .15s;width:10px}
@@ -833,6 +879,8 @@
     padding:6px 8px;border-radius:7px;background:#f4f6f9;color:var(--ink)}
   .grgarde b{font-weight:650}
   .grgarde.vide{background:none;padding:6px 0;color:var(--muted)}
+  .grgarde.alerte{background:#fdf6f3;color:#7a2f14}
+  .grgarde{display:block}
   .grm .nm.lien{border:none;background:none;padding:0;height:auto;text-align:left;
     font:inherit;font-size:13px;color:var(--ink);cursor:pointer;border-radius:4px}
   .grm .nm.lien:hover{color:var(--accent);text-decoration:underline}
@@ -1309,9 +1357,9 @@
         <button class="mini" id="grUndo" style="display:none">↶ Annuler</button>
         <button class="mini" id="grNew">+ Nouveau cours</button>
         <button class="mini" id="grAll"
-          title="Reposer tous les cours tels quels au prochain calcul">Garder tous les cours</button>
+          title="Reposer tous les cours tels quels au prochain calcul">Figer tous les cours</button>
         <button class="primary big" id="grRelance" style="display:none"
-          title="Repart du calcul en reposant les cours gardés tels quels">↻ Régénérer l'emploi du temps</button>
+          title="Repart du calcul en reposant les cours figés tels quels">↻ Régénérer l'emploi du temps</button>
       </div>
       <!-- Ce qui n'est ni une decision ni une sortie : l'agent, la sauvegarde,
            l'export de secours. Visible, jamais au milieu des boutons. -->
@@ -3190,6 +3238,9 @@ let filtre = {profs:[], pal:"", etat:""};
 // colonne de 90 px n'ont pas la place d'un seul nom. Jusqu'ici la composition
 // des groupes ne se lisait qu'a l'impression et dans le classeur Excel.
 let vueListe = false;
+// Apres un deplacement de cours : les joueurs qui n'ont pas coche le nouveau
+// creneau, tant que personne n'a dit quoi en faire.
+let apresDepl = null;
 // Creation d'un cours en cours : {tc, mode, stop}. Non nul = la grille est une
 // surface de pose, comme quand on deplace un joueur.
 let creation = null;
@@ -3232,6 +3283,17 @@ function lireDispos(txt){
 function disposDe(txt){ const d = lireDispos(txt); return d.length ? d : null; }
 // ne recopie que les cinq champs de fiche, pour ne pas trainer tout l'objet
 function pick(o){ const r = {}; CH_FICHE.forEach(k=>{ if(o && o[k]) r[k] = o[k]; }); return r; }
+/* Qui, dans ce cours, n'a pas coche le creneau vise. `valide` ne regarde que
+   les courts, le prof et ses heures : quatre joueurs pouvaient partir un autre
+   soir sans qu'un mot le dise. Dispos illisibles = on n'accuse pas — c'est un
+   trou dans la fiche, pas un refus du joueur. */
+function joueursHors(c, jour, d){
+  const f = d + (c.f - c.d);
+  return c.membres.filter(m=>{
+    const dp = lireDispos(m.dispos);
+    return dp.length && !dp.some(z=>z.jour===jour && z.de<=d && f<=z.a);
+  });
+}
 function dansDispo(c, t){
   if(!t || !t.dispos) return null;
   if(!t.dispos.length) return false;
@@ -3948,6 +4010,7 @@ function memoriser(nom){       // apres une retouche : on garde une trace nommee
 function rend(){
   if(enCalcul) return;                 // pendant un calcul, l'ecran de progression tient l'affichage
   _teintes = null;                     // la liste des profs a pu changer
+  _annu = null;                        // ... et la population aussi
   const ok = cours.length > 0;
   const vue = ok && !ecranLance;       // affiche-t-on les groupes, ou l'ecran de lancement ?
   F("grProg").style.display  = "none";
@@ -4077,7 +4140,7 @@ function rendFil(){
        <button class="grchip ${filtre.etat==="incomplet"?"on":""}" data-e="incomplet"
          title="Les cours où il reste au moins une place">incomplets${
          nInc ? ` <b>${nInc}</b>` : ""}</button>
-       <button class="grchip ${filtre.etat==="fige"?"on":""}" data-e="fige">gardés</button>
+       <button class="grchip ${filtre.etat==="fige"?"on":""}" data-e="fige">figés</button>
        <button class="grchip ${filtre.etat==="libre"?"on":""}" data-e="libre">libres</button>
        <button class="grchip ${filtre.etat==="chg"?"on":""}" data-e="chg">retouchés</button></span>
      <span class="cnt">${actif()
@@ -4117,11 +4180,64 @@ function cible(){
   if(moving) return moving;
   if(selAtt!==null && attente[selAtt]){
     const p = attente[selAtt];
-    return {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null,
-            dispos:disposDe(p.dispos), raison:p.raison||""};
+    // pick() emporte les demandes ecrites sur la fiche : sans elles, la grille
+    // ne pourrait pas dire ce qu'un cours vaut pour CE joueur-la.
+    return Object.assign({nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null, id:p.id||"",
+                          dispos:disposDe(p.dispos), raison:p.raison||""}, pick(p));
   }
   return null;
 }
+
+/* ---------------- ce qu'un cours vaut pour un joueur ----------------
+   Les fiches portent quatre demandes : deux souhaits (« avec untel », « avec
+   tel prof ») et deux refus (« sans untel », « pas ce prof »). Cote solveur les
+   refus sont des contraintes DURES — un faux positif n'y coute pas une
+   preference ratee mais une place introuvable. L'ecran doit donc les separer :
+   un souhait satisfait s'affiche, un refus contredit se force. */
+const listeChamp = v => String(v||"").split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+let _annu = null;
+function annuaire(){                 // id de fiche -> nom, sur toute la population
+  if(_annu) return _annu;
+  _annu = {};
+  const mettre = p => { if(p && p.id) _annu[p.id] = p.nom; };
+  cours.forEach(c=>c.membres.forEach(mettre));
+  attente.forEach(mettre);
+  (annexes.enPlace||[]).forEach(mettre);
+  (annexes.hors||[]).forEach(mettre);
+  return _annu;
+}
+function affinites(c, t){
+  const souhaits = [], refus = [];
+  if(!c || !t) return {souhaits, refus};
+  const nom = annuaire(), dedans = id => c.membres.some(m=>m.id === id);
+  if(listeChamp(t.demande_prof).indexOf(c.prof) >= 0) souhaits.push("prof demandé");
+  if(listeChamp(t.refus_prof).indexOf(c.prof) >= 0)   refus.push(c.prof + " est refusé sur sa fiche");
+  listeChamp(t.demande_avec).filter(dedans).forEach(id=>
+    souhaits.push("avec " + (nom[id] || "quelqu'un qu'il demande")));
+  listeChamp(t.demande_sans).filter(dedans).forEach(id=>
+    refus.push("avec " + (nom[id] || "quelqu'un") + ", qu'il refuse"));
+  return {souhaits, refus};
+}
+/* Tout ce qui cloche entre ce joueur et ce cours, en clair. Rien n'est interdit :
+   le geste manuel prime, on le dit, on ne le bloque pas — c'est deja la regle de
+   « + Ajouter un eleve ». Mais `durs` demande un geste assume : un refus ecrit
+   sur la fiche est une contrainte DURE cote solveur, forcer c'est la lui
+   imposer. « Hors dispos » reste mou : c'est le cas courant d'un placement a la
+   main, et il est deja signale sur la carte. */
+function ecarts(c, t){
+  const durs = [], mous = [];
+  if(!c || !t) return {durs, mous, tout:[]};
+  if(t.sexe && c.sexe && t.sexe !== c.sexe)
+    durs.push(c.sexe==="F" ? "c'est un groupe féminin" : "c'est un groupe masculin");
+  if(t.niveau && c.pal && c.pal.indexOf(t.niveau) < 0)
+    durs.push("le palier est " + c.pal + ", il est en " + t.niveau);
+  if(c.membres.length >= c.max && !c.force)
+    durs.push("le cours est complet (" + c.membres.length + "/" + c.max + ")");
+  affinites(c, t).refus.forEach(x=>durs.push(x));
+  if(dansDispo(c, t) === false) mous.push("hors de ses disponibilités");
+  return {durs, mous, tout:durs.concat(mous)};
+}
+const aForcer = (c, t) => ecarts(c, t).durs;
 function compat(c,t){
   return t && c.diff!=="supp" && c.cle!==t.from && (!t.sexe || c.sexe===t.sexe)
       && (!t.niveau || !c.pal || c.pal.indexOf(t.niveau)>=0);
@@ -4154,6 +4270,37 @@ function poser(c){
 }
 function rendMove(){
   const bar = F("grMove"), t = cible();
+  // Le cours vient de changer de creneau et tout le monde ne suit pas : on
+  // nomme ceux qui manquent, et on propose la seule chose a decider.
+  if(apresDepl && !t && !creation){
+    const c = vivants().find(x=>x.cle === apresDepl.cle);
+    if(!c){ apresDepl = null; }
+    else {
+      const n = apresDepl.noms.length;
+      bar.style.display = "flex"; bar.className = "grmove ko";
+      bar.innerHTML = `<span>Déplacé ${esc(apresDepl.quand.toLowerCase())}. <b>${n} joueur${
+        n>1?"s":""} sur ${c.membres.length} n'${n>1?"ont":"a"} pas coché ce créneau</b> :
+        ${esc(apresDepl.noms.join(", "))}. ${n>1?"Ils sont gardés":"Il est gardé"} dans le cours
+        tant que vous ne les rendez pas au calcul.</span>
+        <span class="sp"></span>
+        <button class="mini" id="grDeplOut">${n>1?"Les rendre":"Le rendre"} au calcul</button>
+        <button class="mini" id="grDeplOk">${n>1?"Les garder ici":"Le garder ici"}</button>`;
+      F("grDeplOk").onclick = ()=>{ apresDepl = null; rend(); };
+      F("grDeplOut").onclick = ()=>{
+        avant("retrait des " + n + " joueurs hors dispos du cours de " + c.prof);
+        apresDepl.noms.forEach(nm=>{
+          const k = c.membres.findIndex(m=>m.nom === nm); if(k < 0) return;
+          const m = c.membres.splice(k,1)[0];
+          c.epingles = c.epingles.filter(x=>x !== nm);
+          attente.push(Object.assign({id:m.id||"", nom:m.nom, sexe:c.sexe, niveau:m.niveau,
+            email:m.email||"", ancien:!!m.ancien, dispos:m.dispos||"",
+            raison:"n'a pas coché le créneau où le cours de " + c.prof + " a été déplacé"}, pick(m)));
+        });
+        c.manuel = true; apresDepl = null; memoriser(); rend();
+      };
+      return;
+    }
+  }
   if(creation && creation.mode === "bouton"){
     bar.style.display = "flex"; bar.className = "grmove";
     bar.innerHTML = `<span><b>Nouveau cours</b> — cliquez dans la grille à l'heure où il commence.
@@ -4171,18 +4318,27 @@ function rendMove(){
   const libres = dedans.filter(c=>c.membres.length < c.max);
   if(forcing){
     const c = cours.find(x=>x.cle===forcing);
+    const rs = aForcer(c, t);
     bar.className = "grmove ko";
-    bar.innerHTML = `<span><b>${esc(c.prof)} · ${esc(c.jour)} ${gtx(c.d)}</b> est complet (${c.membres.length}/${c.max}).
-      Le placer quand même ? Le cours passera au-dessus du plafond, et il faudra que le solveur respecte ce choix.</span>
+    bar.innerHTML = `<span>Mettre <b>${esc(t.nom)}</b> chez <b>${esc(c.prof)} · ${esc(c.jour.toLowerCase())}
+      ${gtx(c.d)}</b> contredit ${rs.length>1?"ce qui suit":"ceci"} : ${esc(rs.join(" ; "))}.
+      ${rs.some(x=>/refus[ée]/.test(x))
+        ? "Ce que la fiche refuse est une contrainte dure du calcul : le forcer, c'est la lui imposer."
+        : rs.some(x=>x.indexOf("complet")>=0)
+        ? "Le cours passera au-dessus du plafond, et il faudra que le solveur respecte ce choix."
+        : "Le calcul devra respecter ce choix au lieu de le corriger."}</span>
       <span class="sp"></span><button class="mini" id="grForce">Forcer</button><button class="mini" id="grCancel">Annuler</button>`;
     F("grForce").onclick = ()=>{ const cc = cours.find(x=>x.cle===forcing); cc.force = true; poser(cc); };
   } else {
     bar.className = "grmove";
     const complets = dedans.length - libres.length;
     bar.innerHTML = `<span>Déplacer <b>${esc(t.nom)}</b>${t.niveau?" (niveau "+esc(t.niveau)+")":""} —
-      cliquez le cours d'arrivée. <b>${libres.length}</b> dans ses disponibilités avec une place libre${
-      complets ? `, ${complets} complet${complets>1?"s":""}` : ""}${
-      dehors ? ` · ${dehors} compatible${dehors>1?"s":""} mais hors de ses disponibilités (trait discontinu)` : ""}.</span>
+      cliquez le cours d'arrivée. ${libres.length
+        ? `<b>${libres.length}</b> cours l'accueille${libres.length>1?"nt":""} sans rien contredire`
+        : "<b>aucun cours</b> ne l'accueille sans contredire quelque chose"}${
+      complets ? `, ${complets} est complet`.replace("est complet", complets>1?"sont complets":"est complet") : ""}${
+      dehors ? ` · ${dehors} à son palier mais hors de ses disponibilités (trait discontinu)` : ""}.
+      Les cours éteints restent cliquables : leur infobulle dit ce qui s'y oppose.</span>
       <span class="sp"></span><button class="mini" id="grCancel">Annuler</button>`;
   }
   F("grCancel").onclick = ()=>{ moving = null; forcing = null; selAtt = null; rend(); };
@@ -4437,13 +4593,19 @@ function rendWeek(){
         ? "grc supp" + (sel===c.cle?" sel":"")
         : "grc" + (c.lock===1?" f1":c.lock===2?" f2":"") + (c.manuel?" manuel":"")
           + (sel===c.cle?" sel":"") + (trouve===c.cle?" trouve":"");
+      let ec = null, af = null;
       if(t && !mort){
+        ec = ecarts(c, t); af = affinites(c, t);
+        // Le gris ne dit plus « pas pour lui » sans dire pourquoi : la carte
+        // eteinte porte son motif, et un clic la propose quand meme.
         if(!compat(c,t)) el.classList.add("dim");
         else {
-          el.classList.add(c.membres.length < c.max ? "cible" : "plein");
+          el.classList.add(!ec.durs.length ? "cible" : "plein");
           // compatible sexe/palier, mais le joueur n'a pas declare ce creneau
           if(dansDispo(c,t) === false) el.classList.add("hors");
         }
+        if(af.souhaits.length) el.classList.add("voulu");
+        if(af.refus.length)    el.classList.add("refuse");
       } else if(actif() && !passe(c)) el.classList.add("dim");
       el.style.top = ((c.d-H0)/60*PXH)+"px";
       el.style.height = Math.max(Math.min(28,PXH-2),(c.f-c.d)/60*PXH-2)+"px";
@@ -4459,22 +4621,35 @@ function rendWeek(){
              :c.lock===1?"Créneau figé — cliquer pour tout figer"
              :"Libre — cliquer pour figer le créneau"}">${
              c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span>`
-        + (c.manuel ? `<span class="tg" style="color:#7a4fb5">à la main</span>` : "");
+        + (c.manuel ? `<span class="tg" style="color:#7a4fb5">à la main</span>` : "")
+        + (af && af.refus.length ? `<span class="aff ko" title="${esc(af.refus.join(" ; "))}">✗</span>`
+           : af && af.souhaits.length ? `<span class="aff" title="${esc(af.souhaits.join(" ; "))}">✓</span>` : "");
       el.title = mort
         ? `Cours supprimé à la main — au prochain calcul, ${c.prof} n'ouvre aucun cours `
           + `${c.jour.toLowerCase()} entre ${gtx(c.d)} et ${gtx(c.f)}. Cliquer pour rétablir.`
+        : ec
+        // pendant un deplacement, le titre repond a la seule question du moment :
+        // est-ce que CE joueur peut aller la, et sinon qu'est-ce qui s'y oppose
+        ? `${c.prof} · ${c.jour.toLowerCase()} ${gtx(c.d)} · palier ${c.pal || "à définir"} · ${
+            c.membres.length}/${c.max}\n`
+          + (ec.tout.length
+             ? `Pour ${t.nom} : ${ec.tout.join(" ; ")}.\nCliquer pour l'y mettre quand même.`
+             : `Rien ne s'y oppose pour ${t.nom}${
+                 af.souhaits.length ? " — " + af.souhaits.join(", ") : ""}. Cliquer pour l'y placer.`)
         : `${c.prof} · ${c.jour} ${gtx(c.d)}–${gtx(c.f)} · palier ${c.pal || "à définir"} · ${c.membres.length} joueurs`;
       if(!t && !mort && !creation){ el.classList.add("grab"); el.onpointerdown = ev=>debutDrag(ev, c, el); }
       el.onclick = ev=>{
         if(Date.now() - dragFini < 250) return;
+        apresDepl = null;
         if(mort){ sel = sel===c.cle ? null : c.cle; selAtt = null; trouve = null; rend(); return; }
         if(ev.target.classList.contains("lk")){
           avant("garde du cours de " + c.prof + " " + c.jour.toLowerCase() + " " + gtx(c.d));
           c.lock = (c.lock+1)%3; memoriser(); rend(); return; }
         const tt = cible();
         if(tt){
-          if(!compat(c,tt)) return;
-          if(c.membres.length >= c.max){ forcing = c.cle; rend(); return; }
+          // Une seule porte pour tout ce qui cloche — mauvais palier, mauvais
+          // sexe, cours plein, refus ecrit : on nomme, on ne bloque pas.
+          if(ecarts(c, tt).durs.length){ forcing = c.cle; rend(); return; }
           poser(c); return;
         }
         sel = sel===c.cle ? null : c.cle; selAtt = null; trouve = null; rend();
@@ -4514,7 +4689,7 @@ function rendListe(){
             c.sexe==="F"?"féminin":c.sexe==="H"?"masculin":"—"}${
             c.manuel?' · <span class="mn">à la main</span>':""}
             <span class="lk" title="${c.lock===2?"Rien ne bouge au prochain calcul"
-              :c.lock===1?"Heure et prof gardés au prochain calcul"
+              :c.lock===1?"Même heure, même prof au prochain calcul"
               :"Le prochain calcul peut tout changer"}">${
               c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span></div>
           <ol>${
@@ -4532,6 +4707,14 @@ function rendListe(){
   });
 }
 
+/* Pendant un glisse, le fantome sous le curseur et le bandeau flottant disent
+   deja tout — et l'infobulle native du navigateur, elle, montre encore l'ANCIEN
+   creneau. Trois etiquettes pour un geste, dont une fausse. On coupe celles du
+   planning le temps du geste ; le `rend()` de sortie les repose. */
+function muetGrille(){
+  F("grWeek").querySelectorAll(".grc,.grcol").forEach(n=>{ n.title = ""; });
+}
+
 /* -------- glisser un cours vers un autre creneau -------- */
 function debutDrag(ev, c, el){
   if(ev.button !== 0 || ev.target.classList.contains("lk")) return;
@@ -4543,12 +4726,13 @@ function debutDrag(ev, c, el){
   const gx = x0 - w.left, gy = y0 - w.top;
   const cols = [...F("grWeek").querySelectorAll(".grcol")].map(n=>({n, r:n.getBoundingClientRect()}));
   const o = {jour:c.jour, d:c.d, f:c.f}, dur = c.f - c.d, fin = ctr ? ctr.fin : H1;
+  apresDepl = null;
   let lance = false, gh, hi, zo, cand = null;
 
   const move = e=>{
     if(!lance){
       if(Math.abs(e.clientX-x0) < 4 && Math.abs(e.clientY-y0) < 4) return;
-      lance = true; el.classList.add("ghosted");
+      lance = true; el.classList.add("ghosted"); muetGrille();
       gh = document.createElement("div"); gh.className = "grghost";
       gh.style.width = w.width+"px"; gh.style.height = w.height+"px";
       gh.innerHTML = `<b>${esc(c.prof)}</b><div>${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`;
@@ -4569,8 +4753,11 @@ function debutDrag(ev, c, el){
     gh.style.left = (e.clientX - gx)+"px"; gh.style.top = (e.clientY - gy)+"px";
     gh.classList.toggle("ko", !v.ok);
     hi.className = "grhint" + (v.ok ? "" : " ko");
+    const hs = v.ok ? joueursHors(c, j, d) : [];
     hi.innerHTML = `<b>${esc(j)} ${gtx(d)}–${gtx(d+dur)}</b>` + (v.ok
       ? `<em>${v.courts}/${courtsSur(c.jour,c.d,c.f)} courts${v.warn?" · ⚠ "+esc(v.warn):v.hres?" · "+esc(c.prof)+" "+v.hres:""}</em>`
+        + (hs.length ? `<em class="ko">⚠ ${hs.length} joueur${hs.length>1?"s":""} sur ${
+            c.membres.length} n'${hs.length>1?"ont":"a"} pas coché ce créneau</em>` : "")
       : `<em>impossible : ${esc(v.why)}</em>`);
     hi.style.left = Math.min(e.clientX+16, innerWidth-340)+"px";
     hi.style.top = (e.clientY+18)+"px";
@@ -4585,10 +4772,17 @@ function debutDrag(ev, c, el){
     gh.remove(); hi.remove(); zo.remove(); el.classList.remove("ghosted");
     dragFini = Date.now();
     if(cand){
+      const hs = joueursHors(c, cand.jour, cand.d).map(m=>m.nom);
       hist.push(copie); if(hist.length > HIST_MAX) hist.shift();
       c.jour = cand.jour; c.d = cand.d; c.f = cand.d + dur;
       c.manuel = true; if(c.lock === 0) c.lock = 1;
-      sel = c.cle; memoriser();
+      c.cle = cleDe(c); sel = c.cle;
+      // Le deplacement est fait — l'annuler tient dans « ↶ Annuler ». Ce qui
+      // reste a decider, c'est le sort de ceux qui ne suivent pas : les garder
+      // ici epingles, ou les rendre au calcul. L'ecran pose la question au lieu
+      // de trancher tout seul.
+      apresDepl = hs.length ? {cle:c.cle, noms:hs, quand:c.jour+" "+gtx(c.d)} : null;
+      memoriser();
     } else { c.jour = o.jour; c.d = o.d; c.f = o.f; }
     rend();
   };
@@ -4628,6 +4822,7 @@ function poseCrea(tc, mode, ev0){   // `mode` change en cours de route : voir su
   gh.style.width = Math.max(96, cols[0].r.width - 8) + "px";
   gh.style.height = Math.max(20, dur/60*PXH) + "px";
   document.body.appendChild(gh); document.body.appendChild(hi);
+  muetGrille();
   let cand = null, bouge = false;
 
   const place = e=>{
@@ -4727,25 +4922,20 @@ function normNom(s){
   return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 }
 function vivierAjout(c){
-  const out = attente.map(p=>({nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:null,
-                               dispos:disposDe(p.dispos), ou:""}));
+  const out = attente.map(p=>Object.assign({nom:p.nom, niveau:p.niveau, sexe:p.sexe,
+                               from:null, id:p.id||"",
+                               dispos:disposDe(p.dispos), ou:""}, pick(p)));
   cours.forEach(x=>{
     if(x.cle===c.cle || x.diff==="supp") return;
-    x.membres.forEach(m=>out.push({nom:m.nom, niveau:m.niveau, sexe:x.sexe, from:x.cle,
-      dispos:disposDe(m.dispos),
-      ou:x.prof + " · " + x.jour.toLowerCase() + " " + gtx(x.d)}));
+    x.membres.forEach(m=>out.push(Object.assign({nom:m.nom, niveau:m.niveau, sexe:x.sexe,
+      from:x.cle, id:m.id||"", dispos:disposDe(m.dispos),
+      ou:x.prof + " · " + x.jour.toLowerCase() + " " + gtx(x.d)}, pick(m))));
   });
   return out.sort((a,b)=>String(a.nom).localeCompare(String(b.nom),"fr"));
 }
 // Ce qui cloche sans interdire : le geste est manuel, il prime. On le dit, on
 // ne le bloque pas — c'est la meme regle que « Forcer » sur un cours complet.
-function ecartsAjout(c, t){
-  const out = [];
-  if(t.sexe && c.sexe && t.sexe !== c.sexe) out.push(c.sexe==="F"?"groupe féminin":"groupe masculin");
-  if(t.niveau && c.pal && c.pal.indexOf(t.niveau) < 0) out.push("hors du palier " + c.pal);
-  if(dansDispo(c, t) === false) out.push("hors de ses disponibilités");
-  return out;
-}
+
 const AJOUT_MAX = 40;   // au-dela, la liste ne se lit plus : on affine
 function htmlAjout(c, q){
   const n = normNom(q);
@@ -4756,7 +4946,9 @@ function htmlAjout(c, q){
   return ajoutVus.map((t,k)=>`<div class="grm go">
       <span class="nm">${esc(t.nom)}${t.niveau?` <span style="color:var(--muted)">· ${esc(t.niveau)}</span>`:""}</span>
       <span class="qd">${t.ou ? esc(t.ou) : "sans groupe"}</span>
-      ${ecartsAjout(c,t).map(x=>`<span class="tag ambre">${esc(x)}</span>`).join("")}
+      ${ecarts(c,t).durs.map(x=>`<span class="tag rouge">${esc(x)}</span>`).join("")}
+      ${ecarts(c,t).mous.map(x=>`<span class="tag ambre">${esc(x)}</span>`).join("")}
+      ${affinites(c,t).souhaits.map(x=>`<span class="tag vert">✓ ${esc(x)}</span>`).join("")}
       <span class="act"><button data-add="${k}">${t.ou ? "Déplacer ici" : "Ajouter"}</button></span>
     </div>`).join("")
     + (v.length > AJOUT_MAX
@@ -4937,30 +5129,55 @@ function rendSide(){
     // que le calcul a le droit de defaire », mais « qui peuple ce cours ».
     const neuf = !!c.cree;
     const ouvert = !!(ajout && ajout.cle === c.cle);
+    // On ouvre un cours pour voir QUI est dedans : la liste passe devant les
+    // reglages, qui passent devant ce qui arrivera au prochain calcul. Les
+    // paragraphes d'explication ne sont plus permanents — un seul reste, celui
+    // qui decrit l'etat choisi.
+    const nGard = c.lock===2 ? c.membres.length
+                             : c.membres.filter(m=>c.epingles.indexOf(m.nom)>=0).length;
+    const tGard = c.membres.length;
+    const libres = c.max - c.membres.length;
     body.innerHTML =
-      `<div class="grh4" style="margin-top:2px">Au prochain calcul</div>
-       <div class="grseg">
-         <button data-l="0" class="${c.lock===0?"on":""}">🔓 Tout peut changer</button>
-         <button data-l="1" class="${c.lock===1?"on":""}">🕘 Heure et prof gardés</button>
-         <button data-l="2" class="${c.lock===2?"on":""}">🔒 Rien ne bouge</button>
+      `<div class="grh4" style="margin-top:2px">Les joueurs
+         <span class="grh4n">${c.membres.length}/${c.max}</span></div>
+       ${c.membres.map((m,i)=>{
+         const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
+         return `<div class="grm ${ep?"ep":""}">
+           <button class="nm lien" data-fi="${i}" title="${esc(m.nom)} — ses disponibilités, et où on peut le déplacer">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
+           <span class="act"><button data-rm="${i}">Retirer</button></span>
+           ${m.id ? `<button class="fic" data-fic="${esc(m.id)}"
+             title="Ouvrir sa préinscription, photo comprise">Fiche</button>` : ""}
+           <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}
+             aria-pressed="${ep}" title="${ep?"Le calcul le laissera dans ce cours"
+             :"Le faire rester dans ce cours au prochain calcul"}"><span aria-hidden="true">📌</span> ${
+             ep?"Gardé":"Garder"}</button></div>`;
+       }).join("")}
+       ${libres > 0 ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${libres} place${
+         libres>1?"s":""} libre${libres>1?"s":""}</span></div>` : ""}
+       ${c.enPlace.length ? `<div style="margin-top:8px">
+         ${c.enPlace.map(n=>`<div class="grm hors"><span class="nm">${esc(n)}</span><span class="cad" title="Membre du groupe hors CCA">🔒 en place</span></div>`).join("")}
+         <p class="grnote" style="margin:4px 0 0">Déjà dans ce groupe hors CCA — le calcul ne peut ni les
+           retirer, ni les déplacer, ni compter leur place.</p></div>` : ""}
+       <div style="margin-top:10px">
+         <button class="mini" id="grAdd">${ouvert ? "Annuler l'ajout" : "+ Ajouter un élève"}</button>
+         ${ouvert ? `<div style="margin-top:8px">
+           <input id="grAddQ" placeholder="Chercher un nom…" autocomplete="off">
+           <p class="grnote" style="margin:6px 0 4px">Les sans-groupe et les membres des autres cours.
+             Choisir quelqu'un qui a déjà un cours l'y désinscrit. Un joueur posé à la main reste ici
+             d'office : sans ça le calcul suivant déferait le geste.</p>
+           <div id="grAddL"></div></div>` : ""}
        </div>
-       <p class="grnote">${neuf
-         ? (c.lock===0 ? "⚠ Un cours créé à la main et laissé libre n'est pas écrit dans le fichier de figeages : le prochain calcul ne saura pas qu'il existe, et il disparaîtra."
-           : c.lock===1 ? "Le calcul peuple ce cours : le jour, l'heure, le prof et le format sont imposés, il choisit qui entre. Les joueurs que vous y posez à la main y sont gardés, il complète le reste."
-           : "Peuplé à la main : le calcul n'ajoutera personne et n'en retirera aucun.")
-         : (c.lock===0 ? "Le prochain calcul peut déplacer ce cours, changer son prof, ou le supprimer."
-           : c.lock===1 ? "L'horaire et le prof sont conservés. Le calcul rechoisit qui joue — sauf ceux que vous gardez ci-dessous."
-           : "Rien ne bougera : ni l'horaire, ni le prof, ni la composition.")}</p>
-       <div class="two" style="margin-top:12px;align-items:end">
+
+       <div class="grh4">Réglages</div>
+       <div class="two" style="align-items:end">
          <div><label style="margin:0 0 3px">Prof</label>
            <select id="grProf">${profs.map(p=>`<option ${p===c.prof?"selected":""}>${esc(p)}</option>`).join("")}</select></div>
-         <div><label style="margin:0 0 3px">Ce ${esc(c.jour.toLowerCase())}</label>
+         <div><label style="margin:0 0 3px">Heures de ${esc(c.prof)} ce ${esc(c.jour.toLowerCase())}</label>
            <div style="font-size:13px;padding:8px 0;font-variant-numeric:tabular-nums;
              color:${dep?"var(--warn)":"var(--ink)"};font-weight:${dep?700:400}">
              ${b===null ? "budget inconnu" : b===0 ? "indisponible" : hh(u)+" / "+hh(b)}${dep?" ⚠":""}</div></div>
        </div>
-       <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change le prof. Les deux gardent l'heure et le prof.</p>
-       ${neuf ? `<div class="two" style="margin-top:12px;align-items:end">
+       ${neuf ? `<div class="two" style="margin-top:10px;align-items:end">
          <div><label style="margin:0 0 3px">Format</label>
            <select id="grType">${typesDispo().map(tc=>
              `<option value="${esc(tc.cle)}" ${tc.cle===c.type?"selected":""}>${esc(libType(tc))}</option>`).join("")}</select></div>
@@ -4972,46 +5189,35 @@ function rendSide(){
        <p class="grnote" id="grTmsg">${c.pal
          ? "Le palier vaut pour ce que vous posez à la main. Si vous laissez le calcul peupler le cours, il reste libre de le rechoisir : figer le niveau d'un cours vide peut rendre la relance impossible."
          : "Sans palier, aucun joueur ne peut être posé ici à la main — la grille ne montrera aucune cible. Choisissez-en un, ou laissez le calcul peupler le cours."}</p>` : ""}
-       ${c.enPlace.length ? `<div style="margin-top:12px">
-         <p class="grnote" style="margin:0 0 4px">Déjà dans ce groupe hors CCA — le calcul ne peut ni les retirer, ni les déplacer, ni compter leur place.</p>
-         ${c.enPlace.map(n=>`<div class="grm hors"><span class="nm">${esc(n)}</span><span class="cad" title="Membre du groupe hors CCA">🔒 en place</span></div>`).join("")}
-       </div>` : ""}
-       <div style="margin-top:12px">${c.enPlace.length ? `<p class="grnote" style="margin:0 0 4px">Places CCA</p>` : ""}${
-         // Garder deux joueurs sur quatre et relancer : c'est le geste courant, et
-         // il ne se lisait nulle part. La phrase le dit avant la liste, en clair.
-         (()=>{ const n = c.lock===2 ? c.membres.length
-                        : c.membres.filter(m=>c.epingles.indexOf(m.nom)>=0).length;
-           const t = c.membres.length;
-           if(c.lock===2) return `<div class="grgarde"><b>Les ${t} sont gardés</b> — le calcul ne touche à personne.</div>`;
-           if(!n) return `<div class="grgarde vide">Personne n'est gardé : le calcul peut refaire ce groupe entièrement.</div>`;
-           if(c.lock===0) return `<div class="grgarde" style="background:#fdf6f3"><b>${n} gardé${n>1?"s":""} sur ${t}</b>,
-             mais le cours est libre : le calcul peut le supprimer, et ${n>1?"ils partiraient":"il partirait"} avec.
-             Passez-le à « Heure et prof gardés ».</div>`;
-           return `<div class="grgarde"><b>${n} gardé${n>1?"s":""} sur ${t}</b> — au prochain calcul,
-             ${t-n>0 ? `${c.max-n} place${c.max-n>1?"s":""} ${c.max-n>1?"sont repourvues":"est repourvue"}` : "rien d'autre à pourvoir"}.</div>`;
-         })()
-       }${c.membres.map((m,i)=>{
-         const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
-         return `<div class="grm ${ep?"ep":""}">
-           <button class="nm lien" data-fi="${i}" title="${esc(m.nom)} — ses disponibilités, et où on peut le déplacer">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
-           <span class="act"><button data-rm="${i}">Retirer</button></span>
-           ${m.id ? `<button class="fic" data-fic="${esc(m.id)}"
-             title="Ouvrir sa préinscription, photo comprise">Fiche</button>` : ""}
-           <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}
-             aria-pressed="${ep}" title="${ep?"Gardé : le calcul le laissera dans ce cours"
-             :"Le garder ici au prochain calcul"}"><span aria-hidden="true">📌</span> ${
-             ep?"Gardé":"Garder"}</button></div>`;
-       }).join("")}
-       ${c.membres.length < c.max ? `<div class="grm"><span class="nm" style="color:#9aa3ad">${c.max-c.membres.length} place${c.max-c.membres.length>1?"s":""} libre${c.max-c.membres.length>1?"s":""}</span></div>` : ""}
+       <p class="grnote" id="grPmsg">Glisser la carte dans la grille change l'horaire ; ce menu change
+         le prof. Les deux font passer le cours en « même heure, même prof ».</p>
+
+       <div class="grh4">Au prochain calcul</div>
+       <div class="grseg">
+         <button data-l="0" class="${c.lock===0?"on":""}">🔓 Tout peut changer</button>
+         <button data-l="1" class="${c.lock===1?"on":""}">🕘 Même heure, même prof</button>
+         <button data-l="2" class="${c.lock===2?"on":""}">🔒 Rien ne bouge</button>
        </div>
-       <div style="margin-top:10px">
-         <button class="mini" id="grAdd">${ouvert ? "Annuler l'ajout" : "+ Ajouter un élève"}</button>
-         ${ouvert ? `<div style="margin-top:8px">
-           <input id="grAddQ" placeholder="Chercher un nom…" autocomplete="off">
-           <p class="grnote" style="margin:6px 0 4px">Les sans-groupe et les membres des autres cours. Choisir quelqu'un qui a déjà un cours l'y désinscrit.</p>
-           <div id="grAddL"></div></div>` : ""}
-       </div>
-       <p class="grnote">Un joueur déplacé à la main est gardé d'office : sans ça le calcul suivant déferait le déplacement.</p>
+       ${(()=>{
+         // Une seule phrase, celle de l'etat choisi, et elle compte les joueurs
+         // au lieu de renvoyer a un autre bloc.
+         const cl = "grgarde" + (c.lock===0 && nGard ? " alerte" : nGard ? "" : " vide");
+         if(neuf && c.lock===0) return `<div class="grgarde alerte">⚠ Ce cours a été créé à la main et
+           reste libre : il n'est pas écrit dans le fichier de figeages, le prochain calcul ne saura pas
+           qu'il existe, et il disparaîtra.</div>`;
+         if(c.lock===2) return `<div class="grgarde"><b>Rien ne bouge</b> — ni l'horaire, ni le prof,
+           ni ${tGard ? `ces ${tGard} joueur${tGard>1?"s":""}` : "la composition"}.</div>`;
+         if(c.lock===1) return `<div class="${cl}"><b>L'heure et le prof restent.</b> ${
+           nGard ? `${nGard} joueur${nGard>1?"s":""} sur ${tGard} reste${nGard>1?"nt":""} aussi ; le calcul
+             repourvoit ${c.max-nGard>0 ? `les ${c.max-nGard} autres places` : "le reste"}.`
+                 : "Le calcul rechoisit qui joue."}</div>`;
+         return `<div class="${cl}">${nGard
+           ? `<b>⚠ ${nGard} joueur${nGard>1?"s":""} doi${nGard>1?"vent":"t"} rester ici, mais le cours est
+              libre :</b> le calcul peut le supprimer, et ${nGard>1?"ils partiraient":"il partirait"} avec.
+              Passez-le à « Même heure, même prof ».`
+           : `Le prochain calcul peut déplacer ce cours, changer son prof, ou le supprimer.`}</div>`;
+       })()}
+
        <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
          <button class="mini danger" id="grSupp">Supprimer ce cours</button>
          <p class="grnote" style="margin-top:6px">${neuf
@@ -5101,8 +5307,8 @@ function rendSide(){
     // preinscription papier, elle, s'ouvre d'un seul clic depuis la ligne.
     body.querySelectorAll("[data-fi]").forEach(b2=>b2.onclick = ()=>{
       const m = c.membres[+b2.dataset.fi];
-      moving = {nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle,
-                dispos:disposDe(m.dispos)};
+      moving = Object.assign({nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle,
+                              id:m.id||"", dispos:disposDe(m.dispos)}, pick(m));
       selAtt = null; rend();
     });
     body.querySelectorAll("[data-fic]").forEach(b2=>b2.onclick = ()=>ouvrirFiche(b2.dataset.fic));
@@ -5143,14 +5349,19 @@ function rendSide(){
   // Deux lignes par joueur : le nom, puis ses jours et le motif en trois mots.
   // La phrase entiere du solveur tenait cinq lignes — on n'en voyait que huit
   // sur vingt sans faire defiler, et la comparaison entre eux etait impossible.
-  const ligne = ([p,i])=>{
+  // La famille dit deja le motif : le repeter mot pour mot sur chaque ligne
+  // noyait le seul chiffre qui varie. On ne garde que lui.
+  const ligne = ([p,i], fam)=>{
     const dp = lireDispos(p.dispos);
     const js = DAYS.map(j=>`<i class="${dp.some(d=>d.jour===j)?"y":""}">${j[0]}</i>`).join("");
+    const m = String(p.raison||"").toLowerCase().match(/dont\s+(\d+)\s+ouvert/);
+    const dit = (fam === "capacite" && m)
+      ? `<span class="tag gris">${+m[1]} cours plein${+m[1]>1?"s":""} à son niveau</span>`
+      : esc(motifCourt(p.raison));
     return `<button class="grp ${selAtt===i?"on":""}" data-i="${i}">
        <span class="niv" title="niveau ${esc(p.niveau||"inconnu")}">${esc(p.niveau||"?")}</span>
        <span class="tx"><b>${esc(p.nom)}${p.ancien?' <span class="anc" title="deja adherent l\'an dernier">ancien</span>':""}</b>
-         <span class="why"><span class="grjrs" aria-label="jours déclarés">${js}</span>${
-           esc(motifCourt(p.raison))}</span></span>
+         <span class="why"><span class="grjrs" aria-label="jours déclarés">${js}</span>${dit}</span></span>
      </button>`;
   };
   // dans chaque famille de motif, les anciens d'abord : eux qu'on refuse
@@ -5231,7 +5442,10 @@ function rendSide(){
         </button>
         <div class="grfamb" id="fam-${g.f.cle}">
           <p class="grfama">${esc(g.f.aide)}</p>
-          ${g.gens.map(ligne).join("")}</div>
+          <p class="grleg"><span class="niv">N</span> son niveau ·
+            <span class="grjrs"><i class="y">L</i><i>M</i><i class="y">M</i><i>J</i><i>V</i><i>S</i></span>
+            les six jours, en vert ceux qu'il a cochés</p>
+          ${g.gens.map(x=>ligne(x, g.f.cle)).join("")}</div>
       </div>`).join("")
     || `<p class="grnote">Personne ici.</p>`;
   body.querySelectorAll("[data-f]").forEach(b=>b.onclick = ()=>{
@@ -5261,8 +5475,8 @@ function rendSide(){
    elles ne sont qu'un recapitulatif a relire. */
 function rendJoueur(head, body, p, src){
   const dp = lireDispos(p.dispos);
-  const t  = {nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:src?src.cle:null,
-              dispos:dp.length?dp:null};
+  const t  = Object.assign({nom:p.nom, niveau:p.niveau, sexe:p.sexe, from:src?src.cle:null,
+              id:p.id||"", dispos:dp.length?dp:null}, pick(p));
   head.innerHTML = `<button class="mini" id="grBack">←</button>
     <div><b>${esc(p.nom)}${p.ancien?' <span class="anc" title="deja adherent l\'an dernier">ancien</span>':""}</b>
     <div class="sub">niveau ${esc(p.niveau||"?")} · ${
@@ -5277,32 +5491,85 @@ function rendJoueur(head, body, p, src){
   const bf = F("grFiche");
   if(bf) bf.onclick = ()=>ouvrirFiche(p.id);
 
+  // Les cours possibles, du meilleur au moins bon : dans ses plages d'abord,
+  // puis ce qui satisfait ses demandes, puis ce qui n'en contredit aucune, et
+  // les cours pleins en dernier. L'ordre EST le conseil.
   const poss = vivants().filter(c=>compat(c,t))
-    .map(c=>({c, dedans: dansDispo(c,t) !== false, libre: c.membres.length < c.max}))
-    .sort((a,b)=> (b.dedans-a.dedans) || (b.libre-a.libre)
-                || jours().indexOf(a.c.jour)-jours().indexOf(b.c.jour) || a.c.d-b.c.d);
+    .map(c=>{
+      const a = affinites(c, t);
+      return {c, a, dedans: dansDispo(c,t) !== false, libre: c.membres.length < c.max,
+              dur: aForcer(c, t)};
+    })
+    .sort((x,y)=> (y.dedans-x.dedans)
+                || ((x.dur.length?1:0)-(y.dur.length?1:0))
+                || (y.a.souhaits.length-x.a.souhaits.length)
+                || (y.libre-x.libre)
+                || jours().indexOf(x.c.jour)-jours().indexOf(y.c.jour) || x.c.d-y.c.d);
 
+  // Un « e-mail » sans arobase n'est pas un lien : quatre fiches portent
+  // « idem », un point-gmail.com ou une adresse coupee. Cliquer ouvrait le
+  // logiciel de courrier sur une adresse qui n'existe pas.
   const tel = String(p.portable||"").trim(), mel = String(p.email||"").trim();
+  const melOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mel);
   const contact = (tel||mel)
     ? `<div class="grct">
          ${tel?`<a href="tel:${esc(tel.replace(/[^+\d]/g,""))}"><span aria-hidden="true">📞</span>
             <span>${esc(tel)}</span></a>`:""}
-         ${mel?`<a href="mailto:${esc(mel)}" title="${esc(mel)}"><span aria-hidden="true">✉</span>
-            <span>${esc(mel)}</span></a>`:""}
+         ${mel ? (melOk
+            ? `<a href="mailto:${esc(mel)}" title="${esc(mel)}"><span aria-hidden="true">✉</span>
+                 <span>${esc(mel)}</span></a>`
+            : `<span class="grmelko" title="ce n'est pas une adresse : à corriger sur la fiche">
+                 <span aria-hidden="true">✉</span> <span>${esc(mel)}</span>
+                 <span class="tag ambre">illisible</span></span>`) : ""}
        </div>`
     : `<p class="grnote" style="margin-top:0">Ni téléphone ni e-mail sur la fiche.</p>`;
 
   const dem = [["demande_avec","avec"],["demande_sans","sans"],
                ["demande_prof","prof souhaité"],["refus_prof","prof refusé"]]
-    .filter(([k])=>p[k]).map(([k,lb])=>
-      `<div class="grd"><span class="dl">${lb}</span><span class="dv ${
-        k==="demande_sans"||k==="refus_prof"?"dur":""}">${esc(p[k])}</span></div>`).join("");
+    .filter(([k])=>p[k]).map(([k,lb])=>{
+      const dur = k==="demande_sans"||k==="refus_prof";
+      // Les « avec » et « sans » sont des identifiants de fiche : on les rend
+      // en noms, sinon la ligne affiche un UUID.
+      const val = (k==="demande_avec"||k==="demande_sans")
+        ? listeChamp(p[k]).map(i=>annuaire()[i] || "fiche inconnue").join(", ")
+        : listeChamp(p[k]).join(", ");
+      return `<div class="grd"><span class="dl">${lb}</span><span class="dv ${
+        dur?"dur":""}">${esc(val)}</span></div>`;
+    }).join("");
+
+  // Placer quelqu'un est la raison d'ouvrir ce volet : la liste passe devant.
+  // Le contact ne sert que dans le cas contraire — quand il n'y a nulle part ou
+  // le mettre, il faut telephoner, et c'est alors lui qui remonte en tete.
+  const rien = !poss.length;
+  const blocOu = `<div class="grh4">${src ? "Où le déplacer" : "Où le mettre à la main"}${
+      poss.length ? ` <span class="grh4n">${poss.length}</span>` : ""}</div>
+    ${rien
+      ? `<p class="grnote" style="margin-top:0">Aucun ${src?"autre ":""}cours ouvert de son sexe et
+         de son palier. Il faudrait en ouvrir un — ou lui téléphoner pour lui proposer autre chose.</p>`
+      : poss.map((o,k)=>`<button class="grop ${o.dur.length?"dur":""}" data-go="${k}">
+          <span class="l1"><b>${esc(o.c.jour)} ${gtx(o.c.d)} · ${esc(o.c.prof)}</b>
+            <span class="go">${o.dur.length?"Forcer":"Placer"}</span></span>
+          <span class="l2">
+            <span class="qd">${esc(o.c.pal)} · ${o.c.membres.length}/${o.c.max}</span>
+            ${o.a.souhaits.map(x=>`<span class="tag vert">✓ ${esc(x)}</span>`).join("")}
+            ${o.dedans?"":`<span class="tag ambre">hors dispos</span>`}
+            ${o.a.refus.map(x=>`<span class="tag rouge">✗ ${esc(x)}</span>`).join("")}
+            ${o.libre?"":`<span class="tag rouge">✗ complet</span>`}
+          </span>
+        </button>`).join("")}
+    <p class="grnote">Un joueur ${src?"déplacé":"placé"} à la main est gardé d'office : sans ça le
+      calcul suivant déferait le geste.</p>`;
+  const blocContact = `<div class="grh4">Contact</div>${contact}`;
 
   body.innerHTML =
-    `<div class="grh4">Contact</div>
-     ${contact}
+    (rien ? blocContact : "") +
 
-     <div class="grh4">Disponibilités déclarées</div>
+    (src ? "" : `<div class="grh4">Pourquoi le solveur ne l'a pas placé</div>
+     <p class="grnote" style="margin-top:0">${esc(p.raison||"aucun motif écrit par le solveur")}</p>`) +
+
+    blocOu +
+
+    `<div class="grh4">Disponibilités déclarées</div>
      ${dp.length ? dp.map(d=>`<div class="grd">
          <span class="hs">${esc(d.jour)} ${gtx(d.de)}–${gtx(d.a)}</span>
          ${d.rang?`<span class="tag vert">choix ${d.rang}</span>`:""}
@@ -5314,26 +5581,13 @@ function rendJoueur(head, body, p, src){
      <div class="grh4">Ce qu'il a écrit sur sa fiche</div>
      ${p.obs ? `<p class="grobs">${esc(p.obs)}</p>` : ""}
      ${dem}
-     ${!p.obs && !dem ? `<p class="grnote" style="margin-top:0">Rien d'écrit : ni observation, ni demande.</p>` : ""}
+     ${!p.obs && !dem ? `<p class="grnote" style="margin-top:0">Rien d'écrit : ni observation, ni demande.</p>` : ""}` +
 
-     ${src ? "" : `<div class="grh4">Pourquoi le solveur ne l'a pas placé</div>
-     <p class="grnote" style="margin-top:0">${esc(p.raison||"aucun motif écrit par le solveur")}</p>`}
-
-     <div class="grh4">${src ? "Où le déplacer" : "Où le mettre à la main"}</div>
-     ${poss.length ? poss.map((o,k)=>`<div class="grm go">
-         <span class="nm">${esc(o.c.jour)} ${gtx(o.c.d)} · ${esc(o.c.prof)}</span>
-         <span class="qd">${esc(o.c.pal)} · ${o.c.membres.length}/${o.c.max}</span>
-         ${o.dedans?"":`<span class="tag ambre">hors dispos</span>`}
-         <span class="act"><button data-go="${k}">${o.libre?"Placer":"Forcer"}</button></span>
-       </div>`).join("")
-       : `<p class="grnote">Aucun ${src?"autre ":""}cours ouvert de son sexe et de son palier. Il faudrait
-          en ouvrir un — c'est au prochain calcul de le faire, pas à la main.</p>`}
-     <p class="grnote">Un joueur ${src?"déplacé":"placé"} à la main est gardé d'office : sans ça le
-       calcul suivant déferait le geste.</p>`;
+    (rien ? "" : blocContact);
 
   body.querySelectorAll("[data-go]").forEach(b=>b.onclick = ()=>{
     const o = poss[+b.dataset.go];
-    if(o.libre){ poser(o.c); } else { forcing = o.c.cle; rend(); }
+    if(o.dur.length){ forcing = o.c.cle; rend(); } else { poser(o.c); }
   });
 }
 
@@ -5368,22 +5622,22 @@ function rendBar(){
   const n = cours.filter(c=>c.lock>0 && c.diff!=="supp").length, l = vivants().length - n;
   const ns = cours.filter(c=>c.diff==="supp").length;
   const d = hist[hist.length-1];
-  const resume = (n ? `${n} cours gardé${n>1?"s":""} tel${n>1?"s":""} quel${n>1?"s":""}`
-                    : "aucun cours gardé")
+  const resume = (n ? `${n} cours figé${n>1?"s":""}`
+                    : "aucun cours figé")
     + ` · ${l} à recalculer · ${attente.length} sans groupe`
     + (ns ? ` · ${ns} supprimé${ns>1?"s":""}` : "");
   F("grBarTx").innerHTML = d
     ? `Dernière action : <b>${esc(d.nom)}</b><em>${resume}</em>`
-    : (n ? `<span class="nb">${n} cours gardé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
+    : (n ? `<span class="nb">${n} cours figé${n>1?"s":""}</span> — à reposer tels quels au prochain calcul.
            <em>${l} cours et ${attente.length} joueurs sans groupe restent à recalculer.${
            ns ? ` ${ns} cours supprimé${ns>1?"s":""}, le calcul n'y reviendra pas.` : ""}</em>`
-         : `Rien n'est gardé.<em>Le prochain calcul repartira d'une page blanche : les ${
+         : `Aucun cours n'est figé.<em>Le prochain calcul repartira d'une page blanche : les ${
            vivants().length} cours peuvent tous changer.</em>`);
   F("grNew").textContent = creation ? "Annuler" : "+ Nouveau cours";
   // « Tout garder » se lisait comme « tout sauvegarder ». Nommer l'objet leve
   // l'ambiguite : ce qu'on garde, ce sont les cours, et c'est pour la relance.
   const gAll = F("grAll"), tout = n===vivants().length && n>0;
-  gAll.textContent = tout ? "Libérer tous les cours" : "Garder tous les cours";
+  gAll.textContent = tout ? "Libérer tous les cours" : "Figer tous les cours";
   gAll.title = tout
     ? "Rendre les " + n + " cours au calcul : il pourra tous les refaire"
     : "Reposer les " + vivants().length + " cours tels quels au prochain calcul";
@@ -5402,7 +5656,7 @@ function rendBar(){
   // cours gardes, juste au-dessus, et le geste qui les repose.
   F("grEtat").innerHTML = agent
     ? `Calcul possible depuis ce poste : « ↻ Régénérer l'emploi du temps » repart d'ici
-       en reposant les cours gardés.`
+       en reposant les cours figés.`
     : `Le calcul tourne sur l'ordinateur du club : pas de bouton pour régénérer depuis ce
        poste — double-cliquez <code>CCA.command</code> pour calculer d'ici.`;
 }
@@ -6498,7 +6752,7 @@ function rendRelance(){
   const cur = scen.find(e=>e.n===vu);
   // « Ce qui est gardé » se compte en joueurs autant qu'en cours : c'est le
   // nombre de familles a qui on ne retelephonera pas. Sur un cours « rien ne
-  // bouge » tout le monde reste ; sur « heure et prof gardés », seuls les
+  // bouge » tout le monde reste ; sur « meme heure, meme prof », seuls les
   // joueurs gardes a la main sont surs d'y etre encore apres le calcul.
   const jGardes = figs.reduce((s,c)=>s + (c.lock===2 ? c.membres.length
                                                      : (c.epingles||[]).length), 0);
@@ -6513,9 +6767,9 @@ function rendRelance(){
 
   const garde = figs.length ? `
     <div class="bloc garde">
-      <h4>Reposé tel quel — ${figs.length} cours gardé${ph(figs.length)}${
+      <h4>Reposé tel quel — ${figs.length} cours figé${ph(figs.length)}${
         jGardes ? `, ${jGardes} joueur${ph(jGardes)}` : ""}</h4>
-      <p>${f1 ? `<b>${f1}</b> en « heure et prof gardés » : jour, heure, prof et format imposés,
+      <p>${f1 ? `<b>${f1}</b> en « même heure, même prof » : jour, heure, prof et format imposés,
               le calcul refait seulement la composition${epinSurs
                 ? `, sauf les ${epinSurs} joueur${ph(epinSurs)} gardé${ph(epinSurs)} à la main` : ""}. ` : ""}${
            f2 ? `<b>${f2}</b> en « rien ne bouge » : les joueurs aussi sont reposés à l'identique. ` : ""}${
@@ -6528,7 +6782,7 @@ function rendRelance(){
         <span>${esc(c.prof)} · ${esc(c.pal || "palier ?")}${
           c.sexe==="F" ? " femmes" : c.sexe==="H" ? " hommes" : ""} · ${c.membres.length} joueur${
           ph(c.membres.length)}</span>
-        <em>${c.lock===2 ? "rien ne bouge" : "heure et prof gardés"}</em></li>`).join("")}</ul>
+        <em>${c.lock===2 ? "rien ne bouge" : "même heure, même prof"}</em></li>`).join("")}</ul>
     </div>` : `
     <div class="bloc rien">
       <h4>Aucun cours n'est gardé</h4>
@@ -6711,7 +6965,7 @@ F("grImp").onclick = imprimer;
 F("grAll").onclick = ()=>{
   const v = vivants(), tout = v.length && v.every(c=>c.lock>0);
   if(!v.length) return;
-  avant(tout ? "libération de tous les cours" : "garde de tous les cours");
+  avant(tout ? "libération de tous les cours" : "figeage de tous les cours");
   v.forEach(c=>c.lock = tout?0:2); memoriser(); rend();
 };
 F("grNew").onclick = armerCrea;
@@ -6727,6 +6981,7 @@ document.addEventListener("keydown", e=>{
     if(modal.length){ modal.forEach(k=>F(k).classList.remove("open")); return; }
     if(creation){ creation.stop(); return; }
     if(F("grView").style.display !== "grid") return;
+    if(apresDepl){ apresDepl = null; rend(); return; }
     if(forcing){ forcing = null; rend(); return; }
     if(moving || selAtt !== null){ moving = null; selAtt = null; rend(); return; }
     if(sel){ sel = null; trouve = null; rend(); return; }
