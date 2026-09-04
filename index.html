@@ -348,22 +348,36 @@
   .grsres .n{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grsres .w{font-size:11.5px;color:var(--muted);white-space:nowrap}
   .grsres .none{padding:10px;font-size:12.5px;color:var(--muted)}
-  .grpills{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow:auto;max-width:320px}
+  .grpills{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow:auto;
+    max-width:min(430px,32vw);scrollbar-width:none}
+  .grpills::-webkit-scrollbar{display:none}
+  /* Une rangee coupee net se lit comme une liste complete : on ne cherche pas
+     le calcul qui manque. Meme signe que pour les pastilles de profs. */
+  .grpills.defile{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent);
+    mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent)}
   .grpill{font-size:12.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);
     background:#fff;color:var(--muted);cursor:pointer;white-space:nowrap;height:auto}
   .grpill.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
-  .grpill.val{border-color:var(--accent);background:var(--accent-soft);color:#14512f;font-weight:600}
-  .grpill.on.val{background:#14512f;border-color:#14512f;color:#fff}
-  /* La croix vit dans la pastille, pas a cote : trois calculs et trois croix
-     alignes prendraient toute la barre. Elle n'apparait qu'au survol du groupe. */
+  /* « Calcul 3 » ne dit pas de quoi il est le nom : le mot le dit une fois pour
+     toute la rangee, et separe ces pastilles des boutons voisins. */
+  .grpllb{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    flex:none;margin-right:1px}
+  /* Croix et crayon vivent DANS la pastille, pas a cote : trois calculs et six
+     boutons alignes prendraient toute la barre. Ils n'apparaissent qu'au survol
+     du groupe, aux deux coins hauts — le crayon a gauche, la croix a droite. */
   .grpg{display:flex;align-items:center;position:relative;flex:none}
-  .grpg .grpillx{position:absolute;right:-2px;top:-4px;width:15px;height:15px;padding:0;
+  .grpg .grpillx,.grpg .grpilled{position:absolute;top:-4px;width:15px;height:15px;padding:0;
     border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--muted);
     font-size:10px;line-height:1;display:none;align-items:center;justify-content:center}
-  .grpg:hover .grpillx,.grpg:focus-within .grpillx{display:flex}
+  .grpg .grpillx{right:-2px}
+  .grpg .grpilled{left:-2px}
+  .grpg:hover .grpillx,.grpg:focus-within .grpillx,
+  .grpg:hover .grpilled,.grpg:focus-within .grpilled{display:flex}
+  .grpg.edit .grpillx,.grpg.edit .grpilled{display:none}
   .grpg .grpillx:hover{border-color:var(--warn);color:var(--warn)}
-  .grpills input{font:inherit;font-size:12.5px;height:26px;width:140px;padding:0 8px;
-    border:1px solid var(--accent);border-radius:20px}
+  .grpg .grpilled:hover{border-color:var(--accent);color:var(--accent)}
+  .grpills input{font:inherit;font-size:12.5px;height:26px;width:140px;padding:0 10px;
+    border:1px solid var(--accent);border-radius:20px;background:#fff;color:var(--ink)}
 
   .grsum{flex:none;background:var(--panel);border-bottom:1px solid var(--line);
     padding:5px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -789,6 +803,8 @@
   .grfamh .n{font-size:14px;font-weight:700;color:var(--fct);font-variant-numeric:tabular-nums;
     background:var(--fcs);border-radius:6px;padding:1px 7px;min-width:26px;text-align:center}
   .grfama{font-size:11.5px;color:var(--muted);line-height:1.4;margin:2px 0 7px;padding:0 5px}
+  .grfamh .s2{font-size:11px;color:var(--muted);line-height:1.3;
+    overflow:hidden;text-overflow:ellipsis}
   .grfamh .chev{font-size:10px;color:var(--muted);transition:transform .15s;width:10px}
   .grfam.plie .chev{transform:rotate(-90deg)}
   .grfam.plie .grfamb{display:none}
@@ -1164,7 +1180,9 @@
       <div class="grsres" id="grSres"></div>
     </span>
     <span class="grpills" id="grPills"></span>
-    <button class="mini" id="grNouveau" style="display:none">← Nouveau calcul</button>
+    <button class="mini" id="grNouveau" style="display:none"
+      title="Rouvrir l'écran de lancement : les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti">↻ Relancer le calcul</button>
+    <button class="mini" id="grImp" style="display:none">🖨 Imprimer</button>
     <button class="mini" id="grExport" disabled>⬇︎ Excel</button>
   </div>
 
@@ -1292,7 +1310,6 @@
         <button class="mini" id="grNew">+ Nouveau cours</button>
         <button class="mini" id="grAll"
           title="Reposer tous les cours tels quels au prochain calcul">Garder tous les cours</button>
-        <button class="mini" id="grImp">🖨 Imprimer le planning</button>
         <button class="primary big" id="grRelance" style="display:none"
           title="Repart du calcul en reposant les cours gardés tels quels">↻ Régénérer l'emploi du temps</button>
       </div>
@@ -3159,7 +3176,7 @@ let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],enP
 let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
 let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
-let scen = [];          // scenarios : {n,nom,valide,cours,attente}
+let scen = [];          // scenarios : {n,nom,cours,attente}
 // Les inscrits que le solveur n'a pas eus en main. `enPlace` : deja membres d'un
 // groupe competition, donc PLACES. `hors` : rien a decider (niveau manquant,
 // fiche mise de cote). Sans eux le header ne peut pas retomber sur le nombre de
@@ -3790,7 +3807,7 @@ function choisir(quoi, surDisque){
 /* ---------------- scenarios ---------------- */
 function instantane(nom){
   if(!nom) return;
-  scen.push({n:scen.length+1, nom:nom+" "+(scen.length+1), valide:false,
+  scen.push({n:scen.length+1, nom:nom+" "+(scen.length+1),
     cours:JSON.parse(JSON.stringify(cours)), attente:JSON.parse(JSON.stringify(attente))});
   vu = scen.length;
 }
@@ -3798,20 +3815,35 @@ function rendPills(){
   const w = F("grPills");
   w.innerHTML = "";
   if(!cours.length) return;
+  // « Calcul 3 » tout seul dans la barre ne dit pas de quoi il est le nom. Le
+  // mot devant le dit, et separe ces pastilles-la des boutons voisins.
+  const lb = document.createElement("span");
+  lb.className = "grpllb"; lb.textContent = "Calculs";
+  w.appendChild(lb);
   scen.forEach(e=>{
     const g = document.createElement("span");
     g.className = "grpg";
     const b = document.createElement("button");
-    b.className = "grpill" + (e.n===vu?" on":"") + (e.valide?" val":"");
-    b.textContent = (e.valide?"★ ":"") + e.nom;
-    b.title = "Revenir à « " + e.nom + " »";
+    b.className = "grpill" + (e.n===vu?" on":"");
+    b.textContent = e.nom;
+    b.title = "Revenir à « " + e.nom + " » — double-cliquez pour le renommer";
     b.onclick = ()=>{
       cours = JSON.parse(JSON.stringify(e.cours));
       attente = JSON.parse(JSON.stringify(e.attente));
       vu = e.n; sel = null; selAtt = null; moving = null; trouve = null;
       sauver(); rend();
     };
+    // Renommer se faisait par un crayon pose apres TOUTE la rangee : il ne
+    // designait rien, et a cette taille il se lisait comme un trombone. Le
+    // geste vit maintenant sur la pastille elle-meme.
+    b.ondblclick = ev=>{ ev.preventDefault(); renommer(e, g, b); };
     g.appendChild(b);
+    const cr = document.createElement("button");
+    cr.className = "grpilled"; cr.textContent = "✎";
+    cr.title = "Renommer « " + e.nom + " »";
+    cr.setAttribute("aria-label", "Renommer " + e.nom);
+    cr.onclick = ev=>{ ev.stopPropagation(); renommer(e, g, b); };
+    g.appendChild(cr);
     // Un calcul depasse encombre la barre et n'aide plus a comparer. On peut
     // l'enlever — sauf le dernier, sinon l'ecran perdrait le planning affiche.
     if(scen.length > 1){
@@ -3840,24 +3872,33 @@ function rendPills(){
     }
     w.appendChild(g);
   });
-  const cur = scen.find(e=>e.n===vu);
-  if(!cur) return;
-  const ren = document.createElement("button");
-  ren.className = "grpill"; ren.textContent = "✎"; ren.title = "Renommer ce scénario";
-  ren.onclick = ()=>{
-    const inp = document.createElement("input");
-    inp.value = cur.nom;
-    inp.onblur = ()=>{ cur.nom = inp.value.trim() || cur.nom; sauver(); rend(); };
-    inp.onkeydown = ev=>{ if(ev.key==="Enter") inp.blur(); if(ev.key==="Escape"){ inp.onblur=null; rend(); } };
-    w.replaceChild(inp, ren); inp.focus(); inp.select();
+  w.classList.toggle("defile", w.scrollWidth > w.clientWidth + 2);
+  // le calcul affiche doit etre visible, meme s'il est le huitieme de la rangee
+  const on = w.querySelector(".grpill.on");
+  if(on) on.scrollIntoView({block:"nearest", inline:"nearest"});
+}
+/* La pastille cede la place a un champ, sur place : on renomme la ou on lit,
+   sans boite de dialogue. Entree valide, Echap annule, sortir du champ vaut
+   Entree — c'est ce que fait un nom de fichier sur le bureau. */
+function renommer(e, g, b){
+  const inp = document.createElement("input");
+  inp.value = e.nom;
+  inp.setAttribute("aria-label", "Nouveau nom du calcul");
+  let fini = false;
+  const finir = garder=>{
+    if(fini) return;
+    fini = true;
+    if(garder) e.nom = inp.value.trim() || e.nom;
+    sauver(); rend();
   };
-  w.appendChild(ren);
-  const val = document.createElement("button");
-  val.className = "grpill" + (cur.valide?" val":"");
-  val.textContent = cur.valide ? "✓ Validé" : "Valider";
-  val.title = "Le scénario validé est celui qui part en emails. Un seul à la fois.";
-  val.onclick = ()=>{ const v = !cur.valide; scen.forEach(e=>e.valide=false); cur.valide = v; sauver(); rend(); };
-  w.appendChild(val);
+  inp.onblur = ()=>finir(true);
+  inp.onkeydown = ev=>{
+    if(ev.key === "Enter"){ ev.preventDefault(); finir(true); }
+    if(ev.key === "Escape"){ ev.preventDefault(); ev.stopPropagation(); finir(false); }
+  };
+  g.classList.add("edit");
+  g.replaceChild(inp, b);
+  inp.focus(); inp.select();
 }
 /* -------- annuler --------
    Chaque geste destructeur pose d'abord une copie de l'etat. C'est du brutal
@@ -3914,6 +3955,7 @@ function rend(){
   F("grView").style.display  = vue ? "grid" : "none";
   F("grSearch").style.display = vue ? "block" : "none";
   F("grExport").disabled = !ok;
+  F("grImp").style.display = vue ? "block" : "none";
   F("grNouveau").style.display = vue ? "block" : "none";
   F("grRetour").style.display = (ok && ecranLance) ? "inline-block" : "none";
   rendFichiers(); rendPills();
@@ -4312,6 +4354,7 @@ function rendWeek(){
     // Appuyer-glisser dans une zone vide cree un cours. Un clic sec ne fait
     // rien : sur une grille aussi dense, un cours ne doit pas naitre d'une
     // maladresse. Le bouton « + Nouveau cours » reste le chemin visible.
+    col.title = "Cliquer ici ouvre un cours à cette heure";
     col.onpointerdown = ev=>{
       if(ev.button !== 0 || ev.target !== col || creation || cible()) return;
       creation = {tc:typeDefaut(), mode:"glisser", stop:null};
@@ -4575,7 +4618,7 @@ function creerCours(jour, d, prof, tc){
    cours, a l'identique. Deux gestes y menent — le bouton, qui arme le mode et
    pose au clic suivant ; l'appui-glisser dans le vide, qui pose au relacher —
    mais un seul chemin de code, donc une seule chose a apprendre. */
-function poseCrea(tc, mode, ev0){
+function poseCrea(tc, mode, ev0){   // `mode` change en cours de route : voir surUp
   const J = jours(), [H0,H1] = bornes(), dur = tc.duree, ferme = ctr ? ctr.fin : H1;
   const cols = [...F("grWeek").querySelectorAll(".grcol")].map(n=>({n, r:n.getBoundingClientRect()}));
   if(!cols.length){ creation = null; return; }
@@ -4623,11 +4666,30 @@ function poseCrea(tc, mode, ev0){
   };
   const surUp = e=>{
     if(mode !== "glisser") return;
-    e.preventDefault(); e.stopPropagation(); finir(bouge);
+    e.preventDefault(); e.stopPropagation();
+    // Appuyer sans bouger ne creait rien, et ne disait rien : l'ecran restait
+    // muet et le geste passait pour casse. Le clic sec arme desormais le meme
+    // mode que le bouton — bandeau, bandes vertes, fantome — et c'est le clic
+    // suivant qui pose. Un cours ne nait donc toujours pas d'une maladresse,
+    // mais la maladresse a maintenant une reponse.
+    if(!bouge){
+      // On repasse par armerCrea plutot que de basculer `mode` sur place : lui
+      // redessine la semaine AVANT de poser le fantome, donc les bandes vertes
+      // « possible » s'allument et le bouton du bas devient « Annuler ». Bascule
+      // sur place, le fantome aurait garde les colonnes mesurees a l'appui.
+      finir(false);
+      dragFini = 0;          // ce clic-ci arme, il n'annule pas : pas de garde-fou
+      armerCrea();
+      return;
+    }
+    finir(true);
   };
   const surDown = e=>{
     if(mode !== "bouton") return;
     e.preventDefault(); e.stopPropagation();
+    // Mesurer la ou on clique, et pas la ou la souris est passee : armer le mode
+    // puis cliquer sans bouger d'un pixel ne posait rien, et n'expliquait rien.
+    if(e.target.closest && e.target.closest("#grWeek")) place(e);
     finir(!!(e.target.closest && e.target.closest("#grWeek")));
   };
   document.addEventListener("pointermove", place);
@@ -5096,7 +5158,7 @@ function rendSide(){
   // La tuile de tete passe AVANT les familles : elle ne classe pas un probleme,
   // elle propose la decision qui debloque le plus de monde d'un coup.
   const grs = filtre.pal ? [] : grappes();
-  const tete = grs.slice(0,2).map((gr,k)=>{
+  const tete = grs.map((gr,k)=>{
     const v = verdict(gr), autres = v.ok ? [] : creneauxLibres(gr.tc, 2);
     const gens = gr.gens.map(x=>{
       const tel = String(x.p.portable||"").trim();
@@ -5110,13 +5172,22 @@ function rendSide(){
         ${tel ? `<a class="grtel" href="tel:${esc(tel.replace(/[^+\d]/g,""))}">${esc(tel)}</a>` : ""}
       </div>`;
     }).join("");
-    return `<div class="grfam tete" style="--fc:var(--accent);--fcs:var(--accent-soft);--fct:#14512f">
-      <div class="grfamh" style="cursor:default">
+    // Depliee, la carte prend la moitie du volet et repousse les familles sous
+    // la ligne de flottaison. Repliee, elle ne coute qu'une ligne — a condition
+    // que cette ligne porte l'essentiel : qui, combien, et quand.
+    const cle = "tete|" + gr.sexe + "|" + gr.niveau;
+    return `<div class="grfam tete ${ouv[cle]?"":"plie"}"
+        style="--fc:var(--accent);--fcs:var(--accent-soft);--fct:#14512f">
+      <button class="grfamh" data-f="${esc(cle)}" aria-expanded="${!!ouv[cle]}"
+        aria-controls="fam-${esc(cle)}">
         <span class="ic" aria-hidden="true">👥</span>
-        <span class="tx"><b>Un groupe tout fait</b></span>
+        <span class="tx"><b>Un groupe tout fait</b>
+          <span class="s2">${gr.n} ${gr.sexe==="F"?"femmes":"hommes"} de niveau ${esc(gr.niveau)},
+            ${esc(gr.jour.toLowerCase())} ${gtx(gr.de)}${v.ok?" · ouvrable":""}</span></span>
         <span class="n">${gr.n}</span>
-      </div>
-      <div class="grfamb">
+        <span class="chev" aria-hidden="true">▾</span>
+      </button>
+      <div class="grfamb" id="fam-${esc(cle)}">
         <p class="grfama">${gr.sexe==="F"?"Femmes":"Hommes"} de niveau ${esc(gr.niveau)} —
           ${gr.n} sont libres ensemble ${esc(gr.jour.toLowerCase())} entre ${gtx(gr.de)} et ${gtx(gr.a)}${
           gr.gens.length > gr.n ? `, sur ${gr.gens.length} qui demandent ce créneau` : ""} :
@@ -6648,10 +6719,18 @@ F("grUndo").onclick = annuler;
 F("grVoirX").onclick = ()=>F("grVoirBg").classList.remove("open");
 F("grVoirBg").onclick = e=>{ if(e.target === F("grVoirBg")) F("grVoirBg").classList.remove("open"); };
 document.addEventListener("keydown", e=>{
-  if(e.key === "Escape"){ F("grVoirBg").classList.remove("open");
-                          F("grCtlBg").classList.remove("open");
-                          F("grRelBg").classList.remove("open");
-                          if(creation) creation.stop(); }
+  // Echap defait le geste en cours, du plus engageant au moins engageant. Sans
+  // lui, sortir d'un deplacement demandait de retrouver « Annuler » dans le
+  // bandeau — le seul chemin, et il n'est pas sous la souris.
+  if(e.key === "Escape"){
+    const modal = ["grVoirBg","grCtlBg","grRelBg"].filter(k=>F(k).classList.contains("open"));
+    if(modal.length){ modal.forEach(k=>F(k).classList.remove("open")); return; }
+    if(creation){ creation.stop(); return; }
+    if(F("grView").style.display !== "grid") return;
+    if(forcing){ forcing = null; rend(); return; }
+    if(moving || selAtt !== null){ moving = null; selAtt = null; rend(); return; }
+    if(sel){ sel = null; trouve = null; rend(); return; }
+  }
   // ⌘Z / Ctrl+Z, sauf quand on est en train de taper dans un champ
   if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey
      && F("grView").style.display === "grid"
