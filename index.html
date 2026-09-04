@@ -928,7 +928,9 @@
      cette largeur bridee et ces en-tetes sur deux lignes, la quatrieme
      simulation sortait du cadre et il fallait deviner qu'on pouvait defiler. */
   .grsimt .grtable th{white-space:normal;letter-spacing:.02em}
-  .grsimt .grtable th:first-child{width:168px}
+  .grsimt .grtable th:first-child{width:150px}
+  .grsimt .grtable th{font-size:10.5px;padding:5px 6px}
+  .grsimt .grtable td{padding:4px 6px}
   .grsimt .grtable td{max-width:none}
   .grok{color:var(--accent);font-size:12px;font-weight:600;margin-right:8px}
   .grtabs{display:flex;gap:4px;flex-wrap:wrap}
@@ -3820,15 +3822,26 @@ function rendFichiers(){
    qu'on retient d'une simulation, on l'ouvre — et c'est ce planning-la, un
    seul, qui devient l'etat partage. */
 const CLE_SIMS = "cca_simulations_v1";
+/* Chaque simulation porte ses ingredients en clair plutot que deux cases a
+   cocher : la cinquieme reprend l'EDT et les affinites comme la premiere, et
+   ne s'en distingue que par la grille dont elle part. Deux pastilles vertes
+   identiques sur deux lignes voisines auraient dit le contraire. */
 const SIMS = [
-  {n:1, titre:"EDT 2026 + affinités de Loïc", court:"EDT + affinités",  edt:true,  aff:true,
-   fic:"resultat-1-edt-affinites.xlsx"},
-  {n:2, titre:"EDT 2026 seul",                court:"EDT seul",         edt:true,  aff:false,
-   fic:"resultat-2-edt-seul.xlsx"},
-  {n:3, titre:"Affinités de Loïc seules",     court:"Affinités seules", edt:false, aff:true,
-   fic:"resultat-3-affinites-seules.xlsx"},
-  {n:4, titre:"Ni l'un ni l'autre",           court:"Aucun des deux",   edt:false, aff:false,
-   fic:"resultat-4-aucun.xlsx"},
+  {n:1, titre:"EDT 2026 + affinités de Loïc", court:"EDT + affinités",
+   fic:"resultat-1-edt-affinites.xlsx",
+   tags:[["EDT 2026", true], ["affinités Loïc", true]]},
+  {n:2, titre:"EDT 2026 seul", court:"EDT seul",
+   fic:"resultat-2-edt-seul.xlsx",
+   tags:[["EDT 2026", true], ["affinités Loïc", false]]},
+  {n:3, titre:"Affinités de Loïc seules", court:"Affinités seules",
+   fic:"resultat-3-affinites-seules.xlsx",
+   tags:[["EDT 2026", false], ["affinités Loïc", true]]},
+  {n:4, titre:"Ni l'un ni l'autre", court:"Aucun des deux",
+   fic:"resultat-4-aucun.xlsx",
+   tags:[["EDT 2026", false], ["affinités Loïc", false]]},
+  {n:5, titre:"Groupes 2026 bruts", court:"Groupes bruts",
+   fic:"resultat-5-groupes-bruts.xlsx",
+   tags:[["EDT 2026", true], ["affinités Loïc", true], ["sans les arbitrages", true]]},
 ];
 // Les lignes de l'onglet Synthese qui font la comparaison. Le classeur les
 // ecrit sans accent : la cle est celle du fichier, le libelle celui de l'ecran.
@@ -3867,11 +3880,12 @@ function resumeSim(syn, wb){
 function rendSims(){
   const w = F("grSims"); if(!w) return;
   const pretes = SIMS.filter(s=>sims[s.n]);
-  const tag = (on, txt) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${txt}</span>`;
+  const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
   w.innerHTML =
-    `<div class="grsimh"><b>Quatre simulations à comparer</b>
+    `<div class="grsimh"><b>Cinq simulations à comparer</b>
        <span>Le même calcul quatre fois, avec ou sans l'emploi du temps 2026 reconduit,
-       avec ou sans les affinités relevées par Loïc. Déposez en face de chacune le classeur
+       avec ou sans les affinités relevées par Loïc — et une cinquième qui repart de la grille
+       de Loïc brute, avant les arbitrages pris à la main. Déposez en face de chacune le classeur
        que <code>simulations.command</code> a produit ; « Ouvrir » amène celle-là sur l'écran
        des groupes, sans toucher aux trois autres.</span></div>` +
     SIMS.map(s=>{
@@ -3879,7 +3893,7 @@ function rendSims(){
       return `<div class="grsim${d && resFic && resFic.fichier === d.fichier ? " on" : ""}" data-n="${s.n}">
         <span class="num">${s.n}</span>
         <span class="tx"><b>${esc(s.titre)}</b>
-          <span class="tags">${tag(s.edt, "EDT 2026")}${tag(s.aff, "affinités Loïc")}</span>
+          <span class="tags">${s.tags.map(tag).join("")}</span>
           <span class="fic">${d ? esc(d.fichier) + " — déposé " + esc(d.date)
                                    + (d.resume ? " · " + esc(d.resume) : "")
                                 : "aucun classeur — attendu : " + esc(s.fic)}</span></span>
