@@ -4707,6 +4707,14 @@ function rendListe(){
   });
 }
 
+/* Pendant un glisse, le fantome sous le curseur et le bandeau flottant disent
+   deja tout — et l'infobulle native du navigateur, elle, montre encore l'ANCIEN
+   creneau. Trois etiquettes pour un geste, dont une fausse. On coupe celles du
+   planning le temps du geste ; le `rend()` de sortie les repose. */
+function muetGrille(){
+  F("grWeek").querySelectorAll(".grc,.grcol").forEach(n=>{ n.title = ""; });
+}
+
 /* -------- glisser un cours vers un autre creneau -------- */
 function debutDrag(ev, c, el){
   if(ev.button !== 0 || ev.target.classList.contains("lk")) return;
@@ -4724,7 +4732,7 @@ function debutDrag(ev, c, el){
   const move = e=>{
     if(!lance){
       if(Math.abs(e.clientX-x0) < 4 && Math.abs(e.clientY-y0) < 4) return;
-      lance = true; el.classList.add("ghosted");
+      lance = true; el.classList.add("ghosted"); muetGrille();
       gh = document.createElement("div"); gh.className = "grghost";
       gh.style.width = w.width+"px"; gh.style.height = w.height+"px";
       gh.innerHTML = `<b>${esc(c.prof)}</b><div>${esc(c.pal)} · ${c.membres.length}/${c.max}</div>`;
@@ -4814,6 +4822,7 @@ function poseCrea(tc, mode, ev0){   // `mode` change en cours de route : voir su
   gh.style.width = Math.max(96, cols[0].r.width - 8) + "px";
   gh.style.height = Math.max(20, dur/60*PXH) + "px";
   document.body.appendChild(gh); document.body.appendChild(hi);
+  muetGrille();
   let cand = null, bouge = false;
 
   const place = e=>{
