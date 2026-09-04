@@ -431,6 +431,40 @@
 
   .grwrap{flex:1;min-height:0;overflow:auto;padding:0 12px 12px}
   .grweek{display:grid}
+
+  /* ---- la vue liste : les memes cours, deplies, avec les noms ----
+     Des paves de 210 px qui se rangent en autant de colonnes que l'ecran en
+     porte : un jour charge se lit d'un coup d'oeil, et la fenetre etroite
+     retombe sur une colonne sans rien couper. */
+  .grliste{flex:1;min-height:0;overflow:auto;padding:2px 12px 16px}
+  .grlvide{color:var(--muted);font-size:13px;padding:18px 4px}
+  .grlj{margin-bottom:18px}
+  .grlj h3{position:sticky;top:0;z-index:2;background:var(--bg);margin:0 0 8px;
+    padding:7px 2px 5px;font-size:13.5px;font-weight:700;border-bottom:1px solid var(--line)}
+  .grlj h3 span{font-weight:400;font-size:11.5px;color:var(--muted);margin-left:7px}
+  .grlg{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .grlc{border:1px solid var(--line);border-left:3px solid var(--pc,#5b6570);border-radius:8px;
+    background:var(--pcbg,#fff);padding:7px 9px 8px;cursor:pointer}
+  .grlc:hover{border-color:var(--accent);border-left-color:var(--pc,#5b6570);
+    box-shadow:0 2px 8px rgba(31,42,55,.13)}
+  .grlc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+  .grlc.trouve{border-color:var(--ink);box-shadow:0 0 0 3px #ffd66e}
+  .grlc .hd{display:flex;align-items:baseline;gap:6px}
+  .grlc .hd b{font-size:12.5px;font-weight:700;color:var(--pc,#5b6570)}
+  .grlc .hd .hr{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .grlc .hd .nb{margin-left:auto;font-size:11.5px;font-weight:600;
+    font-variant-numeric:tabular-nums}
+  .grlc .hd .nb.inc{color:#96600d}
+  .grlc .sb{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);
+    margin:1px 0 5px;padding-bottom:4px;border-bottom:1px solid rgba(31,42,55,.08)}
+  .grlc .sb .mn{color:#7a4fb5;font-weight:600}
+  .grlc .sb .lk{margin-left:auto;font-size:10.5px;opacity:.55}
+  .grlc ol{margin:0;padding:0;list-style:none}
+  .grlc li{display:flex;gap:6px;align-items:baseline;font-size:12px;line-height:1.5;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grlc li i{flex:none;margin-left:auto;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .grlc li.hors{color:var(--muted)}
+  .grlc li.vide{color:#9aa3ad;font-style:italic}
   .grhead{position:sticky;top:0;z-index:5;background:var(--bg);padding:7px 4px 5px;text-align:center;
     border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
   .grhead b{font-size:13px;display:block}
@@ -691,6 +725,12 @@
   /* Le bouton porte desormais un mot : il reste visible en permanence, sinon
      « garder deux eleves sur quatre » se decouvre au survol, donc jamais. */
   .grm .pin:hover{border-color:#2f5597;color:#2f5597}
+  /* La preinscription papier quitte l'ecran des groupes : ce bouton-la ne peut
+     pas se decouvrir au survol comme « Retirer », sinon il n'existe pas. */
+  .grm .fic{flex:none;border:none;background:none;padding:2px 4px;height:auto;
+    font-size:11.5px;line-height:1.5;color:var(--muted);text-decoration:underline;
+    text-underline-offset:2px;white-space:nowrap;border-radius:5px}
+  .grm .fic:hover{color:var(--accent)}
   .grnote{font-size:12px;color:var(--muted);line-height:1.45;margin:10px 0 0}
   .grh4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
     font-weight:700;margin:14px 0 5px}
@@ -845,9 +885,10 @@
   }
 
   /* ---------------- le planning mural, sur papier ----------------
-     L'ecran ne montre jamais les noms : quatre cours en parallele dans une
-     colonne de 90 px, il n'y a pas la place. Le papier, si — c'est la mise en
-     page du classeur Excel, une journee par page, une colonne par prof. */
+     La grille ne montre pas les noms : quatre cours en parallele dans une
+     colonne de 90 px, il n'y a pas la place — c'est la vue liste qui les porte
+     a l'ecran. Le papier, lui, reprend la mise en page du classeur Excel :
+     une journee par page, une colonne par prof. */
   #grPrint{display:none}
   @media print{
     @page{size:A4 landscape;margin:10mm}
@@ -1243,6 +1284,7 @@
       <div class="grfil" id="grFil"></div>
       <div class="grmove" id="grMove" style="display:none"></div>
       <div class="grwrap" id="grWrap"><div class="grweek" id="grWeek"></div></div>
+      <div class="grliste" id="grListe" style="display:none"></div>
       <div class="grpd" id="grPd"></div>
       <div class="grbar">
         <div class="tx" id="grBarTx"></div>
@@ -3127,6 +3169,10 @@ let annexes = {enPlace:[], hors:[]};
 let horsVue = false;
 let vu = 0, sel = null, selAtt = null, moving = null, forcing = null, trouve = null;
 let filtre = {profs:[], pal:"", etat:""};
+// La grille dit QUAND, la liste dit QUI : quatre cours en parallele dans une
+// colonne de 90 px n'ont pas la place d'un seul nom. Jusqu'ici la composition
+// des groupes ne se lisait qu'a l'impression et dans le classeur Excel.
+let vueListe = false;
 // Creation d'un cours en cours : {tc, mode, stop}. Non nul = la grille est une
 // surface de pose, comme quand on deplace un joueur.
 let creation = null;
@@ -3872,7 +3918,11 @@ function rend(){
   F("grRetour").style.display = (ok && ecranLance) ? "inline-block" : "none";
   rendFichiers(); rendPills();
   if(!vue){ majLance(); return; }
-  rendSum(); rendFil(); rendMove(); rendWeek(); rendSide(); rendBar();
+  rendSum(); rendFil(); rendMove();
+  F("grWrap").style.display  = vueListe ? "none" : "block";
+  F("grListe").style.display = vueListe ? "block" : "none";
+  vueListe ? rendListe() : rendWeek();
+  rendSide(); rendBar();
   F("grRelance").style.display = agent ? "block" : "none";
   majTuile();
 }
@@ -3973,6 +4023,11 @@ function rendFil(){
          <b>${esc(p)}</b>${sem?`<i class="gg"><s style="width:${Math.min(100,use/sem*100)}%"></s></i>`:""}
          <span class="v">${hh(use)}${sem?"/"+hh(sem):""}${dep.length?" ⚠":pl.length?" ●":""}</span></button>`;
      }).join("")}</span>
+     <span class="g"><span class="lb">Vue</span>
+       <button class="grchip ${vueListe?"":"on"}" data-v="grille"
+         title="Le planning de la semaine, heure par heure">grille</button>
+       <button class="grchip ${vueListe?"on":""}" data-v="liste"
+         title="Les cours les uns sous les autres, avec les noms de chaque groupe">liste</button></span>
      <span class="g"><span class="lb">Niveau</span><select id="grPal">
        <option value="">tous les paliers</option>
        ${pals.map(p=>`<option ${filtre.pal===p?"selected":""}>${esc(p)}</option>`).join("")}</select></span>
@@ -4001,6 +4056,15 @@ function rendFil(){
   });
   F("grFil").querySelectorAll("[data-e]").forEach(b=>b.onclick = ()=>{
     filtre.etat = filtre.etat===b.dataset.e ? "" : b.dataset.e; rend();
+  });
+  F("grFil").querySelectorAll("[data-v]").forEach(b=>b.onclick = ()=>{
+    const l = b.dataset.v === "liste";
+    if(l === vueListe) return;
+    // Creer et deplacer sont des gestes de grille : on les rend avant de partir,
+    // sinon le bandeau resterait a demander un clic dans une grille absente.
+    if(creation) creation.stop();
+    moving = null; forcing = null; trouve = null;
+    vueListe = l; rend();
   });
   const sp = F("grPal"); if(sp) sp.onchange = ()=>{ filtre.pal = sp.value; rend(); };
   const cl = F("grClr"); if(cl) cl.onclick = ()=>{ filtre = {profs:[],pal:"",etat:""}; rend(); };
@@ -4032,8 +4096,12 @@ function poser(c){
     src.manuel = true;
   } else {
     const k = attente.findIndex(a=>a.nom===t.nom);
+    // `id` voyage avec le joueur : sans lui, deplacer quelqu'un a la main lui
+    // ferait perdre le lien vers sa preinscription, et le bouton « Fiche »
+    // disparaitrait pour ce joueur-la seulement.
     if(k>=0){ const a = attente.splice(k,1)[0];
-      m = Object.assign({nom:a.nom, email:a.email||"", niveau:a.niveau, dispos:a.dispos||""},
+      m = Object.assign({id:a.id||"", nom:a.nom, email:a.email||"", niveau:a.niveau,
+                         sexe:a.sexe||"", ancien:!!a.ancien, dispos:a.dispos||""},
                         pick(a)); }
     selAtt = null;
   }
@@ -4374,6 +4442,53 @@ function rendWeek(){
   });
 }
 
+/* ---------------- la vue liste ----------------
+   Les memes cours que la grille, dans le meme ordre, mais deplies : un pave par
+   cours, avec les noms dedans. « Qui est dans ce groupe » ne se lisait jusqu'ici
+   qu'en ouvrant les cours un par un, a l'impression, ou dans le classeur Excel.
+   Les filtres valent ici comme la-bas ; ce qu'ils ecartent n'est pas grise mais
+   absent, puisque rien n'oblige a garder une place vide dans une liste. */
+function rendListe(){
+  const w = F("grListe"), lst = ordonne().filter(passe);
+  if(!lst.length){
+    w.innerHTML = `<p class="grlvide">Aucun cours ne correspond aux filtres.</p>`;
+    return;
+  }
+  w.innerHTML = DAYS.filter(j=>lst.some(c=>c.jour===j)).map(j=>{
+    const dj = lst.filter(c=>c.jour===j);
+    const nj = dj.reduce((t,c)=>t+c.membres.length, 0);
+    return `<section class="grlj">
+      <h3>${esc(j)} <span>${dj.length} cours · ${nj} joueur${nj>1?"s":""}</span></h3>
+      <div class="grlg">${dj.map(c=>{
+        const libre = c.max - c.membres.length;
+        return `<article class="grlc ${sel===c.cle?"sel":""} ${trouve===c.cle?"trouve":""}" data-c="${esc(c.cle)}"
+            style="--pc:${teinte(c.prof)};--pcbg:${teinteFond(c.prof)}"
+            title="Ouvrir ce cours dans le volet de droite">
+          <div class="hd"><b>${esc(c.prof)}</b>
+            <span class="hr">${gtx(c.d)}–${gtx(c.f)}</span>
+            <span class="nb ${libre>0?"inc":""}">${c.membres.length}/${c.max}</span></div>
+          <div class="sb">${esc(c.pal || "palier ?")} · ${
+            c.sexe==="F"?"féminin":c.sexe==="H"?"masculin":"—"}${
+            c.manuel?' · <span class="mn">à la main</span>':""}
+            <span class="lk" title="${c.lock===2?"Rien ne bouge au prochain calcul"
+              :c.lock===1?"Heure et prof gardés au prochain calcul"
+              :"Le prochain calcul peut tout changer"}">${
+              c.lock===2?"🔒":c.lock===1?"🕘":"🔓"}</span></div>
+          <ol>${
+            c.membres.map(m=>`<li>${esc(m.nom)}${m.niveau?`<i>${esc(m.niveau)}</i>`:""}</li>`).join("")
+            + c.enPlace.map(n=>`<li class="hors">${esc(n)}<i>hors CCA</i></li>`).join("")
+            + (libre>0 ? `<li class="vide">${libre} place${libre>1?"s":""} libre${
+                libre>1?"s":""}</li>` : "")}</ol>
+        </article>`;
+      }).join("")}</div>
+    </section>`;
+  }).join("");
+  w.querySelectorAll("[data-c]").forEach(el=>el.onclick = ()=>{
+    const k = el.dataset.c;
+    sel = sel===k ? null : k; selAtt = null; trouve = null; rend();
+  });
+}
+
 /* -------- glisser un cours vers un autre creneau -------- */
 function debutDrag(ev, c, el){
   if(ev.button !== 0 || ev.target.classList.contains("lk")) return;
@@ -4528,6 +4643,9 @@ function armerCrea(){
   // a deja ferme, le click arrive ensuite sur le meme bouton.
   if(Date.now() - dragFini < 250) return;
   if(!vivants().length && !ctr) return;
+  // On pose un cours sur des heures : la liste n'en a pas. Le bouton ramene a
+  // la grille plutot que de ne rien faire.
+  vueListe = false;
   creation = {tc:typeDefaut(), mode:"bouton", stop:()=>{ creation = null; rend(); }};
   sel = null; selAtt = null; moving = null; forcing = null;
   rend();                       // le bandeau et les bandes d'abord : la geometrie
@@ -4685,7 +4803,8 @@ function ouvrirPour(gr, dest, avecEux){
   if(avecEux) gr.gens.slice(0, c.max).forEach(x=>{
     const k = attente.findIndex(p=>p.nom === x.p.nom); if(k<0) return;
     const a = attente.splice(k,1)[0];
-    c.membres.push(Object.assign({nom:a.nom, email:a.email||"", niveau:a.niveau,
+    c.membres.push(Object.assign({id:a.id||"", nom:a.nom, email:a.email||"", niveau:a.niveau,
+                                  sexe:a.sexe||"", ancien:!!a.ancien,
                                   dispos:a.dispos||""}, pick(a)));
     c.epingles.push(a.nom);
   });
@@ -4812,8 +4931,10 @@ function rendSide(){
        }${c.membres.map((m,i)=>{
          const ep = c.lock===2 || c.epingles.indexOf(m.nom)>=0;
          return `<div class="grm ${ep?"ep":""}">
-           <button class="nm lien" data-fi="${i}" title="Ouvrir sa fiche">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
+           <button class="nm lien" data-fi="${i}" title="${esc(m.nom)} — ses disponibilités, et où on peut le déplacer">${esc(m.nom)}${m.niveau?` <span style="color:var(--muted)">· ${esc(m.niveau)}</span>`:""}</button>
            <span class="act"><button data-rm="${i}">Retirer</button></span>
+           ${m.id ? `<button class="fic" data-fic="${esc(m.id)}"
+             title="Ouvrir sa préinscription, photo comprise">Fiche</button>` : ""}
            <button class="pin ${ep?"on":""}" data-ep="${i}" ${c.lock===2?"disabled":""}
              aria-pressed="${ep}" title="${ep?"Gardé : le calcul le laissera dans ce cours"
              :"Le garder ici au prochain calcul"}"><span aria-hidden="true">📌</span> ${
@@ -4862,8 +4983,8 @@ function rendSide(){
             const k = c.membres.findIndex(x=>x.nom===m.nom);
             const p = c.membres.splice(k,1)[0];
             c.epingles = c.epingles.filter(n=>n!==p.nom);
-            attente.push(Object.assign({nom:p.nom, sexe:c.sexe, niveau:p.niveau, email:p.email||"",
-              ancien:!!p.ancien, dispos:p.dispos||"",
+            attente.push(Object.assign({id:p.id||"", nom:p.nom, sexe:c.sexe, niveau:p.niveau,
+              email:p.email||"", ancien:!!p.ancien, dispos:p.dispos||"",
               raison:"hors du palier " + c.pal + " choisi pour le cours de " + c.prof}, pick(p)));
           }
         });
@@ -4894,7 +5015,7 @@ function rendSide(){
     }
     F("grSupp").onclick = ()=>{
       avant("suppression du cours de " + c.prof + " " + c.jour.toLowerCase() + " " + gtx(c.d));
-      c.membres.slice().forEach(m=>attente.push(Object.assign({nom:m.nom, sexe:c.sexe,
+      c.membres.slice().forEach(m=>attente.push(Object.assign({id:m.id||"", nom:m.nom, sexe:c.sexe,
         niveau:m.niveau, email:m.email||"", ancien:!!m.ancien, dispos:m.dispos||"",
         raison:"cours supprimé à la main (" + c.prof + " " + c.jour.toLowerCase()
                + " " + gtx(c.d) + ")"}, pick(m))));
@@ -4914,19 +5035,22 @@ function rendSide(){
       c.cle = cleDe(c); sel = c.cle; memoriser(); rend();
       if(v.warn) F("grPmsg").innerHTML = `<span style="color:var(--warn)">⚠ ${esc(v.warn)}. Le cours est gardé ; le dépassement reste visible dans le bandeau des heures.</span>`;
     };
+    // Le nom mene a la fiche d'ecran du joueur (dispos, cours possibles) ; la
+    // preinscription papier, elle, s'ouvre d'un seul clic depuis la ligne.
     body.querySelectorAll("[data-fi]").forEach(b2=>b2.onclick = ()=>{
       const m = c.membres[+b2.dataset.fi];
       moving = {nom:m.nom, niveau:m.niveau, sexe:c.sexe, from:c.cle,
                 dispos:disposDe(m.dispos)};
       selAtt = null; rend();
     });
+    body.querySelectorAll("[data-fic]").forEach(b2=>b2.onclick = ()=>ouvrirFiche(b2.dataset.fic));
     body.querySelectorAll("[data-rm]").forEach(b2=>b2.onclick = ()=>{
       avant("retrait de " + c.membres[+b2.dataset.rm].nom);
       const m = c.membres.splice(+b2.dataset.rm,1)[0];
       c.epingles = c.epingles.filter(n=>n!==m.nom);
       c.manuel = true;
-      attente.push(Object.assign({nom:m.nom, sexe:c.sexe, niveau:m.niveau, email:m.email,
-        ancien:!!m.ancien,
+      attente.push(Object.assign({id:m.id||"", nom:m.nom, sexe:c.sexe, niveau:m.niveau,
+        email:m.email, ancien:!!m.ancien,
         dispos:m.dispos||"", raison:"retiré à la main du cours de "+c.prof}, pick(m)));
       memoriser(); rend();
     });
@@ -5004,16 +5128,18 @@ function rendSide(){
              ${v.warn ? "⚠ " + esc(v.warn) + "." : ""}</div>`
           : `<div class="grverd"><b>Impossible tel quel.</b> ${esc(v.why)}.</div>`
             + (autres.length
-              ? `<div class="grverd ok"><b>Ailleurs, oui.</b> Un cours de ce format tiendrait
-                 ${autres.map(o=>esc(o.jour.toLowerCase())+" "+gtx(o.de)+" avec "+esc(o.prof)).join(", ou ")}.
-                 Hors de leurs plages : à leur proposer par téléphone.</div>`
+              ? `<div class="grverd ok"><b>Ailleurs, oui.</b> ${autres.length>1
+                 ? autres.length + " créneaux de la semaine porteraient" : "Un créneau de la semaine porterait"}
+                 un cours de ce format — hors de leurs plages : à leur proposer par téléphone.</div>`
               : `<div class="grverd"><b>Nulle part ailleurs non plus.</b> Aucun créneau de la semaine
                  n'a à la fois un court libre et un prof qui a encore des heures.</div>`)}
         <div class="gracts">
           ${v.ok ? `<button class="mini primary" data-gr="${k}" data-ou="ici">Ouvrir le cours
             ${esc(gr.jour.toLowerCase())} ${gtx(v.de)}</button>` : ""}
-          ${!v.ok && autres.length ? `<button class="mini" data-gr="${k}" data-ou="0">Ouvrir un cours
-            ${esc(autres[0].jour.toLowerCase())} ${gtx(autres[0].de)}</button>` : ""}
+          ${/* Un bouton par creneau : la phrase en proposait deux, un seul etait
+                cliquable, et le second se cherchait a la main dans la grille. */
+            v.ok ? "" : autres.map((o,q)=>`<button class="mini" data-gr="${k}" data-ou="${q}">Ouvrir
+            ${esc(o.jour.toLowerCase())} ${gtx(o.de)} · ${esc(o.prof)}</button>`).join("")}
         </div>
       </div>
     </div>`;
@@ -5268,7 +5394,7 @@ function chercher(q){
     else { sel = null; selAtt = h.att; trouve = null;
            ouv[familleDe(attente[h.att].raison)] = true; }
     box.classList.remove("on"); F("grQ").value = ""; rend();
-    const el = F("grWeek").querySelector(".grc.trouve");
+    const el = (vueListe ? F("grListe") : F("grWeek")).querySelector(".trouve");
     if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
   });
 }
