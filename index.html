@@ -923,6 +923,32 @@
   .grsim .acts{flex:none;margin-left:auto}
   .grsim .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
   .grsimt{padding:10px 12px;overflow:auto}
+  .grana{width:min(1000px,96vw)}
+  .grana h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    margin:18px 0 8px;font-weight:600}
+  .grana h3:first-child{margin-top:0}
+  .granat{width:100%;border-collapse:collapse;font-size:12.5px}
+  .granat th,.granat td{border:1px solid var(--line);padding:5px 8px;text-align:right;
+    white-space:nowrap}
+  .granat th{background:#f4f6f8;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--muted);font-weight:600;white-space:normal}
+  .granat th:first-child,.granat td:first-child{text-align:left;color:var(--muted);width:190px}
+  .granat tr.fort td{font-weight:700;color:var(--ink)}
+  .granat tr:nth-child(even) td{background:#fafbfc}
+  .granat td.ok{color:var(--accent)}
+  .granat td.ko{color:var(--warn);font-weight:600}
+  .granat col.ici{background:#f6fbf7}
+  .granot{font-size:13px;line-height:1.5;margin:0 0 10px}
+  .granot b{font-weight:650}
+  .granok{border-left:3px solid var(--warn);background:#fdf6f6;padding:9px 12px;border-radius:0 8px 8px 0;
+    font-size:13px;line-height:1.5;margin:0 0 10px}
+  .granoj{border-left:3px solid var(--accent);background:#f6fbf7;padding:9px 12px;border-radius:0 8px 8px 0;
+    font-size:13px;line-height:1.5;margin:0 0 10px}
+  .granab{display:flex;height:22px;border-radius:5px;overflow:hidden;margin:6px 0 4px;
+    border:1px solid var(--line);background:#fff}
+  .granab span{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;
+    white-space:nowrap;overflow:hidden}
+  .granal{font-size:11.5px;color:var(--muted);margin:0 0 14px}
   .grsimt .grtable td:first-child{white-space:nowrap;color:var(--muted)}
   /* Quatre colonnes de valeurs plus le libelle tiennent dans la carte : sans
      cette largeur bridee et ces en-tetes sur deux lignes, la quatrieme
@@ -1257,6 +1283,7 @@
     <span class="grpills" id="grPills"></span>
     <button class="mini" id="grNouveau" style="display:none"
       title="Rouvrir l'écran de lancement : les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti">↻ Relancer le calcul</button>
+    <button class="mini" id="grAna">🔬 Analyse</button>
     <button class="mini" id="grImp" style="display:none">🖨 Imprimer</button>
     <button class="mini" id="grExport" disabled>⬇︎ Excel</button>
   </div>
@@ -1292,6 +1319,19 @@
         son résultat arrive ici par la base partagée.</p>
       <p style="margin-top:12px"><button class="mini" id="grRetour"
         style="display:none">← Revenir aux groupes</button></p>
+    </div>
+  </div>
+
+  <!-- analyse : ce que chaque planning place, et a quel prix en contraintes -->
+  <div class="modal-bg" id="grAnaBg">
+    <div class="modal grana">
+      <div class="modal-head">
+        <b>Analyse</b>
+        <span class="sub" id="grAnaN"></span>
+        <span style="flex:1"></span>
+        <button class="mini" id="grAnaX">✕</button>
+      </div>
+      <div class="modal-body" id="grAnaC"></div>
     </div>
   </div>
 
@@ -3806,6 +3846,324 @@ function rendFichiers(){
     };
   });
   rendSims();
+}
+
+/* ---------------- l'analyse ----------------
+   Le tableau des simulations dit ce que chaque calcul PLACE. Il ne dit pas ce
+   qu'il a fallu lacher pour y arriver, ni ou est le plafond. Trois choses
+   manquaient, et chacune a change une conclusion :
+
+   · le planning corrige a la main n'etait dans aucune colonne — c'est pourtant
+     le seul qui compte, et il place plus que tous les calculs ;
+   · une demande « avec » qui ne designe aucune fiche est ignoree par le
+     solveur (`modele.py`, `_paires_affinite` apparie par identifiant). Ecrite
+     en clair dans un classeur, elle se lit comme une preference respectee
+     alors que personne ne l'a jamais entendue. On les compte a part ;
+   · le plafond en heures de prof n'avait jamais ete pose. Il dit lequel des
+     deux — heures ou courts — ferme la porte, et donc sur quoi agir.
+
+   Tout est recalcule ici, dans le navigateur, a partir des memes classeurs :
+   aucune de ces valeurs n'est recopiee d'un rapport. */
+
+const CAP_NIV = {F:"D", H:"H"};   // profs plafonnes a 30/5 : lettre max par sexe
+const LETTRES_N = "ABCDEFGHIJKLMNOPQRSTUVWX";
+
+/* Un planning, quel qu'il soit, ramene aux memes mesures. `cs/att/anx` sont des
+   copies : mesurer une simulation ne doit pas deplacer ce qui est a l'ecran. */
+function mesurer(cs, att, anx){
+  const viv = cs.filter(c=>c.diff !== "supp");
+  const enPlace = (anx && anx.enPlace) ? anx.enPlace.length : 0;
+  const r = {cours:viv.length, attente:(att||[]).length, hors:(anx&&anx.hors?anx.hors.length:0),
+             places: viv.reduce((t,c)=>t+c.membres.length, 0) + enPlace,
+             heures:0, courtsPic:0, libres:0,
+             fautes:{}, dem:{avec:[0,0,0], sans:[0,0,0], prof:[0,0,0], refus:[0,0,0]}};
+  const ko = (k,q)=>{ (r.fautes[k] = r.fautes[k] || []).push(q); };
+  const qd = c => `${c.jour} ${gtx(c.d)} ${c.prof}`;
+
+  viv.forEach(c=>{ r.heures += (c.f - c.d)/60; });
+  r.heures = Math.round(r.heures*100)/100;
+
+  // effectifs : le format dit un plancher et un plafond, tous deux durs
+  viv.forEach(c=>{
+    const t = (ctr && ctr.types || []).find(x=>x.cle === c.type);
+    if(!t || t.seul) return;
+    const e = c.membres.length;
+    if(e < t.min || e > t.max) ko("effectif", `${qd(c)} [${c.type}] : ${e} joueurs pour ${t.min}-${t.max}`);
+    r.libres += Math.max(0, t.max - e);
+  });
+
+  // courts et profs, pas de 15 min : c'est la seule facon de voir un pic
+  const JS = (ctr && ctr.jours && ctr.jours.length) ? ctr.jours : DAYS;
+  JS.forEach(j=>{
+    for(let t = 9*60; t < 21*60+30; t += 15){
+      const ici = viv.filter(c=>c.jour===j && c.d<=t && t<c.f);
+      const pris = ici.reduce((n,c)=>n+(c.nc||1), 0);
+      r.courtsPic = Math.max(r.courtsPic, pris);
+      const ouv = Math.max(0, ...(ctr&&ctr.terrains||[])
+        .filter(x=>x.jour===j && x.de<=t && t<x.a).map(x=>x.courts), 0);
+      if(ctr && ctr.terrains && ctr.terrains.length && pris > ouv)
+        ko("courts", `${j} ${gtx(t)} : ${pris} courts pris pour ${ouv} ouverts`);
+      const parProf = {};
+      ici.forEach(c=>{ parProf[c.prof] = (parProf[c.prof]||0)+1; });
+      Object.keys(parProf).forEach(p=>{
+        if(parProf[p] > 1) ko("prof_double", `${p} ${j} ${gtx(t)} : ${parProf[p]} cours a la fois`);
+      });
+    }
+  });
+
+  // heures par prof contre le contrat
+  r.budget = 0;
+  Object.keys((ctr && ctr.budget) || {}).forEach(p=>{
+    JS.forEach(j=>{
+      const b = (ctr.budget[p] || {})[j] || 0;
+      r.budget += b;
+      const u = viv.filter(c=>c.prof===p && c.jour===j).reduce((t,c)=>t+(c.f-c.d)/60, 0);
+      if(u > b + 1e-6) ko("budget_prof", `${p} ${j} : ${u.toFixed(2)} h pour ${b.toFixed(2)} h au contrat`);
+    });
+  });
+
+  // joueur par joueur : palier, sexe, dispos, plafond du prof, doublon
+  const vus = {};
+  viv.forEach(c=>{
+    const plafonne = ctr && ctr.budget && POSE_CAP[c.prof];
+    c.membres.forEach(m=>{
+      if(c.pal && m.niveau && c.pal.indexOf(m.niveau) < 0)
+        ko("palier", `${m.nom} (${m.niveau}) dans le palier ${c.pal} — ${qd(c)}`);
+      if(c.sexe && m.sexe && c.sexe !== m.sexe)
+        ko("sexe", `${m.nom} (${m.sexe}) dans un cours ${c.sexe} — ${qd(c)}`);
+      const dp = lireDispos(m.dispos);
+      if(dp.length && !dp.some(z=>z.jour===c.jour && z.de<=c.d && c.f<=z.a))
+        ko("dispos", `${m.nom} : ${qd(c)} hors de ses plages`);
+      const lim = plafonne && CAP_NIV[m.sexe];
+      if(lim && m.niveau && LETTRES_N.indexOf(m.niveau) > LETTRES_N.indexOf(lim))
+        ko("plafond_prof", `${c.prof} : ${m.nom} (${m.niveau}) au-dela de son plafond`);
+      (vus[m.nom] = vus[m.nom] || []).push(qd(c));
+    });
+  });
+  Object.keys(vus).forEach(n=>{
+    if(vus[n].length > 1) ko("doublon", `${n} : ${vus[n].length} cours`);
+  });
+
+  /* Les demandes. Trois compteurs et pas deux : tenues, exprimees, et
+     « inertes » — ecrites sur la fiche mais ne designant aucune fiche connue.
+     Une inerte n'est ni tenue ni ratee : elle n'existe pas pour le solveur. */
+  const parId = {};
+  viv.forEach(c=>c.membres.forEach(m=>{ if(m.id) parId[m.id] = c; }));
+  const connus = {};
+  viv.forEach(c=>c.membres.forEach(m=>{ if(m.id) connus[m.id] = 1; }));
+  (att||[]).forEach(a=>{ if(a.id) connus[a.id] = 1; });
+  ((anx&&anx.enPlace)||[]).forEach(a=>{ if(a.id) connus[a.id] = 1; });
+  ((anx&&anx.hors)||[]).forEach(a=>{ if(a.id) connus[a.id] = 1; });
+  const profs = Object.keys((ctr && ctr.budget) || {});
+  const compte = (cle, brut, resolvable, tenu) => listeChamp(brut).forEach(q=>{
+    const d = r.dem[cle];
+    d[1]++;
+    if(!resolvable(q)) d[2]++; else if(tenu(q)) d[0]++;
+  });
+  viv.forEach(c=>c.membres.forEach(m=>{
+    compte("avec",  m.demande_avec, q=>!!connus[q], q=>parId[q] === c);
+    compte("sans",  m.demande_sans, q=>!!connus[q], q=>parId[q] !== c);
+    compte("prof",  m.demande_prof, q=>profs.indexOf(q) >= 0, q=>q === c.prof);
+    compte("refus", m.refus_prof,   q=>profs.indexOf(q) >= 0, q=>q !== c.prof);
+  }));
+  r.dur = Object.keys(r.fautes).filter(k=>k !== "dispos")
+                 .reduce((t,k)=>t+r.fautes[k].length, 0);
+  return r;
+}
+
+/* Les profs dont l'onglet Profs borne le niveau. `lireContraintes` ne garde pas
+   la colonne : on la relit ici, dans le classeur en cache, plutot que d'elargir
+   un objet dont dependent quinze autres fonctions. */
+let POSE_CAP = {};
+function relirePlafondsProfs(){
+  POSE_CAP = {};
+  const c = CACHE["contraintes-tennis.xlsx"];
+  if(!c) return;
+  const a = feuille("contraintes-tennis.xlsx", "Profs");
+  if(!a) return;
+  const i = idx(a[0]);
+  if(i["niveau_max"] === undefined) return;
+  a.slice(1).forEach(r=>{
+    const nom = String(r[0]||"").trim();
+    if(nom && nom.length <= 24 && String(r[i["niveau_max"]]||"").trim()) POSE_CAP[nom] = String(r[i["niveau_max"]]).trim();
+  });
+}
+
+/* Le plafond : combien de joueurs tiendraient, si SEULES les heures de prof
+   comptaient ? Puis la meme question pour les courts. Celui des deux qui donne
+   le plus petit nombre est celui qui ferme la porte — et c'est le seul sur
+   lequel il serve a quelque chose d'agir. */
+function plafond(){
+  if(!ctr || !ctr.types || !ctr.types.length || !ctr.budget) return null;
+  const heures = Object.keys(ctr.budget)
+    .reduce((t,p)=>t + Object.keys(ctr.budget[p]).reduce((u,j)=>u+(ctr.budget[p][j]||0), 0), 0);
+  const imp = ctr.types.filter(t=>t.seul);
+  const hComp = imp.reduce((t,x)=>t + x.duree/60, 0);
+  const vac = imp.reduce((t,x)=>t + x.max, 0);
+  const A = ctr.types.find(t=>t.cle === "A") || {duree:60, max:4, courts:1};
+  const B = ctr.types.find(t=>t.cle === "B") || A;
+  const cH = (ctr.terrains||[]).reduce((t,x)=>t + (x.a-x.de)/60 * x.courts, 0);
+  return {heures, hComp, hCca:heures-hComp, vac,
+          parHeureA: A.max/(A.duree/60), parHeureB: B.max/(B.duree/60),
+          toutA: Math.floor((heures-hComp) * A.max/(A.duree/60)) + vac,
+          toutB: Math.floor((heures-hComp) * B.max/(B.duree/60)) + vac,
+          courtsH: cH, parCourtA: A.max/(A.duree/60)/A.courts,
+          plafondCourts: Math.floor(cH * A.max/(A.duree/60)/A.courts)};
+}
+
+const FAUTES_LIB = {
+  effectif:"Effectif du cours", courts:"Courts disponibles", prof_double:"Un prof, un cours",
+  budget_prof:"Heures au contrat", palier:"Palier de niveau", sexe:"Groupe masculin / féminin",
+  dispos:"Disponibilités déclarées", plafond_prof:"Plafond de niveau du prof",
+  doublon:"Un joueur, un cours"};
+
+function rendAnalyse(){
+  relirePlafondsProfs();
+  const cols = [];
+  if(cours.length) cols.push({lab:"Planning actuel", ici:true, m:mesurer(cours, attente, annexes)});
+  SIMS.forEach(s=>{
+    const d = sims[s.n]; if(!d) return;
+    const g = [cours, attente, annexes];
+    try{
+      lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
+      cols.push({lab:s.n + ". " + s.court, m:mesurer(cours, attente, annexes)});
+    }catch(e){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
+    finally{ cours = g[0]; attente = g[1]; annexes = g[2]; }
+  });
+  F("grAnaN").textContent = cols.length
+    ? cols.length + (cols.length > 1 ? " plannings comparés" : " planning") : "";
+  if(!cols.length){
+    F("grAnaC").innerHTML = `<p class="granot">Rien à analyser : aucun planning chargé,
+      aucune simulation déposée.</p>`;
+    return;
+  }
+  const P = plafond();
+  const nb = v => v == null ? "—" : (Math.round(v*100)/100).toLocaleString("fr-FR");
+  const lignes = [
+    ["Joueurs placés", c=>nb(c.m.places), true],
+    ["Sans groupe", c=>nb(c.m.attente)],
+    ["Cours ouverts", c=>nb(c.m.cours)],
+    ["Places libres dans ces cours", c=>nb(c.m.libres)],
+    ["Heures de prof utilisées", c=>nb(c.m.heures) + (c.m.budget ? " / " + nb(c.m.budget) : "")],
+    ["Courts au pic", c=>nb(c.m.courtsPic)],
+    ["Affinités appariables", c=>nb(c.m.dem.avec[1] - c.m.dem.avec[2])],
+    ["dont tenues", c=>nb(c.m.dem.avec[0])],
+    ["Affinités inertes", c=>c.m.dem.avec[2] ? `<span class="ko">${nb(c.m.dem.avec[2])}</span>` : "0"],
+    ["Prof souhaité obtenu", c=>`${nb(c.m.dem.prof[0])} / ${nb(c.m.dem.prof[1]-c.m.dem.prof[2])}`],
+    ["Refus de prof tenus", c=>`${nb(c.m.dem.refus[0])} / ${nb(c.m.dem.refus[1]-c.m.dem.refus[2])}`],
+    ["Fautes dures", c=>c.m.dur ? `<span class="ko">${c.m.dur}</span>` : `<span class="ok">0</span>`, true],
+    ["Hors disponibilités", c=>{
+      const n = (c.m.fautes.dispos||[]).length;
+      return n ? `<span class="ko">${n}</span>` : `<span class="ok">0</span>`;
+    }],
+  ];
+  const tab = `<table class="granat">
+    <colgroup><col>${cols.map(c=>`<col${c.ici?' class="ici"':""}>`).join("")}</colgroup>
+    <thead><tr><th>Indicateur</th>${cols.map(c=>`<th>${esc(c.lab)}</th>`).join("")}</tr></thead>
+    <tbody>${lignes.map(([lab, f, fort])=>
+      `<tr class="${fort?"fort":""}"><td>${lab}</td>${cols.map(c=>`<td>${f(c)}</td>`).join("")}</tr>`
+    ).join("")}</tbody></table>`;
+
+  // contraintes : une ligne par famille, ✓ quand aucune faute
+  const familles = Object.keys(FAUTES_LIB);
+  const ctab = `<table class="granat">
+    <colgroup><col>${cols.map(c=>`<col${c.ici?' class="ici"':""}>`).join("")}</colgroup>
+    <thead><tr><th>Contrainte</th>${cols.map(c=>`<th>${esc(c.lab)}</th>`).join("")}</tr></thead>
+    <tbody>${familles.map(k=>
+      `<tr><td>${FAUTES_LIB[k]}</td>${cols.map(c=>{
+        const n = (c.m.fautes[k]||[]).length;
+        return n ? `<td class="ko" title="${esc((c.m.fautes[k]||[]).slice(0,4).join(" · "))}">${n} ✗</td>`
+                 : `<td class="ok">✓</td>`;
+      }).join("")}</tr>`).join("")}</tbody></table>
+    <p class="granal">Une case rouge se survole pour lire les cas. « Disponibilités déclarées » n'est
+    pas une faute de calcul : le solveur élargit une fenêtre qui effleure un créneau reconduit, et un
+    placement à la main l'assume — les deux sont voulus, mais aucun ne doit passer inaperçu.</p>`;
+
+  // le plafond
+  let plaf = "";
+  if(P){
+    const ici = cols[0].m;
+    const pc = Math.round(ici.places / P.toutA * 100);
+    plaf = `<p class="granot">Les <b>${nb(P.heures)} h de prof</b> par semaine sont la seule chose
+      que le club ne peut pas fabriquer. ${nb(P.hComp)} h partent dans les deux groupes compétition,
+      il en reste <b>${nb(P.hCca)} h</b> pour les cours collectifs. Un cours de type A place
+      ${nb(P.parHeureA)} joueurs par heure de prof, un type B en place ${nb(P.parHeureB)}.</p>
+      <div class="granab">
+        <span style="width:${pc}%;background:var(--accent)">${nb(ici.places)} placés</span>
+        <span style="width:${100-pc}%;background:#dbe1e8;color:var(--muted)">${nb(P.toutA - ici.places)} de marge</span>
+      </div>
+      <p class="granal">Plafond en tout type A : <b>${nb(P.toutA)} joueurs</b>
+        (${nb(P.hCca)} h × ${nb(P.parHeureA)} + ${nb(P.vac)} places de compétition).
+        En tout type B : ${nb(P.toutB)}. Les courts, eux, offrent ${nb(P.courtsH)} heures-court,
+        soit ${nb(P.plafondCourts)} joueurs — ce n'est donc pas eux qui ferment la porte.</p>`;
+  }
+
+  F("grAnaC").innerHTML =
+    `<h3>Ce que chaque planning place</h3>${tab}
+     <h3>Contraintes respectées</h3>${ctab}
+     <h3>Le plafond</h3>${plaf}
+     <h3>Diagnostic</h3><div id="grAnaD"></div>`;
+  F("grAnaD").innerHTML = diagnostic(cols, P);
+}
+
+/* Le diagnostic. Ecrit ici et pas dans un rapport a cote : il se recalcule sur
+   les plannings du jour, et une phrase qui ne s'appuie sur aucun chiffre mesure
+   n'y a pas sa place. */
+function diagnostic(cols, P){
+  const out = [];
+  const ici = cols[0];
+  const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
+
+  const inertes = cols.filter(c=>c.m.dem.avec[2] > 0);
+  if(inertes.length) out.push(`<p class="granok"><b>Des affinités écrites que personne n'entend.</b>
+    ${inertes.map(c=>`${esc(c.lab)} : ${c.m.dem.avec[2]}`).join(" · ")}. Le solveur apparie les
+    demandes « avec » par identifiant de fiche. Une demande écrite en toutes lettres — un nom de
+    famille tapé à la main — ne désigne aucune fiche : elle n'est ni tenue ni ratée, elle est
+    ignorée, et le bilan du calcul la compte comme un joueur sans demande. Tant que ces noms ne
+    sont pas rapprochés des fiches, le classeur qui les porte n'apporte rien au calcul.</p>`);
+
+  if(P){
+    const marge = P.toutA - ici.m.places;
+    const dorm = P.hCca - ici.m.heures;
+    out.push(`<p class="granot"><b>Ce qui ferme la porte, ce sont les heures de prof.</b>
+      ${nb(P.hCca)} h de cours collectifs à ${nb(P.parHeureA)} joueurs l'heure plafonnent le club à
+      ${nb(P.toutA)} places — pour ${nb(ici.m.places + ici.m.attente)} personnes à placer. La marge
+      est de ${nb(marge)} joueurs, et ${nb(dorm)} h de prof ne sont pas utilisées :
+      ${nb(dorm * P.parHeureA)} places dorment là. Les courts offrent ${nb(P.plafondCourts)} places
+      théoriques : ils ne sont pas la contrainte, sauf aux heures de pointe.</p>`);
+  }
+
+  const lib = ici.m.libres;
+  if(lib) out.push(`<p class="granot"><b>${lib} places libres dans les cours déjà ouverts.</b>
+    Chacune est un joueur qu'on prendrait sans une minute de prof en plus. Elles ne se remplissent
+    pas parce que les candidats restants ne partagent ni le palier, ni le créneau, ni le sexe du
+    groupe — c'est le palier qui est le plus facile à élargir d'une lettre.</p>`);
+
+  const capes = Object.keys(POSE_CAP);
+  if(capes.length && ctr && ctr.budget){
+    const h = capes.reduce((t,p)=>t + Object.keys(ctr.budget[p]||{})
+      .reduce((u,j)=>u+(ctr.budget[p][j]||0), 0), 0);
+    out.push(`<p class="granok"><b>${nb(h)} h de prof réservées aux débutants.</b>
+      ${capes.map(p=>`${esc(p)} (${esc(POSE_CAP[p])})`).join(", ")} n'encadrent pas au-delà de leur
+      plafond de niveau. C'est ${nb(Math.round(h/P.heures*100))} % du temps d'enseignement du club,
+      et il ne sert qu'à une partie de la liste d'attente. Si les joueurs qui restent sont au-dessus
+      de ce plafond, ces heures sont payées et inutilisables — c'est le levier le plus lourd du
+      tableau, et le seul qui ne coûte ni court ni argent : il se lève en formant, ou en révisant
+      le plafond.</p>`);
+  }
+
+  if(cols.length > 1){
+    const meilleur = cols.slice(1).reduce((a,b)=>b.m.places > a.m.places ? b : a);
+    out.push(`<p class="granoj"><b>Comment faire mieux.</b> Dans l'ordre de ce que ça rapporte :
+      remplir les ${lib} places libres en élargissant un palier d'une lettre ;
+      rendre les heures plafonnées utilisables ;
+      ouvrir des cours de type B (6 à 8 joueurs sur 2 courts) là où les courts le permettent —
+      ils placent ${P ? nb(P.parHeureB) : "6,4"} joueurs par heure de prof au lieu de
+      ${P ? nb(P.parHeureA) : "4"}, c'est le seul levier qui déplace le plafond lui-même ;
+      et ne reconduire l'emploi du temps de l'an passé que là où il ne coûte pas de place —
+      le meilleur calcul du tableau (${esc(meilleur.lab)}) en place ${nb(meilleur.m.places)}.</p>`);
+  }
+  return out.join("");
 }
 
 /* ---------------- les quatre simulations ----------------
@@ -7204,6 +7562,9 @@ F("grRelance").onclick = ()=>{ rendRelance(); F("grRelBg").classList.add("open")
 F("grRelX").onclick = ()=>F("grRelBg").classList.remove("open");
 F("grRelBg").onclick = e=>{ if(e.target === F("grRelBg")) F("grRelBg").classList.remove("open"); };
 F("grRelGo").onclick = relancerDepuisPlanning;
+F("grAna").onclick = ()=>{ rendAnalyse(); F("grAnaBg").classList.add("open"); };
+F("grAnaX").onclick = ()=>F("grAnaBg").classList.remove("open");
+F("grAnaBg").onclick = e=>{ if(e.target === F("grAnaBg")) F("grAnaBg").classList.remove("open"); };
 F("grNouveau").onclick = ()=>{ ecranLance = true; rend(); };
 F("grRetour").onclick  = ()=>{ ecranLance = false; rend(); };
 F("grStop").onclick = async ()=>{
