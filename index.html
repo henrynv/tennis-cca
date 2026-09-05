@@ -949,6 +949,31 @@
   .granab span{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;
     white-space:nowrap;overflow:hidden}
   .granal{font-size:11.5px;color:var(--muted);margin:0 0 14px}
+  .granasyn{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+  .granatu{flex:1 1 132px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    background:var(--panel)}
+  .granatu b{display:block;font-size:22px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+  .granatu span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .granatu.ko b{color:var(--warn)}
+  .granatu.ok b{color:var(--accent)}
+  .granad{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+  .granad > summary{cursor:pointer;padding:9px 12px;font-size:13.5px;display:flex;gap:10px;
+    align-items:center;flex-wrap:wrap;background:#fafbfc;list-style:none}
+  .granad > summary::-webkit-details-marker{display:none}
+  .granad > summary::before{content:"▸";color:var(--muted);font-size:11px}
+  .granad[open] > summary::before{content:"▾"}
+  .granad > summary b{font-weight:650}
+  .granad > summary .q{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+  .granadc{padding:10px 12px;border-top:1px solid var(--line)}
+  .granadc h4{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    margin:10px 0 5px;font-weight:600}
+  .granadc h4:first-child{margin-top:0}
+  .granadc ul{margin:0;padding-left:16px;font-size:12.5px;line-height:1.5}
+  .granadc code{font-size:11.5px;background:#f4f6f8;padding:1px 5px;border-radius:4px}
+  .granafl{display:flex;gap:6px;flex-wrap:wrap;font-size:11.5px}
+  .granafl span{border:1px solid var(--line);border-radius:20px;padding:1px 9px;color:var(--muted)}
+  .granafl span.on{border-color:#bfe0c4;background:#f2f9f4;color:var(--accent);font-weight:600}
+  .granafl span.off{border-color:#e2d5c3;background:#fdf8f1;color:#8a6420}
   .grsimt .grtable td:first-child{white-space:nowrap;color:var(--muted)}
   /* Quatre colonnes de valeurs plus le libelle tiennent dans la carte : sans
      cette largeur bridee et ces en-tetes sur deux lignes, la quatrieme
@@ -3536,6 +3561,7 @@ function adopter(o){
   // de tester leur presence aux quatre endroits qui les lisent — un seul oubli
   // et c'est `rend()` qui casse, donc l'ecran entier.
   if(ctr){ ctr.terrains = ctr.terrains||[]; ctr.budget = ctr.budget||{}; ctr.jours = ctr.jours||[];
+           ctr.plafonds = ctr.plafonds||{};
            ctr.types = ctr.types||[]; ctr.paliers = ctr.paliers||[]; }
   cours.forEach(c=>{ c.enPlace = c.enPlace||[]; });
 }
@@ -3665,7 +3691,7 @@ function lireResultat(wb){
 
 function lireContraintes(wb){
   const o = {jours:[], debut:9*60, fin:21*60+30, courts:0, terrains:[], budget:{},
-             types:[], paliers:[]};
+             plafonds:{}, types:[], paliers:[]};
   const ge = aoa(wb, "General");
   if(ge) ge.slice(1).forEach(r=>{
     const k = String(r[0]||"").trim().toLowerCase(), v = r[1];
@@ -3689,7 +3715,11 @@ function lireContraintes(wb){
       const nom = String(r[0]||"").trim();
       if(!nom || nom.length > 24) return;             // la ligne de commentaire du modele
       o.budget[nom] = {};
-      ent.slice(1).forEach((j,k)=>{ if(j) o.budget[nom][j] = +r[k+1] || 0; });
+      ent.slice(1).forEach((j,k)=>{ if(j && j.toLowerCase() !== "niveau_max") o.budget[nom][j] = +r[k+1] || 0; });
+      // Le plafond de niveau : 22 % des heures du club en dependent, et sans lui
+      // l'analyse ne peut pas dire pourquoi des heures payees restent vides.
+      const im = ent.findIndex(j=>j.toLowerCase() === "niveau_max");
+      if(im > 0 && String(r[im]||"").trim()) o.plafonds[nom] = String(r[im]).trim();
     });
   }
   // Formats et paliers : l'ecran ne les lisait pas — relire des cours existants
@@ -3976,7 +4006,9 @@ function mesurer(cs, att, anx){
    un objet dont dependent quinze autres fonctions. */
 let POSE_CAP = {};
 function relirePlafondsProfs(){
-  POSE_CAP = {};
+  // D'abord l'etat deja lu : le classeur n'est pas toujours en cache, alors que
+  // `ctr` survit au rechargement et suit le compte d'un poste a l'autre.
+  POSE_CAP = Object.assign({}, (ctr && ctr.plafonds) || {});
   const c = CACHE["contraintes-tennis.xlsx"];
   if(!c) return;
   const a = feuille("contraintes-tennis.xlsx", "Profs");
@@ -3985,7 +4017,8 @@ function relirePlafondsProfs(){
   if(i["niveau_max"] === undefined) return;
   a.slice(1).forEach(r=>{
     const nom = String(r[0]||"").trim();
-    if(nom && nom.length <= 24 && String(r[i["niveau_max"]]||"").trim()) POSE_CAP[nom] = String(r[i["niveau_max"]]).trim();
+    if(nom && nom.length <= 24 && String(r[i["niveau_max"]]||"").trim())
+      POSE_CAP[nom] = String(r[i["niveau_max"]]).trim();
   });
 }
 
@@ -4020,13 +4053,14 @@ const FAUTES_LIB = {
 function rendAnalyse(){
   relirePlafondsProfs();
   const cols = [];
-  if(cours.length) cols.push({lab:"Planning actuel", ici:true, m:mesurer(cours, attente, annexes)});
+  if(cours.length) cols.push({lab:"Planning actuel", ici:true, sim:null,
+    m:mesurer(cours, attente, annexes)});
   SIMS.forEach(s=>{
     const d = sims[s.n]; if(!d) return;
     const g = [cours, attente, annexes];
     try{
       lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-      cols.push({lab:s.n + ". " + s.court, m:mesurer(cours, attente, annexes)});
+      cols.push({lab:s.n + ". " + s.court, sim:s, dep:d, m:mesurer(cours, attente, annexes)});
     }catch(e){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
     finally{ cours = g[0]; attente = g[1]; annexes = g[2]; }
   });
@@ -4099,11 +4133,114 @@ function rendAnalyse(){
   }
 
   F("grAnaC").innerHTML =
-    `<h3>Ce que chaque planning place</h3>${tab}
+    `<h3>En bref</h3>${enBref(cols, P)}
+     <h3>Ce que chaque planning place</h3>${tab}
      <h3>Contraintes respectées</h3>${ctab}
+     <h3>Le détail de chaque scénario</h3>${detailScenarios(cols)}
      <h3>Le plafond</h3>${plaf}
      <h3>Diagnostic</h3><div id="grAnaD"></div>`;
   F("grAnaD").innerHTML = diagnostic(cols, P);
+}
+
+/* Quatre chiffres et deux phrases, avant les tableaux. Ce qui se lit debout :
+   ou en est le club par rapport a son plafond, et ce qui l'en separe. Le reste
+   de la fenetre repond aux questions que ceux-la font naitre. */
+function enBref(cols, P){
+  const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
+  const ici = cols[0].m;
+  const aPlacer = ici.places + ici.attente;
+  const inertes = cols.reduce((t,c)=>t + c.m.dem.avec[2], 0);
+  const dur = cols.reduce((t,c)=>t + c.m.dur, 0);
+  const tuiles = [
+    {v:nb(ici.places), l:`joueurs placés sur ${nb(aPlacer)} à placer`, k:""},
+    P ? {v:nb(P.toutA - ici.places), l:`places encore possibles avant le plafond des heures de prof`, k:""} : null,
+    {v:nb(ici.libres), l:"places libres dans les cours déjà ouverts", k:ici.libres ? "" : "ok"},
+    ici.budget ? {v:nb(Math.round(ici.heures/ici.budget*100)) + " %", l:`des heures de prof employées (${nb(ici.heures)} sur ${nb(ici.budget)})`, k:""} : null,
+    {v:nb(dur), l:"faute dure, tous plannings confondus", k:dur ? "ko" : "ok"},
+    inertes ? {v:nb(inertes), l:"affinités écrites qui ne désignent aucune fiche", k:"ko"} : null,
+  ].filter(Boolean);
+  let mot;
+  if(cols.length === 1){
+    mot = `<p class="granot">Un seul planning chargé : les colonnes de comparaison apparaissent
+      dès qu'une simulation est déposée dans l'écran de lancement. Ce qui suit ne décrit donc que
+      <b>${esc(cols[0].lab.toLowerCase())}</b>.</p>`;
+  } else {
+    const best = cols.reduce((a,b)=>b.m.places > a.m.places ? b : a);
+    const pire = cols.reduce((a,b)=>b.m.places < a.m.places ? b : a);
+    mot = `<p class="granot">${cols.length} plannings comparés. Le plus généreux est
+      <b>${esc(best.lab)}</b> avec ${nb(best.m.places)} joueurs placés, le plus avare
+      <b>${esc(pire.lab)}</b> avec ${nb(pire.m.places)} — <b>${nb(best.m.places - pire.m.places)} places
+      d'écart</b> pour la même population et les mêmes heures de prof. Aucun ne viole une contrainte
+      dure : ce qui les sépare n'est pas la légalité du planning, c'est ce qu'on lui a imposé
+      d'avance.</p>`;
+  }
+  return `<div class="granasyn">${tuiles.map(t=>
+    `<div class="granatu ${t.k}"><b>${t.v}</b><span>${t.l}</span></div>`).join("")}</div>${mot}`;
+}
+
+/* Le detail, scenario par scenario : avec quoi il a ete calcule, ce qu'on lui a
+   impose, ce qu'il a rendu. Replie par defaut — huit sections ouvertes seraient
+   un rapport, pas un ecran. */
+function detailScenarios(cols){
+  const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
+  const puce = (txt, etat) => `<span class="${etat}">${etat==="on"?"✓":etat==="off"?"—":""} ${esc(txt)}</span>`;
+  return cols.map(c=>{
+    const m = c.m, s = c.sim, r = s ? RECETTES[s.n] : null;
+    const fichiers = [], reglages = [];
+    if(s){
+      fichiers.push(["Résultat lu", c.dep.fichier + " — déposé " + c.dep.date]);
+      if(r){
+        fichiers.push(["Joueurs", r.joueurs]);
+        fichiers.push(["Contraintes", "contraintes-tennis.xlsx"]);
+        fichiers.push(["Reconduction", r.reconduction || "aucune"]);
+        fichiers.push(["Figeages", "aucun (--sans-figeages)"]);
+      }
+      reglages.push(puce("EDT 2026 reconduit", r && r.reconduction ? "on" : "off"));
+      reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
+                         (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
+      reglages.push(puce("figeages de l'écran", "off"));
+    } else {
+      fichiers.push(["Origine", (resFic ? resFic.fichier + " du " + resFic.date : "calcul inconnu")
+        + ", puis corrigé à la main sur cet écran"]);
+      reglages.push(puce("corrections manuelles comprises", "on"));
+      reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
+                         (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
+    }
+    // les contraintes que le planning respecte, telles qu'on vient de les mesurer
+    const dures = Object.keys(FAUTES_LIB).filter(k=>k !== "dispos");
+    const tenues = dures.filter(k=>!(m.fautes[k]||[]).length);
+    const cassees = dures.filter(k=>(m.fautes[k]||[]).length);
+    const hd = (m.fautes.dispos||[]);
+    return `<details class="granad">
+      <summary><b>${esc(c.lab)}</b>
+        <span class="q">${nb(m.places)} placés · ${nb(m.attente)} sans groupe · ${nb(m.heures)} h de prof
+          · ${m.dur ? m.dur + " faute(s) dure(s)" : "aucune faute dure"}</span></summary>
+      <div class="granadc">
+        <h4>Fichiers d'entrée</h4>
+        <ul>${fichiers.map(([k,v])=>`<li>${k} : <code>${esc(v)}</code></li>`).join("")}</ul>
+        <h4>Ce qui lui a été imposé</h4>
+        <div class="granafl">${reglages.join("")}</div>
+        <h4>Contraintes prises en compte et tenues</h4>
+        <div class="granafl">${tenues.map(k=>puce(FAUTES_LIB[k], "on")).join("")}</div>
+        ${cassees.length ? `<h4>Contraintes violées</h4><ul>${cassees.map(k=>
+          `<li><b>${FAUTES_LIB[k]}</b> — ${m.fautes[k].length} cas : ${esc(m.fautes[k].slice(0,3).join(" · "))}${m.fautes[k].length>3?" …":""}</li>`).join("")}</ul>` : ""}
+        ${hd.length ? `<h4>Hors disponibilités déclarées — ${hd.length}</h4>
+          <ul>${hd.slice(0,6).map(x=>`<li>${esc(x)}</li>`).join("")}
+          ${hd.length>6?`<li>… et ${hd.length-6} autre(s)</li>`:""}</ul>
+          <p class="granal">Élargissement d'une fenêtre qui effleurait un créneau reconduit, ou
+          placement à la main assumé. Ce n'est pas une faute de calcul, mais ça ne doit pas passer
+          inaperçu.</p>` : ""}
+        <h4>Ce qu'il rend</h4>
+        <ul>
+          <li>${nb(m.places)} joueurs placés dans ${nb(m.cours)} cours, ${nb(m.libres)} places libres</li>
+          <li>${nb(m.heures)} h de prof employées${m.budget ? " sur " + nb(m.budget) + " h au contrat" : ""},
+              ${nb(m.courtsPic)} courts au pic</li>
+          <li>affinités : ${nb(m.dem.avec[0])} tenues sur ${nb(m.dem.avec[1] - m.dem.avec[2])} appariables${
+              m.dem.avec[2] ? `, <b>${nb(m.dem.avec[2])} inertes</b>` : ""}</li>
+          <li>prof souhaité : ${nb(m.dem.prof[0])} obtenus sur ${nb(m.dem.prof[1] - m.dem.prof[2])} demandés</li>
+        </ul>
+      </div></details>`;
+  }).join("");
 }
 
 /* Le diagnostic. Ecrit ici et pas dans un rapport a cote : il se recalcule sur
@@ -4201,6 +4338,23 @@ const SIMS = [
    fic:"resultat-5-groupes-bruts.xlsx",
    tags:[["EDT 2026", true], ["affinités Loïc", true], ["sans les arbitrages", true]]},
 ];
+/* Comment chaque simulation a ete calculee. Le classeur produit ne porte pas ses
+   propres entrees : rien dedans ne dit avec quel fichier de joueurs ni avec
+   quels drapeaux il a ete obtenu. Sans cette table, deux colonnes voisines du
+   tableau sont incomparables sans le dire — et c'est exactement ce qui a fait
+   lire un fichier d'affinites inerte comme une reussite. */
+const RECETTES = {
+  1: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:"reconduction-2027.xlsx (souple)",
+      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
+  2: {joueurs:"joueurs.xlsx", reconduction:"reconduction-2027.xlsx (souple)",
+      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
+  3: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:null,
+      drapeaux:["--sans-figeages", "--sans-reconduction", "--temps=1800"]},
+  4: {joueurs:"joueurs.xlsx", reconduction:null,
+      drapeaux:["--sans-figeages", "--sans-reconduction", "--temps=1800"]},
+  5: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:"reconduction-2027-brut.xlsx (souple)",
+      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
+};
 // Les lignes de l'onglet Synthese qui font la comparaison. Le classeur les
 // ecrit sans accent : la cle est celle du fichier, le libelle celui de l'ecran.
 const IND_SIM = [
