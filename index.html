@@ -899,7 +899,11 @@
   .grm.go .nm{flex:none;font-weight:600}
   .grm .qd{flex:none;font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px}
 
-  .grempty{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+  /* `align-items:center` sur une carte plus haute que l'ecran fait deborder le
+     haut hors de la zone scrollable : le titre et le premier bloc devenaient
+     inatteignables. On aligne en haut — la carte est longue, elle commence ou
+     on la lit. */
+  .grempty{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow:auto}
   .grcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 32px;
     width:min(720px,100%);box-shadow:0 10px 34px rgba(31,42,55,.07)}
   .grcard h2{font-size:22px;margin:0 0 6px;font-weight:700;letter-spacing:-.01em;
@@ -941,6 +945,12 @@
   .grsim .chip.ouv{background:#eef2f7;color:#2f5597}
   .grsim .chip.ret{background:#fdf2e3;color:#b8721c}
   .grsim .chip.ici{background:var(--accent);color:#fff}
+  /* Une pastille grise pour ce qui ne fait pas partie des cinq : elle aligne la
+     ligne sur les autres sans lui donner un numero qu'elle n'a pas. */
+  .grsim .num.cal{background:#eef2f7;color:var(--muted);font-weight:600}
+  .grsim .tx input{font:inherit;font-size:13.5px;height:28px;width:min(260px,100%);
+    padding:0 8px;border:1px solid var(--accent);border-radius:6px;background:#fff}
+  .grtab:disabled{opacity:.45;cursor:default}
   .grsimh .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
   .grsimh .acts button{font-size:12px;padding:4px 10px}
   .grsimh .aide{margin-top:8px}
@@ -954,12 +964,23 @@
   .grsimt .grtable .ici{background:#eff8f2}
   .grsimt .grtable th.ici{background:var(--accent-soft);color:var(--accent)}
   .grsimn{margin:8px 2px 0;font-size:11.5px;color:var(--muted);line-height:1.45;max-width:820px}
+  .grcard.large{width:min(900px,100%)}
+  /* Le titre et le retour sur la meme ligne : le bouton etait en bas de page,
+     apres deux listes, la ou personne ne le cherchait en arrivant. */
+  .grtete{display:flex;align-items:flex-start;gap:16px;margin-bottom:14px}
+  .grtete > div{flex:1;min-width:0}
+  .grtete .sub{margin-bottom:0}
+  .grtete button{flex:none;white-space:nowrap}
+  .grsec{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    font-weight:700;margin:22px 0 8px}
+  .grsecs{font-size:12.5px;color:var(--muted);margin:-4px 0 8px;line-height:1.45}
   .grsimt{padding:10px 12px;overflow:auto}
   .grana{width:min(1000px,96vw)}
   .grana h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
     margin:18px 0 8px;font-weight:600}
   .grana h3:first-child{margin-top:0}
   .granat{width:100%;border-collapse:collapse;font-size:12.5px}
+  .granat.mono{width:auto;min-width:min(430px,100%)}
   .granat th,.granat td{border:1px solid var(--line);padding:5px 8px;text-align:right;
     white-space:nowrap}
   .granat th{background:#f4f6f8;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;
@@ -1339,18 +1360,32 @@
     </span>
     <span class="grpills" id="grPills"></span>
     <button class="mini" id="grNouveau" style="display:none"
-      title="Rouvrir l'écran de lancement : les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti">↻ Relancer le calcul</button>
+      title="Choisir le scénario affiché, ou en calculer un nouveau">Scénarios…</button>
     <button class="mini" id="grAna">🔬 Analyse</button>
     <button class="mini" id="grImp" style="display:none">🖨 Imprimer</button>
     <button class="mini" id="grExport" disabled>⬇︎ Excel</button>
   </div>
 
-  <!-- rien d'importe -->
+  <!-- Les scenarios : celui qu'on met a l'ecran, et de quoi en calculer un autre.
+       Deux sections et pas une liste : choisir un planning deja calcule et en
+       lancer un nouveau sont deux gestes differents, a deux moments differents. -->
   <div class="grempty" id="grEmpty">
-    <div class="grcard">
-      <h2 id="grEmptyT">Le résultat du calcul</h2>
-      <p class="sub" id="grEmptyS">Le solveur tourne sur l'ordinateur du club. Déposez ici les deux fichiers
-        qu'il produit et qu'il consomme : cet écran sert à relire, corriger et figer avant la relance.</p>
+    <div class="grcard large">
+      <div class="grtete">
+        <div>
+          <h2 id="grEmptyT">Les scénarios</h2>
+          <p class="sub" id="grEmptyS"></p>
+        </div>
+        <button class="mini" id="grRetour" style="display:none">← Revenir au planning</button>
+      </div>
+      <p class="grerr" id="grErr"></p>
+
+      <h3 class="grsec">Mettre un scénario à l'écran</h3>
+      <div id="grSims"></div>
+
+      <h3 class="grsec">Calculer un nouveau scénario</h3>
+      <p class="grsecs">Le calcul part de ces quatre fichiers ; « Remplacer » y met le vôtre.</p>
+      <div class="grfile" id="grFiles"></div>
       <div class="grctl" id="grCtl" style="display:none">
         <span class="pastille" id="grCtlP"></span>
         <span class="tx"><b id="grCtlT"></b><span id="grCtlS"></span></span>
@@ -1369,13 +1404,7 @@
         </select>
         <button class="primary" id="grGo">Lancer le calcul</button>
       </div>
-      <div class="grfile" id="grFiles"></div>
-      <div class="grsims" id="grSims"></div>
-      <p class="grerr" id="grErr"></p>
-      <p class="hint" id="grAide">Le calcul tourne sur l'ordinateur du club ;
-        son résultat arrive ici par la base partagée.</p>
-      <p style="margin-top:12px"><button class="mini" id="grRetour"
-        style="display:none">← Revenir aux groupes</button></p>
+      <p class="hint" id="grAide"></p>
     </div>
   </div>
 
@@ -1384,6 +1413,7 @@
     <div class="modal grana">
       <div class="modal-head">
         <b>Analyse</b>
+        <span class="grtabs" id="grAnaO"></span>
         <span class="sub" id="grAnaN"></span>
         <span style="flex:1"></span>
         <button class="mini" id="grAnaX">✕</button>
@@ -3813,7 +3843,7 @@ function lignes(nom, onglet){
 }
 
 const LIGNES = [
-  {k:"jou", lab:"Joueurs", fic:"joueurs.xlsx", onglets:["Joueurs"], remplacable:true,
+  {k:"jou", lab:"Joueurs", fic:"joueurs.xlsx", onglets:["Joueurs"],
    val(){
      const a = feuille("joueurs.xlsx", "Joueurs");
      if(!a) return "Les fiches et leurs disponibilités, exportées de la base.";
@@ -3826,7 +3856,6 @@ const LIGNES = [
           + (dis!==null ? `, ${dis} avec des disponibilités` : "");
    }},
   {k:"profs", lab:"Profs", fic:"contraintes-tennis.xlsx", onglets:["Profs","Fenetres profs"],
-   remplacable:true,
    val(){
      if(!ctr || !Object.keys(ctr.budget).length) return "Heures de cours par prof et par jour.";
      const noms = Object.keys(ctr.budget);
@@ -3839,7 +3868,7 @@ const LIGNES = [
    // manquait a cette liste : la carte annoncait « 14 plages de courts » sans
    // qu'on puisse en voir une seule. `Fermetures` est l'onglet qu'il a remplace,
    // il n'existe plus dans le classeur et n'apparaissait donc jamais.
-   onglets:["General","Terrains","Types de cours","Cours imposes"], remplacable:true,
+   onglets:["General","Terrains","Types de cours","Cours imposes"],
    val(){
      if(!ctr) return "Plages de courts, jours ouverts, amplitude, heures des profs.";
      const j = ctr.jours && ctr.jours.length ? ctr.jours : jours();
@@ -3847,7 +3876,7 @@ const LIGNES = [
           + `${gtx(ctr.debut)} → ${gtx(ctr.fin)} · <b>${ctr.terrains.length} plages de courts</b>`;
    }},
   {k:"niv", lab:"Niveaux et poids", fic:"contraintes-tennis.xlsx",
-   onglets:["Bareme","Paliers","Poids"], remplacable:true,
+   onglets:["Bareme","Paliers","Poids"],
    val(){
      const b = lignes("contraintes-tennis.xlsx","Bareme"),
            p = lignes("contraintes-tennis.xlsx","Paliers"),
@@ -3855,47 +3884,38 @@ const LIGNES = [
      return b===null ? "Barème des classements, paliers de niveau, poids de l'objectif."
        : `<b>${b} lignes de barème</b> · ${p} paliers · ${w} poids d'arbitrage`;
    }},
-  {k:"res", lab:"Dernier résultat", fic:"resultat-cca.xlsx",
-   onglets:["Cours","Groupes","Non places","Deja en place","Hors calcul","Synthese"],
-   remplacable:false,
-   val(){
-     // meme comptage que le header : les membres deja en place ont un cours
-     const pl = vivants().reduce((t,c)=>t+c.membres.length,0) + annexes.enPlace.length;
-     return cours.length
-       ? `<b>${vivants().length} cours</b>, ${pl} joueurs placés, ${attente.length} sans groupe`
-         + (annexes.hors.length ? `, ${annexes.hors.length} hors calcul` : "")
-       : "Produit par le calcul. Rien à déposer : il arrive tout seul.";
-   }}
 ];
 function JOURS_CTR(){ return (ctr && ctr.jours && ctr.jours.length) ? ctr.jours : DAYS; }
 
+/* Un classeur est consultable des qu'on peut mettre la main dessus : deja en
+   cache, ou present sur la machine et l'agent capable de le servir. Les deux
+   listes s'en servent — celle des fichiers d'entree et celle des scenarios. */
+function surMachineFic(n){
+  return agent && ((n === "joueurs.xlsx" ? agent.joueurs
+    : n === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes) || {}).present;
+}
+function dispoFic(n){ return !!CACHE[n] || !!surMachineFic(n); }
+function etatFic(fic){
+  const c = CACHE[fic];
+  if(c && c.etat && c.etat.present) return `${fic} — sur la machine, ${c.etat.date}`;
+  if(agent){
+    const a = fic === "joueurs.xlsx" ? agent.joueurs
+            : fic === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes;
+    return `${fic} — ` + (a && a.present ? `sur la machine, ${a.date}` : "introuvable à côté du solveur");
+  }
+  if(fic === "resultat-cca.xlsx")
+    return resFic ? `${resFic.fichier} — déposé ${resFic.date}` : `${fic} — aucun fichier déposé`;
+  return `${fic} — ` + (ctr ? `déposé ${ctr.date}` : "aucun fichier déposé");
+}
 function rendFichiers(){
-  // consultable des qu'on peut mettre la main dessus : deja en cache, ou
-  // present sur la machine et l'agent capable de le servir
-  const surMachine = n => agent && ((n === "joueurs.xlsx" ? agent.joueurs
-      : n === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes) || {}).present;
-  const dispo = n => !!CACHE[n] || !!surMachine(n);
-  const etat = f => {
-    const c = CACHE[f.fic];
-    if(c && c.etat && c.etat.present) return `${f.fic} — sur la machine, ${c.etat.date}`;
-    if(agent){
-      const a = f.fic === "joueurs.xlsx" ? agent.joueurs
-              : f.fic === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes;
-      return `${f.fic} — ` + (a && a.present ? `sur la machine, ${a.date}` : "introuvable à côté du solveur");
-    }
-    if(f.fic === "resultat-cca.xlsx") return resFic ? `${esc(resFic.fichier)} — déposé ${resFic.date}` : `${f.fic} — aucun fichier déposé`;
-    return `${f.fic} — ` + (ctr ? `déposé ${ctr.date}` : "aucun fichier déposé");
-  };
   F("grFiles").innerHTML = LIGNES.map(f=>
     `<div data-k="${f.k}">
        <span class="lab">${f.lab}</span>
-       <span class="val">${f.val()}<span class="fic">${etat(f)}</span></span>
+       <span class="val">${f.val()}<span class="fic">${esc(etatFic(f.fic))}</span></span>
        <span class="acts">
-         ${f.fic==="resultat-cca.xlsx" && dispo(f.fic)
-           ? `<button class="mini" data-a="reprendre">Reprendre ce résultat</button>` : ""}
-         <button class="mini" data-a="voir" ${dispo(f.fic)?"":"disabled"}>Voir</button>
-         <button class="mini" data-a="dl" ${dispo(f.fic)?"":"disabled"}>⬇︎</button>
-         ${f.remplacable ? `<button class="mini" data-a="up">Remplacer…</button>` : ""}
+         <button class="mini" data-a="voir" ${dispoFic(f.fic)?"":"disabled"}>Voir</button>
+         <button class="mini" data-a="dl" ${dispoFic(f.fic)?"":"disabled"}>⬇︎</button>
+         <button class="mini" data-a="up">Remplacer…</button>
        </span>
      </div>`).join("");
   F("grFiles").querySelectorAll("[data-a]").forEach(b=>{
@@ -3903,11 +3923,10 @@ function rendFichiers(){
     b.onclick = ()=>{
       if(b.dataset.a === "voir") return voir(f, 0);
       if(b.dataset.a === "dl")   return telecharger(f.fic);
-      if(b.dataset.a === "reprendre") return reprendreResultat(b);
-      choisir(f.k, !!agent && f.remplacable);
+      choisir(f.k, !!agent);
     };
   });
-  rendSims();
+  rendScenarios();
 }
 
 /* ---------------- l'analyse ----------------
@@ -4082,36 +4101,62 @@ const FAUTES_LIB = {
   dispos:"Disponibilités déclarées", plafond_prof:"Plafond de niveau du prof",
   doublon:"Un joueur, un cours"};
 
-function rendAnalyse(){
-  relirePlafondsProfs();
-  const cols = [];
+/* Deux onglets et non plus une seule page : « où en est ce planning » et
+   « lequel des scénarios choisir » sont deux questions posées à deux moments.
+   Melangees, il fallait lire six colonnes pour repondre a la premiere. Le code
+   est le meme des deux cotes ; seules changent les colonnes qu'on lui donne. */
+let anaOnglet = "ici";
+function colonneIci(){
   const cur = scen.find(e=>e.n === vu);
-  if(cours.length) cols.push({lab: cur ? "Ici · " + cur.nom : "Planning actuel",
-    ici:true, sim:null, m:mesurer(cours, attente, annexes)});
+  return {lab: cur ? cur.nom : "Le planning affiché", ici:true, sim:null,
+          m:mesurer(cours, attente, annexes)};
+}
+function colonnesSims(){
+  const out = [];
   SIMS.forEach(s=>{
     const d = sims[s.n]; if(!d) return;
     const e = scenDeSim(s.n);
-    // Celle qu'on regarde est deja la premiere colonne : la remettre ici la
-    // ferait se comparer a elle-meme.
+    // Celle qu'on regarde est deja la colonne « ici » : la remettre la ferait
+    // se comparer a elle-meme.
     if(e && e.n === vu) return;
     const g = [cours, attente, annexes];
     try{
       // Ouverte, c'est SON planning qu'on mesure et plus le classeur depose :
-      // sinon l'analyse compare des simulations que le travail a deja quittees.
+      // sinon l'analyse compare des scenarios que le travail a deja quittes.
       if(e){ cours = e.cours; attente = e.attente; annexes = e.annexes || g[2]; }
       else lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-      cols.push({lab:s.n + ". " + s.court + (e && e.touche ? " ✎" : ""), sim:s, dep:d,
-                 touche: !!(e && e.touche), m:mesurer(cours, attente, annexes)});
+      out.push({lab:s.n + ". " + s.court + (e && e.touche ? " ✎" : ""), sim:s, dep:d,
+                touche: !!(e && e.touche), m:mesurer(cours, attente, annexes)});
     }catch(err){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
     finally{ cours = g[0]; attente = g[1]; annexes = g[2]; }
   });
-  F("grAnaN").textContent = cols.length
-    ? cols.length + (cols.length > 1 ? " plannings comparés" : " planning") : "";
-  if(!cols.length){
-    F("grAnaC").innerHTML = `<p class="granot">Rien à analyser : aucun planning chargé,
+  return out;
+}
+function rendAnalyse(){
+  relirePlafondsProfs();
+  const ici = cours.length ? colonneIci() : null;
+  const autres = colonnesSims();
+  const tous = (ici ? [ici] : []).concat(autres);
+  if(!tous.length){
+    F("grAnaO").innerHTML = "";
+    F("grAnaN").textContent = "";
+    F("grAnaC").innerHTML = `<p class="granot">Rien à analyser : aucun planning à l'écran,
       aucune simulation déposée.</p>`;
     return;
   }
+  if(!ici) anaOnglet = "cmp"; else if(!autres.length) anaOnglet = "ici";
+  const cols = anaOnglet === "ici" ? [ici] : tous;
+
+  F("grAnaO").innerHTML = [["ici", "Le planning à l'écran"], ["cmp", "Comparer les scénarios"]]
+    .map(([k, lab])=>`<button class="grtab${k === anaOnglet ? " on" : ""}" data-o="${k}"${
+      (k === "ici" && !ici) || (k === "cmp" && !autres.length)
+        ? ` disabled title="${k === "ici" ? "Aucun planning à l'écran."
+            : "Déposez au moins une simulation pour comparer."}"` : ""}>${lab}</button>`).join("");
+  F("grAnaO").querySelectorAll("[data-o]").forEach(b=>
+    b.onclick = ()=>{ anaOnglet = b.dataset.o; rendAnalyse(); });
+  F("grAnaN").textContent = anaOnglet === "cmp"
+    ? tous.length + " scénarios comparés" : (ici ? ici.lab : "");
+
   const P = plafond();
   const nb = v => v == null ? "—" : (Math.round(v*100)/100).toLocaleString("fr-FR");
   const lignes = [
@@ -4132,7 +4177,7 @@ function rendAnalyse(){
       return n ? `<span class="ko">${n}</span>` : `<span class="ok">0</span>`;
     }],
   ];
-  const tab = `<table class="granat">
+  const tab = `<table class="granat${cols.length < 2 ? " mono" : ""}">
     <colgroup><col>${cols.map(c=>`<col${c.ici?' class="ici"':""}>`).join("")}</colgroup>
     <thead><tr><th>Indicateur</th>${cols.map(c=>`<th>${esc(c.lab)}</th>`).join("")}</tr></thead>
     <tbody>${lignes.map(([lab, f, fort])=>
@@ -4141,7 +4186,7 @@ function rendAnalyse(){
 
   // contraintes : une ligne par famille, ✓ quand aucune faute
   const familles = Object.keys(FAUTES_LIB);
-  const ctab = `<table class="granat">
+  const ctab = `<table class="granat${cols.length < 2 ? " mono" : ""}">
     <colgroup><col>${cols.map(c=>`<col${c.ici?' class="ici"':""}>`).join("")}</colgroup>
     <thead><tr><th>Contrainte</th>${cols.map(c=>`<th>${esc(c.lab)}</th>`).join("")}</tr></thead>
     <tbody>${familles.map(k=>
@@ -4150,22 +4195,24 @@ function rendAnalyse(){
         return n ? `<td class="ko" title="${esc((c.m.fautes[k]||[]).slice(0,4).join(" · "))}">${n} ✗</td>`
                  : `<td class="ok">✓</td>`;
       }).join("")}</tr>`).join("")}</tbody></table>
-    <p class="granal">Une case rouge se survole pour lire les cas. « Disponibilités déclarées » n'est
-    pas une faute de calcul : le solveur élargit une fenêtre qui effleure un créneau reconduit, et un
-    placement à la main l'assume — les deux sont voulus, mais aucun ne doit passer inaperçu.</p>`;
+    <p class="granal">Une case rouge se survole pour lire les cas. « Disponibilités déclarées »
+    n'est pas une faute de calcul : le solveur élargit une fenêtre qui effleure un créneau
+    reconduit, et un placement à la main l'assume.</p>`;
 
-  // le plafond
+  // le plafond : il parle du club, pas d'un scenario. Il n'a donc sa place que
+  // dans l'onglet qui regarde le planning affiche.
   let plaf = "";
-  if(P){
-    const ici = cols[0].m;
-    const pc = Math.round(ici.places / P.toutA * 100);
-    plaf = `<p class="granot">Les <b>${nb(P.heures)} h de prof</b> par semaine sont la seule chose
+  if(P && anaOnglet === "ici"){
+    const m = cols[0].m;
+    const pc = Math.round(m.places / P.toutA * 100);
+    plaf = `<h3>Le plafond</h3>
+      <p class="granot">Les <b>${nb(P.heures)} h de prof</b> par semaine sont la seule chose
       que le club ne peut pas fabriquer. ${nb(P.hComp)} h partent dans les deux groupes compétition,
       il en reste <b>${nb(P.hCca)} h</b> pour les cours collectifs. Un cours de type A place
       ${nb(P.parHeureA)} joueurs par heure de prof, un type B en place ${nb(P.parHeureB)}.</p>
       <div class="granab">
-        <span style="width:${pc}%;background:var(--accent)">${nb(ici.places)} placés</span>
-        <span style="width:${100-pc}%;background:#dbe1e8;color:var(--muted)">${nb(P.toutA - ici.places)} de marge</span>
+        <span style="width:${pc}%;background:var(--accent)">${nb(m.places)} placés</span>
+        <span style="width:${100-pc}%;background:#dbe1e8;color:var(--muted)">${nb(P.toutA - m.places)} de marge</span>
       </div>
       <p class="granal">Plafond en tout type A : <b>${nb(P.toutA)} joueurs</b>
         (${nb(P.hCca)} h × ${nb(P.parHeureA)} + ${nb(P.vac)} places de compétition).
@@ -4173,50 +4220,58 @@ function rendAnalyse(){
         soit ${nb(P.plafondCourts)} joueurs — ce n'est donc pas eux qui ferment la porte.</p>`;
   }
 
-  F("grAnaC").innerHTML =
-    `<h3>En bref</h3>${enBref(cols, P)}
-     <h3>Ce que chaque planning place</h3>${tab}
-     <h3>Contraintes respectées</h3>${ctab}
-     <h3>Le détail de chaque scénario</h3>${detailScenarios(cols)}
-     <h3>Le plafond</h3>${plaf}
-     <h3>Diagnostic</h3><div id="grAnaD"></div>`;
-  F("grAnaD").innerHTML = diagnostic(cols, P);
+  F("grAnaC").innerHTML = anaOnglet === "ici"
+    ? `<h3>En bref</h3>${enBref(cols, P, autres.length)}
+       <h3>Ce que ce planning place</h3>${tab}
+       <h3>Contraintes respectées</h3>${ctab}
+       ${plaf}
+       <h3>D'où sort ce planning</h3>${detailScenarios(cols)}
+       <h3>Diagnostic</h3><div id="grAnaD"></div>`
+    : `${motComparaison(cols)}
+       <h3>Ce que chaque scénario place</h3>${tab}
+       <h3>Contraintes respectées</h3>${ctab}
+       <h3>Le détail de chaque scénario</h3>${detailScenarios(cols)}
+       <h3>Ce qui rapporterait le plus</h3><div id="grAnaD"></div>`;
+  F("grAnaD").innerHTML = diagnostic(cols, P, anaOnglet === "cmp");
 }
 
-/* Quatre chiffres et deux phrases, avant les tableaux. Ce qui se lit debout :
-   ou en est le club par rapport a son plafond, et ce qui l'en separe. Le reste
-   de la fenetre repond aux questions que ceux-la font naitre. */
-function enBref(cols, P){
+/* Quatre chiffres et une phrase, avant les tableaux. Ce qui se lit debout : ou
+   en est le club par rapport a son plafond. Le reste de la fenetre repond aux
+   questions que ceux-la font naitre. */
+function enBref(cols, P, nAutres){
   const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
   const ici = cols[0].m;
   const aPlacer = ici.places + ici.attente;
-  const inertes = cols.reduce((t,c)=>t + c.m.dem.avec[2], 0);
-  const dur = cols.reduce((t,c)=>t + c.m.dur, 0);
   const tuiles = [
     {v:nb(ici.places), l:`joueurs placés sur ${nb(aPlacer)} à placer`, k:""},
-    P ? {v:nb(P.toutA - ici.places), l:`places encore possibles avant le plafond des heures de prof`, k:""} : null,
+    P ? {v:nb(P.toutA - ici.places), l:"places encore possibles avant le plafond des heures de prof", k:""} : null,
     {v:nb(ici.libres), l:"places libres dans les cours déjà ouverts", k:ici.libres ? "" : "ok"},
     ici.budget ? {v:nb(Math.round(ici.heures/ici.budget*100)) + " %", l:`des heures de prof employées (${nb(ici.heures)} sur ${nb(ici.budget)})`, k:""} : null,
-    {v:nb(dur), l:"faute dure, tous plannings confondus", k:dur ? "ko" : "ok"},
-    inertes ? {v:nb(inertes), l:"affinités écrites qui ne désignent aucune fiche", k:"ko"} : null,
+    {v:nb(ici.dur), l:"faute dure dans ce planning", k:ici.dur ? "ko" : "ok"},
+    ici.dem.avec[2] ? {v:nb(ici.dem.avec[2]), l:"affinités écrites qui ne désignent aucune fiche", k:"ko"} : null,
   ].filter(Boolean);
-  let mot;
-  if(cols.length === 1){
-    mot = `<p class="granot">Un seul planning chargé : les colonnes de comparaison apparaissent
-      dès qu'une simulation est déposée dans l'écran de lancement. Ce qui suit ne décrit donc que
-      <b>${esc(cols[0].lab.toLowerCase())}</b>.</p>`;
-  } else {
-    const best = cols.reduce((a,b)=>b.m.places > a.m.places ? b : a);
-    const pire = cols.reduce((a,b)=>b.m.places < a.m.places ? b : a);
-    mot = `<p class="granot">${cols.length} plannings comparés. Le plus généreux est
-      <b>${esc(best.lab)}</b> avec ${nb(best.m.places)} joueurs placés, le plus avare
-      <b>${esc(pire.lab)}</b> avec ${nb(pire.m.places)} — <b>${nb(best.m.places - pire.m.places)} places
-      d'écart</b> pour la même population et les mêmes heures de prof. Aucun ne viole une contrainte
-      dure : ce qui les sépare n'est pas la légalité du planning, c'est ce qu'on lui a imposé
-      d'avance.</p>`;
-  }
+  const mot = nAutres
+    ? `<p class="granot">Ces chiffres ne décrivent que <b>${esc(cols[0].lab)}</b>.
+       L'onglet <b>Comparer les scénarios</b> le met en face des ${nb(nAutres)} simulation${
+       nAutres > 1 ? "s" : ""} déposée${nAutres > 1 ? "s" : ""}.</p>`
+    : `<p class="granot">Un seul planning à mesurer. Déposez une simulation dans
+       l'écran des scénarios pour ouvrir la comparaison.</p>`;
   return `<div class="granasyn">${tuiles.map(t=>
     `<div class="granatu ${t.k}"><b>${t.v}</b><span>${t.l}</span></div>`).join("")}</div>${mot}`;
+}
+/* La phrase d'entree de la comparaison : l'ecart entre le plus genereux et le
+   plus avare, puisque c'est lui qui decide. */
+function motComparaison(cols){
+  const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
+  const best = cols.reduce((a,b)=>b.m.places > a.m.places ? b : a);
+  const pire = cols.reduce((a,b)=>b.m.places < a.m.places ? b : a);
+  const dur = cols.reduce((t,c)=>t + c.m.dur, 0);
+  return `<p class="granot">${cols.length} scénarios comparés, même population et mêmes heures
+    de prof. Le plus généreux est <b>${esc(best.lab)}</b> avec ${nb(best.m.places)} joueurs placés,
+    le plus avare <b>${esc(pire.lab)}</b> avec ${nb(pire.m.places)} —
+    <b>${nb(best.m.places - pire.m.places)} places d'écart</b>.
+    ${dur ? `${nb(dur)} faute(s) dure(s) au total : lisez le tableau des contraintes avant de choisir.`
+          : "Aucun ne viole une contrainte dure : ce qui les sépare n'est pas la légalité du planning, c'est ce qu'on lui a imposé d'avance."}</p>`;
 }
 
 /* Le detail, scenario par scenario : avec quoi il a ete calcule, ce qu'on lui a
@@ -4281,6 +4336,9 @@ function detailScenarios(cols){
           <li>affinités : ${nb(m.dem.avec[0])} tenues sur ${nb(m.dem.avec[1] - m.dem.avec[2])} appariables${
               m.dem.avec[2] ? `, <b>${nb(m.dem.avec[2])} inertes</b>` : ""}</li>
           <li>prof souhaité : ${nb(m.dem.prof[0])} obtenus sur ${nb(m.dem.prof[1] - m.dem.prof[2])} demandés</li>
+          ${s && c.dep && c.dep.syn ? `<li>le solveur s'est arrêté sur « ${
+            esc(String(c.dep.syn["statut du solveur"] || "?"))} » après ${
+            esc(String(c.dep.syn["temps de resolution (s)"] || "?"))} s de recherche</li>` : ""}
         </ul>
       </div></details>`;
   }).join("");
@@ -4288,11 +4346,13 @@ function detailScenarios(cols){
 
 /* Le diagnostic. Ecrit ici et pas dans un rapport a cote : il se recalcule sur
    les plannings du jour, et une phrase qui ne s'appuie sur aucun chiffre mesure
-   n'y a pas sa place. */
-function diagnostic(cols, P){
+   n'y a pas sa place. Deux jeux de paragraphes, un par onglet : ce qui decrit
+   le planning affiche, et ce qui compare les scenarios entre eux. */
+function diagnostic(cols, P, comparatif){
   const out = [];
   const ici = cols[0];
   const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
+  const lib = ici.m.libres;
 
   const inertes = cols.filter(c=>c.m.dem.avec[2] > 0);
   if(inertes.length) out.push(`<p class="granok"><b>Des affinités écrites que personne n'entend.</b>
@@ -4302,46 +4362,46 @@ function diagnostic(cols, P){
     ignorée, et le bilan du calcul la compte comme un joueur sans demande. Tant que ces noms ne
     sont pas rapprochés des fiches, le classeur qui les porte n'apporte rien au calcul.</p>`);
 
-  if(P){
-    const marge = P.toutA - ici.m.places;
-    const dorm = P.hCca - ici.m.heures;
-    out.push(`<p class="granot"><b>Ce qui ferme la porte, ce sont les heures de prof.</b>
-      ${nb(P.hCca)} h de cours collectifs à ${nb(P.parHeureA)} joueurs l'heure plafonnent le club à
-      ${nb(P.toutA)} places — pour ${nb(ici.m.places + ici.m.attente)} personnes à placer. La marge
-      est de ${nb(marge)} joueurs, et ${nb(dorm)} h de prof ne sont pas utilisées :
-      ${nb(dorm * P.parHeureA)} places dorment là. Les courts offrent ${nb(P.plafondCourts)} places
-      théoriques : ils ne sont pas la contrainte, sauf aux heures de pointe.</p>`);
+  if(!comparatif){
+    if(P){
+      const marge = P.toutA - ici.m.places;
+      const dorm = P.hCca - ici.m.heures;
+      out.push(`<p class="granot"><b>Ce qui ferme la porte, ce sont les heures de prof.</b>
+        ${nb(P.hCca)} h de cours collectifs à ${nb(P.parHeureA)} joueurs l'heure plafonnent le club à
+        ${nb(P.toutA)} places — pour ${nb(ici.m.places + ici.m.attente)} personnes à placer. La marge
+        est de ${nb(marge)} joueurs, et ${nb(dorm)} h de prof ne sont pas utilisées :
+        ${nb(dorm * P.parHeureA)} places dorment là. Les courts offrent ${nb(P.plafondCourts)} places
+        théoriques : ils ne sont pas la contrainte, sauf aux heures de pointe.</p>`);
+    }
+    if(lib) out.push(`<p class="granot"><b>${lib} places libres dans les cours déjà ouverts.</b>
+      Chacune est un joueur qu'on prendrait sans une minute de prof en plus. Elles ne se remplissent
+      pas parce que les candidats restants ne partagent ni le palier, ni le créneau, ni le sexe du
+      groupe — c'est le palier qui est le plus facile à élargir d'une lettre.</p>`);
+
+    const capes = Object.keys(POSE_CAP);
+    if(capes.length && ctr && ctr.budget && P){
+      const h = capes.reduce((t,p)=>t + Object.keys(ctr.budget[p]||{})
+        .reduce((u,j)=>u+(ctr.budget[p][j]||0), 0), 0);
+      out.push(`<p class="granok"><b>${nb(h)} h de prof réservées aux débutants.</b>
+        ${capes.map(p=>`${esc(p)} (${esc(POSE_CAP[p])})`).join(", ")} n'encadrent pas au-delà de leur
+        plafond de niveau. C'est ${nb(Math.round(h/P.heures*100))} % du temps d'enseignement du club,
+        et il ne sert qu'à une partie de la liste d'attente. Si les joueurs qui restent sont au-dessus
+        de ce plafond, ces heures sont payées et inutilisables — c'est le levier le plus lourd,
+        et le seul qui ne coûte ni court ni argent : il se lève en formant, ou en révisant
+        le plafond.</p>`);
+    }
   }
 
-  const lib = ici.m.libres;
-  if(lib) out.push(`<p class="granot"><b>${lib} places libres dans les cours déjà ouverts.</b>
-    Chacune est un joueur qu'on prendrait sans une minute de prof en plus. Elles ne se remplissent
-    pas parce que les candidats restants ne partagent ni le palier, ni le créneau, ni le sexe du
-    groupe — c'est le palier qui est le plus facile à élargir d'une lettre.</p>`);
-
-  const capes = Object.keys(POSE_CAP);
-  if(capes.length && ctr && ctr.budget){
-    const h = capes.reduce((t,p)=>t + Object.keys(ctr.budget[p]||{})
-      .reduce((u,j)=>u+(ctr.budget[p][j]||0), 0), 0);
-    out.push(`<p class="granok"><b>${nb(h)} h de prof réservées aux débutants.</b>
-      ${capes.map(p=>`${esc(p)} (${esc(POSE_CAP[p])})`).join(", ")} n'encadrent pas au-delà de leur
-      plafond de niveau. C'est ${nb(Math.round(h/P.heures*100))} % du temps d'enseignement du club,
-      et il ne sert qu'à une partie de la liste d'attente. Si les joueurs qui restent sont au-dessus
-      de ce plafond, ces heures sont payées et inutilisables — c'est le levier le plus lourd du
-      tableau, et le seul qui ne coûte ni court ni argent : il se lève en formant, ou en révisant
-      le plafond.</p>`);
-  }
-
-  if(cols.length > 1){
-    const meilleur = cols.slice(1).reduce((a,b)=>b.m.places > a.m.places ? b : a);
-    out.push(`<p class="granoj"><b>Comment faire mieux.</b> Dans l'ordre de ce que ça rapporte :
-      remplir les ${lib} places libres en élargissant un palier d'une lettre ;
-      rendre les heures plafonnées utilisables ;
+  if(comparatif && cols.length > 1){
+    const meilleur = cols.reduce((a,b)=>b.m.places > a.m.places ? b : a);
+    out.push(`<p class="granoj"><b>Dans l'ordre de ce que ça rapporte.</b>
+      Remplir les ${lib} places libres du planning affiché en élargissant un palier d'une lettre ;
+      rendre utilisables les heures de prof plafonnées aux débutants ;
       ouvrir des cours de type B (6 à 8 joueurs sur 2 courts) là où les courts le permettent —
       ils placent ${P ? nb(P.parHeureB) : "6,4"} joueurs par heure de prof au lieu de
       ${P ? nb(P.parHeureA) : "4"}, c'est le seul levier qui déplace le plafond lui-même ;
       et ne reconduire l'emploi du temps de l'an passé que là où il ne coûte pas de place —
-      le meilleur calcul du tableau (${esc(meilleur.lab)}) en place ${nb(meilleur.m.places)}.</p>`);
+      le meilleur scénario du tableau (${esc(meilleur.lab)}) en place ${nb(meilleur.m.places)}.</p>`);
   }
   return out.join("");
 }
@@ -4401,19 +4461,6 @@ const RECETTES = {
   5: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:"reconduction-2027-brut.xlsx (souple)",
       drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
 };
-// Les lignes de l'onglet Synthese qui font la comparaison. Le classeur les
-// ecrit sans accent : la cle est celle du fichier, le libelle celui de l'ecran.
-const IND_SIM = [
-  ["joueurs places", "Joueurs placés"],
-  ["joueurs sans groupe", "Sans groupe"],
-  ["dont anciens adherents", "dont anciens adhérents"],
-  ["cours ouverts", "Cours ouverts"],
-  ["heures prof consommees", "Heures de prof"],
-  ["joueurs avec toutes leurs preferences tenues", "Toutes préférences tenues"],
-  ["joueurs avec au moins une preference ratee", "Au moins une préférence ratée"],
-  ["statut du solveur", "Statut du solveur"],
-  ["temps de resolution (s)", "Temps de calcul (s)"],
-];
 let sims = {};
 try{ sims = JSON.parse(localStorage.getItem(CLE_SIMS) || "{}") || {}; }catch(e){ sims = {}; }
 
@@ -4435,66 +4482,41 @@ function resumeSim(syn, wb){
   return `${co ? co.length-1 : "?"} cours` + (np ? ` · ${np.length-1} sans groupe` : "");
 }
 
-function rendSims(){
+/* Ce que pese un scenario, lu dans son instantane et pas dans le classeur dont
+   il sort : deplacer un joueur doit se voir ici aussi, sinon la ligne annonce
+   des chiffres que l'ecran a dementis. */
+function chiffresScen(e){
+  const viv = (e.cours||[]).filter(c=>c.diff !== "supp");
+  // Un instantane d'avant les annexes n'en porte pas : on retombe alors sur
+  // celles de l'ecran, exactement comme le fait `allerA` en y revenant.
+  const pl = viv.reduce((t,c)=>t + (c.membres||[]).length, 0)
+           + (((e.annexes || annexes || {}).enPlace) || []).length;
+  return `${viv.length} cours · ${pl} placés · ${(e.attente||[]).length} sans groupe`;
+}
+/* Le resultat que le solveur vient d'ecrire : il n'est pas un fichier d'entree,
+   il est un scenario de plus. Il a donc quitte la liste des fichiers du calcul
+   pour cette liste-ci, la ou on choisit ce qu'on affiche. */
+const LIGNE_RES = {k:"res", lab:"Dernier résultat du solveur", fic:"resultat-cca.xlsx",
+  onglets:["Cours","Groupes","Non places","Deja en place","Hors calcul","Synthese"]};
+
+function rendScenarios(){
   const w = F("grSims"); if(!w) return;
-  const pretes = SIMS.filter(s=>sims[s.n]);
-  const aOuvrir = pretes.filter(s=>!scenDeSim(s.n));
-  const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
-  w.innerHTML =
-    `<div class="grsimh"><b>Cinq simulations à comparer</b>
-       <span>Le même calcul cinq fois : on enlève, puis on remet, ce que l'année passée a
-       laissé. Rien d'autre ne bouge — l'écart entre deux lignes est donc le prix exact de
-       ce qui les sépare.</span>
-       <span class="acts">
-         <button class="mini" data-t="lot">Déposer les cinq classeurs…</button>
-         <button class="mini" data-t="tout"${aOuvrir.length ? "" : " disabled"}
-           title="Ouvrir d'un coup les simulations déposées, chacune dans sa pastille"
-           >Toutes les ouvrir${
-             aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
-       </span>
-       <span class="aide">Une simulation ouverte rejoint la rangée « Calculs », en haut de l'écran :
-         un clic passe de l'une à l'autre, et chacune garde pour elle seule les cours qu'on y
-         déplace. Déposez en face de chacune le classeur du solveur —
-         <code>simulations.command</code> fabrique les quatre premières.</span>
-       <dl class="grsimd">
-         <div><dt>EDT 2026</dt><dd>les groupes de l'an dernier repris tels quels — créneau, prof,
-           composition — là où la couleur de Loïc sur la grille le permet. Sans lui, le solveur
-           redessine la semaine de zéro.</dd></div>
-         <div><dt>affinités Loïc</dt><dd>les « avec X », « pas avec Y » et les profs souhaités ou
-           refusés que Loïc a relevés sur les fiches, donnés au solveur comme préférences.</dd></div>
-         <div><dt>arbitrages à la main</dt><dd>les décisions prises après coup sur cette grille
-           (<code>decisions-2027.xlsx</code>) : un groupe imposé, deux joueurs qu'on ne fige pas.
-           Sans elles, la reconduction repart de la grille brute.</dd></div>
-       </dl></div>` +
-    SIMS.map(s=>{
-      const d = sims[s.n], e = scenDeSim(s.n), ici = !!(e && e.n === vu);
-      // Trois etats, un seul mot chacun : a l'ecran (c'est ce qu'on regarde),
-      // retouchee (ouverte, et on y a touche), ouverte (chargee, intacte).
-      const chip = !d ? ""
-        : ici ? `<span class="chip ici" title="C'est ce planning qui est affiché${
-                   e && e.touche ? ", et il a été retouché" : ""}">à l'écran</span>`
-        : e   ? `<span class="chip ${e.touche ? "ret" : "ouv"}"
-                   title="Ouverte dans le calcul « ${esc(e.nom)} »">${
-                   e.touche ? "retouchée" : "ouverte"}</span>` : "";
-      const dit = !d
-        ? "aucun classeur — attendu : " + esc(s.fic)
-        : esc(d.fichier) + " · déposé " + esc(d.date) + (d.resume ? " · " + esc(d.resume) : "");
-      return `<div class="grsim${ici ? " on" : ""}" data-n="${s.n}">
-        <span class="num">${s.n}</span>
-        <span class="tx"><b>${esc(s.titre)}</b>
-          <span class="tags">${s.tags.map(tag).join("")}</span>
-          <span class="fic">${dit}</span></span>
-        <span class="acts">${chip}${!d
-          ? `<button class="mini" data-a="deposer">Déposer…</button>`
-          // « Ouvrir » charge le classeur, « Voir » bascule dessus : ce n'est pas
-          // le meme geste, et la pastille d'etat dit lequel des deux s'applique.
-          : `${ici ? "" : `<button class="mini" data-a="ouvrir">${e ? "Voir" : "Ouvrir"}</button>`}
-             ${e && e.touche ? `<button class="mini" data-a="repartir"
-                title="Oublier les retouches et reprendre ce planning tel que le solveur l'a rendu"
-                >↺ Revenir au calcul</button>` : ""}
-             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`}</span>
-      </div>`;
-    }).join("") + tableauSims(pretes);
+  w.innerHTML = blocCalculs() + blocSims();
+  w.querySelectorAll("[data-b]").forEach(b=>{
+    const e = scen.find(x=>x.n === +b.closest("[data-c]").dataset.c);
+    b.onclick = ()=>{
+      if(!e) return;
+      if(b.dataset.b === "voir")     return allerA(e);
+      if(b.dataset.b === "nom") return renommer(e, b.closest(".grsim").querySelector(".tx"),
+                                                     b.closest(".grsim").querySelector(".tx > b"));
+      supprimerScen(e);
+    };
+  });
+  w.querySelectorAll("[data-r]").forEach(r=>{
+    r.onclick = ()=> r.dataset.r === "prendre" ? reprendreResultat(r)
+                   : r.dataset.r === "voir"    ? voir(LIGNE_RES, 0)
+                                               : telecharger(LIGNE_RES.fic);
+  });
   w.querySelectorAll("[data-a]").forEach(b=>{
     const n = +b.closest("[data-n]").dataset.n;
     b.onclick = ()=> b.dataset.a === "deposer"  ? deposerSim(n)
@@ -4505,62 +4527,105 @@ function rendSims(){
     b.onclick = ()=> b.dataset.t === "lot" ? deposerLot() : ouvrirTout();
   });
 }
-/* Ce que l'ecran sait remesurer lui-meme, ligne a ligne du tableau. Les quatre
-   autres n'appartiennent qu'au classeur : le solveur seul sait s'il a tenu
-   TOUTES les preferences d'un joueur, combien de temps il a cherche et sur quoi
-   il s'est arrete. Les recalculer ici donnerait des chiffres voisins et faux ;
-   la case dit « — », et l'Analyse remesure tout le monde a la meme aune. */
-const ECRAN_SIM = {
-  "joueurs places":         e => e.places,
-  "joueurs sans groupe":    e => e.att,
-  "dont anciens adherents": e => e.anc,
-  "cours ouverts":          e => e.cours,
-  "heures prof consommees": e => e.heures,
-};
-function mesureEcran(){
-  const viv = vivants();
-  return {places: viv.reduce((t,c)=>t+c.membres.length, 0) + (annexes.enPlace||[]).length,
-          att: attente.length, anc: attente.filter(p=>p.ancien).length, cours: viv.length,
-          heures: Math.round(viv.reduce((t,c)=>t+(c.f-c.d)/60, 0)*100)/100};
+/* -------- ce qui vient du calcul du club -------- */
+function blocCalculs(){
+  const autres = scen.filter(e=>e.sim == null);
+  const res = ligneResultat();
+  if(!autres.length && !res) return "";
+  return `<div class="grsims"><div class="grsimh"><b>Le calcul du club</b>
+      <span>Le dernier résultat du solveur, et ce qu'il est devenu à force de retouches.</span></div>`
+    + autres.map(ligneCalcul).join("") + res + `</div>`;
 }
-function tableauSims(pretes){
-  // Le planning affiche fait colonne comme les autres, et en premier : c'est lui
-  // qu'il s'agit de battre. Sans lui, le tableau comparait cinq calculs entre
-  // eux sans jamais dire ou en est le club — la question s'est posee des la
-  // premiere lecture. Une seule colonne en tout ne compare toujours rien.
-  const ici = cours.length ? mesureEcran() : null;
-  const cur = scen.find(e=>e.n === vu);
-  // La simulation affichee et intacte donnerait deux colonnes identiques, cote a
-  // cote : la sienne disparait, son numero passe dans l'en-tete de gauche. Des
-  // qu'on la retouche elle revient — l'ecart avec le calcul est justement ce
-  // qu'on cherche a lire.
-  const doublon = (ici && cur && cur.sim != null && !cur.touche) ? cur.sim : null;
-  const cols = pretes.filter(s=>s.n !== doublon);
-  if(cols.length + (ici ? 1 : 0) < 2) return "";
-  const val = (s, k) => { const v = (sims[s.n].syn || {})[k]; return (v == null || v === "") ? "—" : esc(v); };
-  const tete = s => {
-    const e = scenDeSim(s.n);
-    return e && e.touche
-      ? `<th title="Les chiffres du calcul. Ce planning a été retouché depuis : 🔬 Analyse le remesure.">${
-          s.n}. ${esc(s.court)} ✎</th>`
-      : `<th>${s.n}. ${esc(s.court)}</th>`;
-  };
-  return `<div class="grsimt"><table class="grtable">
-    <thead><tr><th>Indicateur</th>${
-      ici ? `<th class="ici">À l'écran${cur ? " · " + esc(cur.nom) : ""}</th>` : ""}${
-      cols.map(tete).join("")}</tr></thead>
-    <tbody>${IND_SIM.map(([k, lab])=>{
-      const f = ECRAN_SIM[k];
-      return `<tr><td>${lab}</td>${
-        ici ? `<td class="n ici">${f ? f(ici) : "—"}</td>` : ""}${
-        cols.map(s=>`<td class="n">${val(s, k)}</td>`).join("")}</tr>`;
-    }).join("")}</tbody>
-    </table>
-    <p class="grsimn">La première colonne est le planning affiché, remesuré à l'instant ; les autres
-      sont les chiffres que le solveur a écrits dans son classeur. Les quatre dernières lignes
-      n'existent que pour un calcul, et une colonne marquée ✎ a été retouchée depuis —
-      <b>🔬 Analyse</b> remesure tout le monde de la même façon.</p>
-    </div>`;
+function ligneCalcul(e){
+  const ici = e.n === vu;
+  return `<div class="grsim${ici ? " on" : ""}" data-c="${e.n}">
+    <span class="num cal">•</span>
+    <span class="tx"><b>${esc(e.nom)}</b>
+      <span class="fic">${e.res ? esc(e.res.fichier) + " · " : ""}${chiffresScen(e)}</span></span>
+    <span class="acts">
+      ${ici ? `<span class="chip ici">à l'écran</span>`
+            : `<button class="mini" data-b="voir">Mettre à l'écran</button>`}
+      <button class="mini" data-b="nom" title="Renommer ce scénario">✎</button>
+      ${scen.length > 1 ? `<button class="mini" data-b="x" title="Supprimer ce scénario">✕</button>` : ""}
+    </span></div>`;
+}
+function ligneResultat(){
+  // Rien a montrer tant qu'aucun resultat n'est a portee : ni en cache, ni a
+  // cote du solveur. La ligne dirait « introuvable » et n'appellerait aucun geste.
+  if(!dispoFic(LIGNE_RES.fic)) return "";
+  return `<div class="grsim">
+    <span class="num cal">↻</span>
+    <span class="tx"><b>${LIGNE_RES.lab}</b>
+      <span class="fic">${esc(etatFic(LIGNE_RES.fic))}</span></span>
+    <span class="acts">
+      <button class="mini" data-r="prendre">Mettre à l'écran</button>
+      <button class="mini" data-r="voir">Voir</button>
+      <button class="mini" data-r="dl">⬇︎</button>
+    </span></div>`;
+}
+function supprimerScen(e){
+  if(scen.length < 2) return;
+  if(!confirm(`Supprimer le scénario « ${e.nom} » ?\n\nCe planning ne sera plus consultable. `
+    + "Les autres scénarios et l'emploi du temps affiché ne changent pas.")) return;
+  const i = scen.findIndex(x=>x.n === e.n);
+  if(i < 0) return;
+  scen.splice(i, 1);
+  if(e.n === vu) return allerA(scen[scen.length-1]);
+  sauver(); rend();
+}
+/* -------- les cinq simulations -------- */
+function blocSims(){
+  const pretes = SIMS.filter(s=>sims[s.n]);
+  const aOuvrir = pretes.filter(s=>!scenDeSim(s.n));
+  const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
+  return `<div class="grsims"><div class="grsimh"><b>Les cinq simulations</b>
+       <span>Le même calcul cinq fois : on enlève, puis on remet, ce que l'année passée a
+       laissé. Rien d'autre ne bouge, donc l'écart entre deux lignes est le prix de ce qui
+       les sépare. <code>simulations.command</code> fabrique les quatre premières.</span>
+       <span class="acts">
+         <button class="mini" data-t="lot">Déposer les cinq classeurs…</button>
+         <button class="mini" data-t="tout"${aOuvrir.length ? "" : " disabled"}
+           title="Charger d'un coup les simulations déposées, chacune dans son scénario"
+           >Toutes les charger${
+             aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
+       </span>
+       <dl class="grsimd">
+         <div><dt>EDT 2026</dt><dd>les groupes de l'an dernier repris tels quels, là où la
+           couleur de Loïc sur la grille le permet.</dd></div>
+         <div><dt>affinités Loïc</dt><dd>les « avec X », « pas avec Y » et les profs souhaités
+           ou refusés, relevés sur les fiches.</dd></div>
+         <div><dt>arbitrages à la main</dt><dd>les décisions prises ensuite sur cette grille
+           (<code>decisions-2027.xlsx</code>).</dd></div>
+       </dl></div>` +
+    SIMS.map(s=>{
+      const d = sims[s.n], e = scenDeSim(s.n), ici = !!(e && e.n === vu);
+      // Trois etats, un mot chacun : a l'ecran (c'est ce qu'on regarde),
+      // retouchee (ouverte, et on y a touche), ouverte (chargee, intacte).
+      const chip = !d ? ""
+        : ici ? `<span class="chip ici" title="C'est ce planning qui est affiché${
+                   e && e.touche ? ", et il a été retouché" : ""}">à l'écran</span>`
+        : e   ? `<span class="chip ${e.touche ? "ret" : "ouv"}"
+                   title="Ouverte dans le scénario « ${esc(e.nom)} »">${
+                   e.touche ? "retouchée" : "ouverte"}</span>` : "";
+      // Ouverte, la ligne compte ce que le scenario contient AUJOURD'HUI ;
+      // fermee, elle ne peut que citer ce que le classeur annonce.
+      const dit = !d ? "aucun classeur — attendu : " + esc(s.fic)
+        : esc(d.fichier) + " · " + (e ? chiffresScen(e) : esc(d.resume || "déposé " + d.date));
+      const quand = d ? ` title="Déposé le ${esc(d.date)}"` : "";
+      return `<div class="grsim${ici ? " on" : ""}" data-n="${s.n}">
+        <span class="num">${s.n}</span>
+        <span class="tx"><b>${esc(s.titre)}</b>
+          <span class="tags">${s.tags.map(tag).join("")}</span>
+          <span class="fic"${quand}>${dit}</span></span>
+        <span class="acts">${chip}${!d
+          ? `<button class="mini" data-a="deposer">Déposer…</button>`
+          : `${ici ? "" : `<button class="mini" data-a="ouvrir">Mettre à l'écran</button>`}
+             ${e && e.touche ? `<button class="mini" data-a="repartir"
+                title="Oublier les retouches et reprendre ce planning tel que le solveur l'a rendu"
+                >↺ Revenir au calcul</button>` : ""}
+             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`}</span>
+      </div>`;
+    }).join("") + `</div>`;
 }
 
 /* -------- deposer les classeurs --------
@@ -4596,7 +4661,7 @@ async function deposerSim(n){
     const err = sauverSims();
     if(err){ if(garde) sims[n] = garde; else delete sims[n]; F("grErr").textContent = err; }
   }catch(e){ F("grErr").textContent = "Fichier refusé : " + e.message; }
-  rendSims();
+  rendScenarios();
 }
 /* Les cinq d'un coup. `simulations.command` les ecrit sous des noms fixes :
    c'est le nom du fichier qui dit dans quelle case il va. Un classeur renomme
@@ -4625,7 +4690,7 @@ async function deposerLot(){
   else F("grErr").textContent = ko.length
     ? `${mis} classeur(s) rangé(s). Laissé de côté : ${ko.join(" · ")}`
     : "";
-  rendSims();
+  rendScenarios();
 }
 
 /* -------- une simulation, un planning modifiable --------
@@ -4707,7 +4772,7 @@ function retirerSim(n){
   delete sims[n];
   sauverSims();
   if(e){ e.sim = null; sauver(); }
-  rendSims();
+  rendScenarios();
 }
 
 async function reprendreResultat(b){
@@ -4840,7 +4905,7 @@ function rendPills(){
   // « Calcul 3 » tout seul dans la barre ne dit pas de quoi il est le nom. Le
   // mot devant le dit, et separe ces pastilles-la des boutons voisins.
   const lb = document.createElement("span");
-  lb.className = "grpllb"; lb.textContent = "Calculs";
+  lb.className = "grpllb"; lb.textContent = "Scénarios";
   w.appendChild(lb);
   scen.forEach(e=>{
     const g = document.createElement("span");
@@ -4869,23 +4934,7 @@ function rendPills(){
       x.className = "grpillx"; x.textContent = "✕";
       x.title = "Supprimer « " + e.nom + " »";
       x.setAttribute("aria-label", "Supprimer " + e.nom);
-      x.onclick = ev=>{
-        ev.stopPropagation();
-        if(!confirm("Supprimer « " + e.nom + " » ?\n\nCe planning ne sera plus consultable. "
-          + "Les autres calculs et l'emploi du temps affiché ne changent pas.")) return;
-        const i = scen.findIndex(x2=>x2.n===e.n);
-        if(i < 0) return;
-        scen.splice(i, 1);
-        // Supprimer celui qu'on regarde : on bascule sur le plus recent restant,
-        // sinon l'ecran afficherait un planning qui n'appartient plus a rien.
-        if(e.n === vu){
-          const suiv = scen[scen.length-1];
-          cours = JSON.parse(JSON.stringify(suiv.cours));
-          attente = JSON.parse(JSON.stringify(suiv.attente));
-          vu = suiv.n; sel = null; selAtt = null; moving = null; trouve = null;
-        }
-        sauver(); rend();
-      };
+      x.onclick = ev=>{ ev.stopPropagation(); supprimerScen(e); };
       g.appendChild(x);
     }
     w.appendChild(g);
@@ -7388,19 +7437,16 @@ async function pingAgent(){
 function majLance(){
   const b = F("grLance");
   F("grAide").innerHTML = agent
-    ? `Agent local détecté. Le calcul tourne sur cette machine ; ces fichiers sont ceux
-       qu'il lit à côté de <code>solve_cca.py</code>.`
-    : `Le calcul tourne sur l'ordinateur du club ; son résultat arrive ici par la
-       base partagée. Pour calculer depuis ce poste, lancez
+    ? `Agent local détecté : le calcul tourne sur cette machine, et les fichiers ci-dessus sont
+       ceux qu'il lit à côté de <code>solve_cca.py</code>.`
+    : `Aucun agent sur ce poste : le calcul tourne sur l'ordinateur du club, et son résultat
+       arrive ici par la base partagée. Pour calculer d'ici, lancez
        <code>python agent.py</code> à côté de <code>solve_cca.py</code>.`;
   const dejaLa = cours.length > 0;
-  F("grEmptyT").textContent = dejaLa ? "Nouveau calcul"
-    : agent ? "Constituer les groupes" : "Le résultat du calcul";
+  F("grEmptyT").textContent = dejaLa ? "Les scénarios" : "Constituer les groupes";
   F("grEmptyS").textContent = dejaLa
-    ? "Les groupes actuels sont conservés tant que le nouveau calcul n'a pas abouti, et les cours figés repartent avec."
-    : agent
-    ? "Le calcul crée les créneaux et y place les joueurs. Vous corrigez ensuite, autant de fois qu'il faut."
-    : "Le solveur tourne sur l'ordinateur du club. Son résultat arrive ici par la base partagée dès qu'il a été ouvert une fois sur ce poste : cet écran sert ensuite à relire, corriger et figer avant la relance, depuis n'importe quel ordinateur.";
+    ? "Choisissez celui qui s'affiche dans l'emploi du temps, ou calculez-en un nouveau. Le planning affiché ne bouge pas tant qu'un nouveau calcul n'a pas abouti."
+    : "Rien n'est encore chargé. Mettez à l'écran un résultat du solveur, ou lancez le calcul si l'agent tourne sur ce poste.";
   if(!agent){ b.style.display = "none"; rendFichiers(); return; }
   b.style.display = "flex";
   const j = agent.joueurs, c = agent.contraintes;
