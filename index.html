@@ -925,15 +925,35 @@
     font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
   .grsim .tx{flex:1 1 240px;min-width:0}
   .grsim .tx b{display:block;font-size:13.5px}
-  .grsim .tags{display:inline-flex;gap:6px;margin-top:3px}
-  .grtag{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:1px 8px;color:var(--muted)}
+  .grsim .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+  .grtag{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:1px 8px;
+    color:var(--muted);white-space:nowrap}
   .grtag.on{border-color:#bfe0c4;background:#f2f9f4;color:var(--accent);font-weight:600}
   .grsim .fic{display:block;color:var(--muted);font-size:12px;margin-top:3px}
   .grsim .acts{flex:none;margin-left:auto}
   .grsim .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
-  .grsim .fic .ouv{color:var(--accent);font-weight:600}
+  /* L'etat d'une simulation se lit d'un coup d'oeil : une pastille a droite,
+     la ou tombe le regard avant d'appuyer sur un bouton. Trois etats et pas
+     quatre — deposee ne se dit pas, le nom du fichier le dit deja. */
+  .grsim .acts{display:flex;align-items:center;gap:6px}
+  .grsim .chip{font-size:11px;font-weight:600;border-radius:20px;padding:2px 9px;
+    white-space:nowrap;margin-right:2px}
+  .grsim .chip.ouv{background:#eef2f7;color:#2f5597}
+  .grsim .chip.ret{background:#fdf2e3;color:#b8721c}
+  .grsim .chip.ici{background:var(--accent);color:#fff}
   .grsimh .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
   .grsimh .acts button{font-size:12px;padding:4px 10px}
+  .grsimh .aide{margin-top:8px}
+  /* Les trois etiquettes valent une definition : elles sont le sujet meme du
+     tableau, et « sans les arbitrages » ne se devine pas. */
+  .grsimd{margin:10px 0 0;display:grid;gap:5px;font-size:12px;color:var(--muted)}
+  .grsimd > div{display:flex;gap:8px;align-items:baseline}
+  .grsimd dt{flex:none;width:136px;font-weight:600;color:var(--ink)}
+  .grsimd dd{margin:0;line-height:1.45}
+  @media(max-width:620px){.grsimd > div{display:block}.grsimd dt{width:auto}}
+  .grsimt .grtable .ici{background:#eff8f2}
+  .grsimt .grtable th.ici{background:var(--accent-soft);color:var(--accent)}
+  .grsimn{margin:8px 2px 0;font-size:11.5px;color:var(--muted);line-height:1.45;max-width:820px}
   .grsimt{padding:10px 12px;overflow:auto}
   .grana{width:min(1000px,96vw)}
   .grana h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
@@ -4341,16 +4361,19 @@ function diagnostic(cols, P){
    seul, qui devient l'etat partage. */
 const CLE_SIMS = "cca_simulations_v1";
 /* Chaque simulation porte ses ingredients en clair plutot que deux cases a
-   cocher : la cinquieme reprend l'EDT et les affinites comme la premiere, et
-   ne s'en distingue que par la grille dont elle part. Deux pastilles vertes
-   identiques sur deux lignes voisines auraient dit le contraire. */
+   cocher. Les trois etiquettes sont les trois memes questions posees a chaque
+   ligne — reconduit-on l'emploi du temps, donne-t-on les affinites, garde-t-on
+   les arbitrages pris a la main dessus — et c'est leur alignement qui rend le
+   bloc lisible : deux lignes voisines ne different que par ce qui change.
+   La troisieme manque aux calculs 3 et 4 : sans emploi du temps reconduit, il
+   n'y a rien a arbitrer, et une pastille vide y mentirait. */
 const SIMS = [
   {n:1, titre:"EDT 2026 + affinités de Loïc", court:"EDT + affinités",
    fic:"resultat-1-edt-affinites.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", true]]},
+   tags:[["EDT 2026", true], ["affinités Loïc", true], ["arbitrages à la main", true]]},
   {n:2, titre:"EDT 2026 seul", court:"EDT seul",
    fic:"resultat-2-edt-seul.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", false]]},
+   tags:[["EDT 2026", true], ["affinités Loïc", false], ["arbitrages à la main", true]]},
   {n:3, titre:"Affinités de Loïc seules", court:"Affinités seules",
    fic:"resultat-3-affinites-seules.xlsx",
    tags:[["EDT 2026", false], ["affinités Loïc", true]]},
@@ -4359,7 +4382,7 @@ const SIMS = [
    tags:[["EDT 2026", false], ["affinités Loïc", false]]},
   {n:5, titre:"Groupes 2026 bruts", court:"Groupes bruts",
    fic:"resultat-5-groupes-bruts.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", true], ["sans les arbitrages", true]]},
+   tags:[["EDT 2026", true], ["affinités Loïc", true], ["arbitrages à la main", false]]},
 ];
 /* Comment chaque simulation a ete calculee. Le classeur produit ne porte pas ses
    propres entrees : rien dedans ne dit avec quel fichier de joueurs ni avec
@@ -4419,34 +4442,56 @@ function rendSims(){
   const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
   w.innerHTML =
     `<div class="grsimh"><b>Cinq simulations à comparer</b>
-       <span>Le même calcul quatre fois, avec ou sans l'emploi du temps 2026 reconduit,
-       avec ou sans les affinités relevées par Loïc — et une cinquième qui repart de la grille
-       de Loïc brute, avant les arbitrages pris à la main. Déposez en face de chacune le classeur
-       que <code>simulations.command</code> a produit. Les cinq peuvent être ouvertes en même
-       temps : chacune prend sa pastille dans la rangée « Calculs », en haut de l'écran des
-       groupes, et garde pour elle seule les cours qu'on y déplace.</span>
+       <span>Le même calcul cinq fois : on enlève, puis on remet, ce que l'année passée a
+       laissé. Rien d'autre ne bouge — l'écart entre deux lignes est donc le prix exact de
+       ce qui les sépare.</span>
        <span class="acts">
          <button class="mini" data-t="lot">Déposer les cinq classeurs…</button>
          <button class="mini" data-t="tout"${aOuvrir.length ? "" : " disabled"}
            title="Ouvrir d'un coup les simulations déposées, chacune dans sa pastille"
-           >Tout ouvrir${aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
-       </span></div>` +
+           >Toutes les ouvrir${
+             aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
+       </span>
+       <span class="aide">Une simulation ouverte rejoint la rangée « Calculs », en haut de l'écran :
+         un clic passe de l'une à l'autre, et chacune garde pour elle seule les cours qu'on y
+         déplace. Déposez en face de chacune le classeur du solveur —
+         <code>simulations.command</code> fabrique les quatre premières.</span>
+       <dl class="grsimd">
+         <div><dt>EDT 2026</dt><dd>les groupes de l'an dernier repris tels quels — créneau, prof,
+           composition — là où la couleur de Loïc sur la grille le permet. Sans lui, le solveur
+           redessine la semaine de zéro.</dd></div>
+         <div><dt>affinités Loïc</dt><dd>les « avec X », « pas avec Y » et les profs souhaités ou
+           refusés que Loïc a relevés sur les fiches, donnés au solveur comme préférences.</dd></div>
+         <div><dt>arbitrages à la main</dt><dd>les décisions prises après coup sur cette grille
+           (<code>decisions-2027.xlsx</code>) : un groupe imposé, deux joueurs qu'on ne fige pas.
+           Sans elles, la reconduction repart de la grille brute.</dd></div>
+       </dl></div>` +
     SIMS.map(s=>{
-      const d = sims[s.n], e = scenDeSim(s.n);
+      const d = sims[s.n], e = scenDeSim(s.n), ici = !!(e && e.n === vu);
+      // Trois etats, un seul mot chacun : a l'ecran (c'est ce qu'on regarde),
+      // retouchee (ouverte, et on y a touche), ouverte (chargee, intacte).
+      const chip = !d ? ""
+        : ici ? `<span class="chip ici" title="C'est ce planning qui est affiché${
+                   e && e.touche ? ", et il a été retouché" : ""}">à l'écran</span>`
+        : e   ? `<span class="chip ${e.touche ? "ret" : "ouv"}"
+                   title="Ouverte dans le calcul « ${esc(e.nom)} »">${
+                   e.touche ? "retouchée" : "ouverte"}</span>` : "";
       const dit = !d
         ? "aucun classeur — attendu : " + esc(s.fic)
-        : esc(d.fichier) + " — déposé " + esc(d.date) + (d.resume ? " · " + esc(d.resume) : "")
-          + (e ? `<b class="ouv"> · ouvert dans « ${esc(e.nom)} »${e.touche ? ", retouché" : ""}</b>` : "");
-      return `<div class="grsim${e && e.n === vu ? " on" : ""}" data-n="${s.n}">
+        : esc(d.fichier) + " · déposé " + esc(d.date) + (d.resume ? " · " + esc(d.resume) : "");
+      return `<div class="grsim${ici ? " on" : ""}" data-n="${s.n}">
         <span class="num">${s.n}</span>
         <span class="tx"><b>${esc(s.titre)}</b>
           <span class="tags">${s.tags.map(tag).join("")}</span>
           <span class="fic">${dit}</span></span>
-        <span class="acts">${!d
+        <span class="acts">${chip}${!d
           ? `<button class="mini" data-a="deposer">Déposer…</button>`
-          : `<button class="mini" data-a="ouvrir">${e ? (e.n === vu ? "Revenir dessus" : "Reprendre") : "Ouvrir"}</button>
-             ${e ? `<button class="mini" data-a="repartir"
-                title="Oublier les retouches et relire le classeur déposé">↺</button>` : ""}
+          // « Ouvrir » charge le classeur, « Voir » bascule dessus : ce n'est pas
+          // le meme geste, et la pastille d'etat dit lequel des deux s'applique.
+          : `${ici ? "" : `<button class="mini" data-a="ouvrir">${e ? "Voir" : "Ouvrir"}</button>`}
+             ${e && e.touche ? `<button class="mini" data-a="repartir"
+                title="Oublier les retouches et reprendre ce planning tel que le solveur l'a rendu"
+                >↺ Revenir au calcul</button>` : ""}
              <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`}</span>
       </div>`;
     }).join("") + tableauSims(pretes);
@@ -4460,27 +4505,62 @@ function rendSims(){
     b.onclick = ()=> b.dataset.t === "lot" ? deposerLot() : ouvrirTout();
   });
 }
+/* Ce que l'ecran sait remesurer lui-meme, ligne a ligne du tableau. Les quatre
+   autres n'appartiennent qu'au classeur : le solveur seul sait s'il a tenu
+   TOUTES les preferences d'un joueur, combien de temps il a cherche et sur quoi
+   il s'est arrete. Les recalculer ici donnerait des chiffres voisins et faux ;
+   la case dit « — », et l'Analyse remesure tout le monde a la meme aune. */
+const ECRAN_SIM = {
+  "joueurs places":         e => e.places,
+  "joueurs sans groupe":    e => e.att,
+  "dont anciens adherents": e => e.anc,
+  "cours ouverts":          e => e.cours,
+  "heures prof consommees": e => e.heures,
+};
+function mesureEcran(){
+  const viv = vivants();
+  return {places: viv.reduce((t,c)=>t+c.membres.length, 0) + (annexes.enPlace||[]).length,
+          att: attente.length, anc: attente.filter(p=>p.ancien).length, cours: viv.length,
+          heures: Math.round(viv.reduce((t,c)=>t+(c.f-c.d)/60, 0)*100)/100};
+}
 function tableauSims(pretes){
-  // A une seule simulation il n'y a rien a comparer, et un tableau d'une colonne
-  // se lirait comme un resultat alors que c'en est un parmi quatre.
-  if(pretes.length < 2) return "";
+  // Le planning affiche fait colonne comme les autres, et en premier : c'est lui
+  // qu'il s'agit de battre. Sans lui, le tableau comparait cinq calculs entre
+  // eux sans jamais dire ou en est le club — la question s'est posee des la
+  // premiere lecture. Une seule colonne en tout ne compare toujours rien.
+  const ici = cours.length ? mesureEcran() : null;
+  const cur = scen.find(e=>e.n === vu);
+  // La simulation affichee et intacte donnerait deux colonnes identiques, cote a
+  // cote : la sienne disparait, son numero passe dans l'en-tete de gauche. Des
+  // qu'on la retouche elle revient — l'ecart avec le calcul est justement ce
+  // qu'on cherche a lire.
+  const doublon = (ici && cur && cur.sim != null && !cur.touche) ? cur.sim : null;
+  const cols = pretes.filter(s=>s.n !== doublon);
+  if(cols.length + (ici ? 1 : 0) < 2) return "";
   const val = (s, k) => { const v = (sims[s.n].syn || {})[k]; return (v == null || v === "") ? "—" : esc(v); };
-  // Une colonne retouchee garde les chiffres du calcul : ce sont ceux du
-  // classeur, et l'onglet Synthese ne se recalcule pas. Le crayon le dit,
-  // plutot que de melanger dans une meme colonne des lignes recalculees et
-  // des lignes d'origine — c'est l'Analyse qui mesure le planning d'aujourd'hui.
   const tete = s => {
     const e = scenDeSim(s.n);
     return e && e.touche
-      ? `<th title="Chiffres du calcul. Les retouches faites depuis se lisent dans 🔬 Analyse.">${
+      ? `<th title="Les chiffres du calcul. Ce planning a été retouché depuis : 🔬 Analyse le remesure.">${
           s.n}. ${esc(s.court)} ✎</th>`
       : `<th>${s.n}. ${esc(s.court)}</th>`;
   };
   return `<div class="grsimt"><table class="grtable">
-    <thead><tr><th>Indicateur</th>${pretes.map(tete).join("")}</tr></thead>
-    <tbody>${IND_SIM.map(([k, lab])=>
-      `<tr><td>${lab}</td>${pretes.map(s=>`<td class="n">${val(s, k)}</td>`).join("")}</tr>`).join("")}</tbody>
-    </table></div>`;
+    <thead><tr><th>Indicateur</th>${
+      ici ? `<th class="ici">À l'écran${cur ? " · " + esc(cur.nom) : ""}</th>` : ""}${
+      cols.map(tete).join("")}</tr></thead>
+    <tbody>${IND_SIM.map(([k, lab])=>{
+      const f = ECRAN_SIM[k];
+      return `<tr><td>${lab}</td>${
+        ici ? `<td class="n ici">${f ? f(ici) : "—"}</td>` : ""}${
+        cols.map(s=>`<td class="n">${val(s, k)}</td>`).join("")}</tr>`;
+    }).join("")}</tbody>
+    </table>
+    <p class="grsimn">La première colonne est le planning affiché, remesuré à l'instant ; les autres
+      sont les chiffres que le solveur a écrits dans son classeur. Les quatre dernières lignes
+      n'existent que pour un calcul, et une colonne marquée ✎ a été retouchée depuis —
+      <b>🔬 Analyse</b> remesure tout le monde de la même façon.</p>
+    </div>`;
 }
 
 /* -------- deposer les classeurs --------
