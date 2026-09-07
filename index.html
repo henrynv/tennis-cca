@@ -1051,6 +1051,8 @@
   .grtable tr:nth-child(even) td{background:#fafbfc}
   .grtscroll{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:8px}
   .grtinfo{font-size:12px;color:var(--muted);margin:8px 0 0}
+  .grlance.ko{border-color:var(--line);background:var(--bg)}
+  .grlance.ko .tx b{color:var(--muted)}
   .grlance{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid #b7d6c5;
     background:linear-gradient(180deg,#fbfdfc,#f4faf6);border-radius:10px;padding:14px 16px;margin-bottom:16px}
   .grlance .tx{flex:1;min-width:200px;font-size:13.5px;line-height:1.35}
@@ -7439,16 +7441,28 @@ function majLance(){
   F("grAide").innerHTML = agent
     ? `Agent local détecté : le calcul tourne sur cette machine, et les fichiers ci-dessus sont
        ceux qu'il lit à côté de <code>solve_cca.py</code>.`
-    : `Aucun agent sur ce poste : le calcul tourne sur l'ordinateur du club, et son résultat
-       arrive ici par la base partagée. Pour calculer d'ici, lancez
-       <code>python agent.py</code> à côté de <code>solve_cca.py</code>.`;
+    : "";
   const dejaLa = cours.length > 0;
   F("grEmptyT").textContent = dejaLa ? "Les scénarios" : "Constituer les groupes";
   F("grEmptyS").textContent = dejaLa
     ? "Choisissez celui qui s'affiche dans l'emploi du temps, ou calculez-en un nouveau. Le planning affiché ne bouge pas tant qu'un nouveau calcul n'a pas abouti."
     : "Rien n'est encore chargé. Mettez à l'écran un résultat du solveur, ou lancez le calcul si l'agent tourne sur ce poste.";
-  if(!agent){ b.style.display = "none"; rendFichiers(); return; }
+  // Sans agent, le bloc restait cache : la section se terminait sur quatre
+  // fichiers et rien pour les calculer, comme si la page etait tronquee. Il
+  // reste donc visible, grise, et c'est LUI qui dit pourquoi il ne part pas.
   b.style.display = "flex";
+  b.classList.toggle("ko", !agent);
+  F("grTemps").disabled = !agent;
+  if(!agent){
+    F("grLanceT").textContent = "Lancer le calcul";
+    F("grLanceS").textContent = "Impossible depuis ce poste : le solveur tourne sur l'ordinateur "
+      + "du club, et son résultat arrive ici par la base partagée. Pour calculer d'ici, lancez "
+      + "python agent.py à côté de solve_cca.py.";
+    F("grGo").disabled = true;
+    rendFichiers();
+    return;
+  }
+  F("grLanceT").textContent = "Lancer le calcul sur cette machine";
   const j = agent.joueurs, c = agent.contraintes;
   F("grLanceS").textContent = j.present
     ? `joueurs.xlsx du ${j.date}` + (c.present ? ` · contraintes du ${c.date}` : " · pas de contraintes")
