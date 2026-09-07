@@ -969,6 +969,12 @@
   /* Une pastille grise pour ce qui ne fait pas partie des cinq : elle aligne la
      ligne sur les autres sans lui donner un numero qu'elle n'a pas. */
   .grsim .num.cal{background:#eef2f7;color:var(--muted);font-weight:600}
+  /* La ligne cliquee commande la section des fichiers, plus bas : sans un trait
+     qui la designe, on remplacait le joueurs.xlsx d'un autre scenario. */
+  .grsim[data-s]{cursor:pointer}
+  .grsim.sel{box-shadow:inset 3px 0 0 var(--accent)}
+  .grsim[data-s]:hover{background:#fafbfc}
+  .grsim.sel:hover{background:#f6fbf7}
   .grsim .tx input{font:inherit;font-size:13.5px;height:28px;width:min(260px,100%);
     padding:0 8px;border:1px solid var(--accent);border-radius:6px;background:#fff}
   .grtab:disabled{opacity:.45;cursor:default}
@@ -1417,8 +1423,8 @@
       <h3 class="grsec">Mettre un scénario à l'écran</h3>
       <div id="grSims"></div>
 
-      <h3 class="grsec">Calculer un nouveau scénario</h3>
-      <p class="grsecs">Le calcul part de ces quatre fichiers ; « Remplacer » y met le vôtre.</p>
+      <h3 class="grsec" id="grSecFic">Les fichiers du scénario</h3>
+      <p class="grsecs" id="grSecFicS"></p>
       <div class="grfile" id="grFiles"></div>
       <div class="grctl" id="grCtl" style="display:none">
         <span class="pastille" id="grCtlP"></span>
@@ -1428,6 +1434,11 @@
       <div class="grlance" id="grLance" style="display:none">
         <span class="tx"><b id="grLanceT">Lancer le calcul sur cette machine</b>
           <span id="grLanceS"></span></span>
+        <select id="grRec" title="Ce que le solveur fait de l'emploi du temps reconduit">
+          <option value="souple" selected>reconduction relâchée si besoin</option>
+          <option value="stricte">reconduction stricte</option>
+          <option value="aucune">sans reconduction</option>
+        </select>
         <select id="grTemps">
           <option value="60">1 minute</option>
           <option value="120">2 minutes</option>
@@ -4123,6 +4134,13 @@ const LIGNES = [
      return `jusqu'à ${ctr.courts} courts, ${j[0].toLowerCase()} au ${j[j.length-1].toLowerCase()}, `
           + `${gtx(ctr.debut)} → ${gtx(ctr.fin)} · <b>${ctr.terrains.length} plages de courts</b>`;
    }},
+  {k:"rec", lab:"EDT reconduit", fic:"reconduction-2027.xlsx", onglets:["Reconduction"],
+   val(){
+     const n = lignes("reconduction-2027.xlsx", "Reconduction");
+     return n === null
+       ? "Les groupes de l'an dernier à reconduire. Sans ce fichier, le solveur redessine la semaine."
+       : `<b>${n} groupes</b> repris de l'an dernier`;
+   }},
   {k:"niv", lab:"Niveaux et poids", fic:"contraintes-tennis.xlsx",
    onglets:["Bareme","Paliers","Poids"],
    val(){
@@ -4156,11 +4174,22 @@ function etatFic(fic, jeu){
                                         : "absent de ce jeu de fichiers");
   const c = CACHE[cleFic(fic, jeu === undefined ? jeuVu : jeu)];
   if(c && c.etat && c.etat.present) return `${fic} — sur la machine, ${c.etat.date}`;
-  if(fic === "resultat-cca.xlsx")
-    return resFic ? `${resFic.fichier} — déposé ${resFic.date}` : `${fic} — aucun fichier déposé`;
-  return `${fic} — ` + (ctr ? `déposé ${ctr.date}` : "sans agent, ce fichier n'est pas lisible d'ici");
+  if(fic === "resultat-cca.xlsx" && resFic) return `${resFic.fichier} — déposé ${resFic.date}`;
+  // Sans agent on ne sait rien de ce fichier : afficher la date des contraintes
+  // pour les cinq lignes faisait croire a cinq classeurs deposes le meme jour.
+  return `${fic} — sur l'ordinateur du solveur, illisible depuis ce poste`;
 }
 function rendFichiers(){
+  // Les fichiers montres sont ceux du scenario que la page detaille : c'est la
+  // meme liste pour tous, mais jamais le meme dossier.
+  const sc = scPage();
+  jeuVu = (sc && sc.jeu != null) ? sc.jeu : "";
+  const t = F("grSecFic"), ts = F("grSecFicS");
+  if(t) t.textContent = sc ? "Les fichiers de « " + sc.nom + " »" : "Les fichiers du calcul";
+  if(ts) ts.textContent = !sc ? "Créez un scénario pour choisir ses fichiers d'entrée."
+    : sc.jeu == null ? "Ce scénario vient d'un classeur déposé à la main : il n'a pas de fichiers d'entrée, et ne peut pas être recalculé."
+    : sc.jeu ? "Dans jeux/" + sc.jeu + "/, à côté du solveur. « Remplacer » y met le vôtre, sans toucher aux autres scénarios."
+    : "À la racine du solveur — le jeu de fichiers historique. « Remplacer » y met le vôtre.";
   F("grFiles").innerHTML = LIGNES.map(f=>
     `<div data-k="${f.k}">
        <span class="lab">${f.lab}</span>
@@ -4176,7 +4205,7 @@ function rendFichiers(){
     b.onclick = ()=>{
       if(b.dataset.a === "voir") return voir(f, 0);
       if(b.dataset.a === "dl")   return telecharger(f.fic);
-      choisir(f.k, !!agent);
+      choisir(f.k, !!agent && jeuVu !== null);
     };
   });
   rendScenarios();
@@ -4360,27 +4389,30 @@ const FAUTES_LIB = {
    est le meme des deux cotes ; seules changent les colonnes qu'on lui donne. */
 let anaOnglet = "ici";
 function colonneIci(){
-  const cur = scen.find(e=>e.n === vu);
-  return {lab: cur ? cur.nom : "Le planning affiché", ici:true, sim:null,
-          m:mesurer(cours, attente, annexes)};
+  const cur = varDe(vu), sc = scAffiche();
+  return {lab: cur ? (sc && variantesDe(sc).length > 1 ? sc.nom + " · " + cur.nom
+                                                       : (sc ? sc.nom : cur.nom))
+                   : "Le planning affiché",
+          ici:true, sc, va:cur, m:mesurer(cours, attente, annexes)};
 }
-function colonnesSims(){
+/* Une colonne par AUTRE scenario : sa derniere variante, celle ou son travail
+   s'est arrete. Comparer deux variantes du meme scenario est le geste des
+   pastilles du haut, pas celui de l'analyse — ici on choisit entre des jeux de
+   fichiers, et melanger les deux rendait le tableau illisible a six colonnes. */
+function colonnesAutres(){
   const out = [];
-  SIMS.forEach(s=>{
-    const d = sims[s.n]; if(!d) return;
-    const e = scenDeSim(s.n);
-    // Celle qu'on regarde est deja la colonne « ici » : la remettre la ferait
-    // se comparer a elle-meme.
-    if(e && e.n === vu) return;
+  const moi = scAffiche();
+  scenarios.forEach(sc=>{
+    if(moi && sc.id === moi.id) return;
+    const vs = variantesDe(sc);
+    if(!vs.length) return;
+    const e = vs[vs.length - 1];
     const g = [cours, attente, annexes];
     try{
-      // Ouverte, c'est SON planning qu'on mesure et plus le classeur depose :
-      // sinon l'analyse compare des scenarios que le travail a deja quittes.
-      if(e){ cours = e.cours; attente = e.attente; annexes = e.annexes || g[2]; }
-      else lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-      out.push({lab:s.n + ". " + s.court + (e && e.touche ? " ✎" : ""), sim:s, dep:d,
-                touche: !!(e && e.touche), m:mesurer(cours, attente, annexes)});
-    }catch(err){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
+      cours = e.cours; attente = e.attente; annexes = e.annexes || g[2];
+      out.push({lab: sc.nom + (e.touche ? " ✎" : ""), sc, va:e,
+                touche: !!e.touche, m:mesurer(cours, attente, annexes)});
+    }catch(err){ /* variante illisible : la colonne manque, le reste s'affiche */ }
     finally{ cours = g[0]; attente = g[1]; annexes = g[2]; }
   });
   return out;
@@ -4388,7 +4420,7 @@ function colonnesSims(){
 function rendAnalyse(){
   relirePlafondsProfs();
   const ici = cours.length ? colonneIci() : null;
-  const autres = colonnesSims();
+  const autres = colonnesAutres();
   const tous = (ici ? [ici] : []).concat(autres);
   if(!tous.length){
     F("grAnaO").innerHTML = "";
@@ -4534,29 +4566,27 @@ function detailScenarios(cols){
   const nb = v => (Math.round(v*100)/100).toLocaleString("fr-FR");
   const puce = (txt, etat) => `<span class="${etat}">${etat==="on"?"✓":etat==="off"?"—":""} ${esc(txt)}</span>`;
   return cols.map(c=>{
-    const m = c.m, s = c.sim, r = s ? RECETTES[s.n] : null;
+    const m = c.m, sc = c.sc, va = c.va, j = sc ? infosJeu(sc.jeu) : null;
     const fichiers = [], reglages = [];
-    if(s){
-      fichiers.push(["Résultat lu", c.dep.fichier + " — déposé " + c.dep.date
-        + (c.touche ? ", puis retouché sur cet écran" : "")]);
-      if(r){
-        fichiers.push(["Joueurs", r.joueurs]);
-        fichiers.push(["Contraintes", "contraintes-tennis.xlsx"]);
-        fichiers.push(["Reconduction", r.reconduction || "aucune"]);
-        fichiers.push(["Figeages", "aucun (--sans-figeages)"]);
+    const d = e => (e && e.present) ? e.date : null;
+    if(sc && sc.jeu != null){
+      fichiers.push(["Jeu de fichiers", sc.jeu ? "jeux/" + sc.jeu + "/" : "à la racine du solveur"]);
+      if(j){
+        fichiers.push(["Joueurs", "joueurs.xlsx" + (d(j.joueurs) ? " du " + d(j.joueurs) : " — absent")]);
+        fichiers.push(["Contraintes", "contraintes-tennis.xlsx"
+          + (d(j.contraintes) ? " du " + d(j.contraintes) : " — absent")]);
+        fichiers.push(["Reconduction", d(j.reconduction)
+          ? "reconduction-2027.xlsx du " + d(j.reconduction) : "aucune"]);
       }
-      reglages.push(puce("EDT 2026 reconduit", r && r.reconduction ? "on" : "off"));
-      reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
-                         (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
-      reglages.push(puce("figeages de l'écran", "off"));
-      if(c.touche) reglages.push(puce("retouches faites sur cet écran", "on"));
+      reglages.push(puce(LIB_MODE[sc.mode] || sc.mode, sc.mode === "aucune" ? "off" : "on"));
     } else {
-      fichiers.push(["Origine", (resFic ? resFic.fichier + " du " + resFic.date : "calcul inconnu")
-        + ", puis corrigé à la main sur cet écran"]);
-      reglages.push(puce("corrections manuelles comprises", "on"));
-      reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
-                         (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
+      fichiers.push(["Origine", (va && va.res ? va.res.fichier + " du " + va.res.date
+                                              : "classeur déposé à la main")]);
+      reglages.push(puce("pas de fichiers d'entrée : ce planning ne se recalcule pas", "off"));
     }
+    reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
+                       (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
+    if(c.touche) reglages.push(puce("retouché à la main sur cet écran", "on"));
     // les contraintes que le planning respecte, telles qu'on vient de les mesurer
     const dures = Object.keys(FAUTES_LIB).filter(k=>k !== "dispos");
     const tenues = dures.filter(k=>!(m.fautes[k]||[]).length);
@@ -4589,9 +4619,6 @@ function detailScenarios(cols){
           <li>affinités : ${nb(m.dem.avec[0])} tenues sur ${nb(m.dem.avec[1] - m.dem.avec[2])} appariables${
               m.dem.avec[2] ? `, <b>${nb(m.dem.avec[2])} inertes</b>` : ""}</li>
           <li>prof souhaité : ${nb(m.dem.prof[0])} obtenus sur ${nb(m.dem.prof[1] - m.dem.prof[2])} demandés</li>
-          ${s && c.dep && c.dep.syn ? `<li>le solveur s'est arrêté sur « ${
-            esc(String(c.dep.syn["statut du solveur"] || "?"))} » après ${
-            esc(String(c.dep.syn["temps de resolution (s)"] || "?"))} s de recherche</li>` : ""}
         </ul>
       </div></details>`;
   }).join("");
@@ -4900,8 +4927,12 @@ function ligneScenario(s, page){
     : !j ? `dossier « ${esc(s.jeu)} » introuvable à côté du solveur`
     : [d(j.joueurs) ? "joueurs " + d(j.joueurs) : "pas de joueurs.xlsx",
        d(j.contraintes) ? "contraintes " + d(j.contraintes) : "pas de contraintes",
-       d(j.reconduction) ? "reconduction " + d(j.reconduction) : "sans reconduction",
-      ].join(" · ") + " · " + (LIB_MODE[s.mode] || s.mode);
+       // Le mode ne se dit que s'il y a une reconduction a lire : sinon la ligne
+       // repetait deux fois « sans reconduction ».
+       d(j.reconduction)
+         ? `reconduction ${d(j.reconduction)} (${s.mode === "stricte" ? "stricte" : "relâchée si besoin"})`
+         : "sans reconduction",
+      ].join(" · ");
   const nb = vs.length
     ? `${vs.length} planning${vs.length > 1 ? "s" : ""}` +
       (vs.some(e=>e.touche) ? ", retouché" + (vs.filter(e=>e.touche).length > 1 ? "s" : "") : "")
@@ -4920,17 +4951,15 @@ function ligneScenario(s, page){
       <button class="mini" data-b="x" title="Supprimer ce scénario">✕</button>
     </span></div>`;
 }
+/* Relire le resultat qui est deja dans le dossier du scenario : une variante de
+   plus, sans relancer le solveur. */
 async function reprendreResultat(b){
+  const s = scPage();
+  if(!s || s.jeu == null) return;
   if(b){ b.disabled = true; b.textContent = "Lecture…"; }
   try{
-    delete CACHE[cleFic("resultat-cca.xlsx", jeuVu)];
-    const r = await jsonAgent("/resultat");
-    lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
-    resFic = {fichier:r.nom,
-              date:(agent && agent.resultat && agent.resultat.date) || "lu sur la machine"};
-    instantane("Calcul");
-    sel = null; selAtt = null; moving = null; forcing = null;
-    ecranLance = false; sauver(); rend();
+    delete CACHE[cleFic("resultat-cca.xlsx", s.jeu)];
+    await chargerResultat(s, true);
   }catch(e){
     F("grErr").textContent = "Résultat illisible : " + e.message;
     rend();
@@ -4983,6 +5012,7 @@ function choisir(quoi, surDisque){
       const wb = XLSX.read(buf, {type:"array"});
       const quand = new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
       const nom = quoi === "jou" ? "joueurs.xlsx"
+                : quoi === "rec" ? "reconduction-2027.xlsx"
                 : quoi === "res" ? "resultat-cca.xlsx" : "contraintes-tennis.xlsx";
       let b = "", u = new Uint8Array(buf);
       for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
@@ -5019,18 +5049,26 @@ function nouveauN(){ return scen.reduce((m,e)=>Math.max(m, e.n||0), 0) + 1; }
    deux annexes et le classeur d'ou il sort. Les annexes ne se retouchent pas,
    mais elles different d'une simulation a l'autre — sans elles, revenir sur une
    pastille afficherait les totaux de la precedente. */
-function poserScen(nom, o){
+/* Une variante appartient toujours a un scenario : sans `sc` elle n'apparait
+   dans aucune rangee et devient un planning fantome. Faute de scenario connu,
+   on en fabrique un — c'est le cas d'un tout premier calcul. */
+function poserScen(nom, sc){
+  if(!sc){
+    const a = scAffiche() || scenarios[0];
+    sc = a ? a.id : nouveauScenario("Premier scénario", agent ? "" : null).id;
+  }
   const n = nouveauN();
-  const e = Object.assign({n, nom, sim:null, touche:false,
+  const e = {n, nom, sc, touche:false,
     cours:clone(cours), attente:clone(attente), annexes:clone(annexes),
-    res: resFic ? {fichier:resFic.fichier, date:resFic.date} : null}, o || {});
+    res: resFic ? {fichier:resFic.fichier, date:resFic.date} : null};
   scen.push(e);
   vu = n;
   return e;
 }
-function instantane(nom){
+function instantane(nom, sc){
   if(!nom) return;
-  poserScen(nom + " " + nouveauN());
+  const s = sc ? scenarioDe(sc) : scAffiche();
+  poserScen(s ? nomVariante(s) : nom + " " + nouveauN(), s ? s.id : null);
 }
 /* Passer d'une pastille a l'autre : tout ce qui decrit le planning affiche
    change en meme temps, y compris le classeur d'origine — le header et la liste
@@ -5049,12 +5087,18 @@ function rendPills(){
   const w = F("grPills");
   w.innerHTML = "";
   if(!cours.length) return;
-  // « Calcul 3 » tout seul dans la barre ne dit pas de quoi il est le nom. Le
-  // mot devant le dit, et separe ces pastilles-la des boutons voisins.
+  // La rangee ne montre que les variantes du scenario affiche : deux plannings
+  // qui ne partent pas des memes fichiers ne se comparent pas d'un clic, et
+  // melanger quatre scenarios de trois variantes rendait la rangee illisible.
+  // Le nom du scenario tient la place du mot « Scenarios » : c'est lui qui dit
+  // de quoi ces pastilles-la sont les variantes.
+  const sc = scAffiche();
   const lb = document.createElement("span");
-  lb.className = "grpllb"; lb.textContent = "Scénarios";
+  lb.className = "grpllb";
+  lb.textContent = sc ? sc.nom : "Variantes";
+  lb.title = sc ? "Les plannings issus du scénario « " + sc.nom + " »" : "";
   w.appendChild(lb);
-  scen.forEach(e=>{
+  variantesDe(sc).forEach(e=>{
     const g = document.createElement("span");
     g.className = "grpg";
     const b = document.createElement("button");
@@ -5076,7 +5120,7 @@ function rendPills(){
     g.appendChild(cr);
     // Un calcul depasse encombre la barre et n'aide plus a comparer. On peut
     // l'enlever — sauf le dernier, sinon l'ecran perdrait le planning affiche.
-    if(scen.length > 1){
+    if(variantesDe(sc).length > 1){
       const x = document.createElement("button");
       x.className = "grpillx"; x.textContent = "✕";
       x.title = "Supprimer « " + e.nom + " »";
@@ -5184,7 +5228,10 @@ function rend(){
   F("grListe").style.display = vueListe ? "block" : "none";
   vueListe ? rendListe() : rendWeek();
   rendSide(); rendBar();
-  F("grRelance").style.display = agent ? "block" : "none";
+  // Regenerer n'a de sens que sur un scenario qui a des fichiers d'entree : un
+  // classeur depose a la main n'a rien a redonner au solveur.
+  F("grRelance").style.display =
+    (agent && scAffiche() && scAffiche().jeu != null) ? "block" : "none";
   majTuile();
 }
 function majTuile(){
@@ -7602,6 +7649,8 @@ function majLance(){
     ? `Agent local détecté : le calcul tourne sur cette machine, et les fichiers ci-dessus sont
        ceux qu'il lit à côté de <code>solve_cca.py</code>.`
     : "";
+  const sc = scPage();
+  if(F("grRec") && sc) F("grRec").value = sc.mode || "souple";
   const dejaLa = cours.length > 0;
   F("grEmptyT").textContent = dejaLa ? "Les scénarios" : "Constituer les groupes";
   F("grEmptyS").textContent = dejaLa
@@ -7611,22 +7660,29 @@ function majLance(){
   // fichiers et rien pour les calculer, comme si la page etait tronquee. Il
   // reste donc visible, grise, et c'est LUI qui dit pourquoi il ne part pas.
   b.style.display = "flex";
-  b.classList.toggle("ko", !agent);
-  F("grTemps").disabled = !agent;
-  if(!agent){
+  const calculable = !!agent && !!sc && sc.jeu != null;
+  b.classList.toggle("ko", !calculable);
+  F("grTemps").disabled = !calculable;
+  F("grRec").disabled = !calculable;
+  if(!calculable){
     F("grLanceT").textContent = "Lancer le calcul";
-    F("grLanceS").textContent = "Impossible depuis ce poste : le solveur tourne sur l'ordinateur "
-      + "du club, et son résultat arrive ici par la base partagée. Pour calculer d'ici, lancez "
-      + "python agent.py à côté de solve_cca.py.";
+    F("grLanceS").textContent = !agent
+      ? "Impossible depuis ce poste : le solveur tourne sur l'ordinateur du club, et son "
+        + "résultat arrive ici par la base partagée. Pour calculer d'ici, lancez "
+        + "python agent.py à côté de solve_cca.py."
+      : !sc ? "Créez d'abord un scénario : c'est lui qui porte les fichiers du calcul."
+      : "Ce scénario vient d'un classeur déposé, sans fichiers d'entrée. Créez-en un nouveau "
+        + "pour repartir d'un joueurs.xlsx et d'un contraintes-tennis.xlsx.";
     F("grGo").disabled = true;
     rendFichiers();
     return;
   }
-  F("grLanceT").textContent = "Lancer le calcul sur cette machine";
-  const j = agent.joueurs, c = agent.contraintes;
+  F("grLanceT").textContent = `Calculer « ${sc.nom} » sur cette machine`;
+  const inf = infosJeu(sc.jeu) || {};
+  const j = inf.joueurs || {}, c = inf.contraintes || {};
   F("grLanceS").textContent = j.present
     ? `joueurs.xlsx du ${j.date}` + (c.present ? ` · contraintes du ${c.date}` : " · pas de contraintes")
-    : "joueurs.xlsx introuvable à côté du solveur";
+    : "joueurs.xlsx introuvable dans ce jeu de fichiers";
   F("grGo").disabled = !j.present || ctlRestants() > 0;
   majControle();
   F("grRelance").style.display = cours.length ? "block" : "none";
@@ -7911,15 +7967,23 @@ async function enregistrerControle(){
   }
 }
 
-async function lancer(){
+async function lancer(sc){
+  sc = sc || scPage();
+  if(!sc || sc.jeu == null){
+    F("grErr").textContent = "Ce scénario n'a pas de fichiers d'entrée : rien à calculer.";
+    return false;
+  }
   try{
     if(cours.length){                       // les figeages partent avant le calcul
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, feuilleFigeages(), "Figeages");
-      await jsonAgent("/figeages", {contenu: XLSX.write(wb, {bookType:"xlsx", type:"base64"})});
+      await jsonAgent("/figeages", {jeu: sc.jeu,
+        contenu: XLSX.write(wb, {bookType:"xlsx", type:"base64"})});
     }
     const t = +F("grTemps").value || 1800;
-    await jsonAgent("/lancer", {temps:t});
+    const rec = (F("grRec") && F("grRec").value) || sc.mode || "souple";
+    sc.mode = rec;
+    await jsonAgent("/lancer", {temps:t, jeu: sc.jeu, reconduction: rec});
     ecranCalcul(t);
     reprendreSuivi();
     return true;
@@ -8053,7 +8117,7 @@ async function relancerDepuisPlanning(){
   const b = F("grRelGo"), lib = b.textContent;
   b.disabled = true; b.textContent = "Lancement…";
   F("grTemps").value = F("grRelT").value;   // une seule source pour le temps de calcul
-  const ok = await lancer();
+  const ok = await lancer(scAffiche());
   b.disabled = false; b.textContent = lib;
   if(ok) F("grRelBg").classList.remove("open");
   else {
@@ -8110,19 +8174,24 @@ function reprendreSuivi(){
 async function terminer(d){
   try{
     if(!ctr){
-      const c = await jsonAgent("/contraintes").catch(()=>null);
+      const c = await jsonAgent("/contraintes?jeu="
+        + encodeURIComponent((d && d.jeu) || "")).catch(()=>null);
       if(c && c.contenu){
         lireContraintes(XLSX.read(Uint8Array.from(atob(c.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
         ctr.fichier = c.nom; ctr.date = "lu sur la machine";
       }
     }
-    delete CACHE[cleFic("resultat-cca.xlsx", jeuVu)];
-    delete CACHE[cleFic("figeages-cca.xlsx", jeuVu)];
-    const r = await jsonAgent("/resultat");
+    // Le jeu vient du calcul lui-meme, pas de ce que la page montre : entre le
+    // lancement et la fin, une demi-heure a pu passer et l'ecran changer.
+    const jeu = (d && d.jeu != null) ? d.jeu : jeuVu;
+    const sc = scenarios.find(x=>x.jeu === jeu) || scPage();
+    delete CACHE[cleFic("resultat-cca.xlsx", jeu)];
+    delete CACHE[cleFic("figeages-cca.xlsx", jeu)];
+    const r = await jsonAgent("/resultat?jeu=" + encodeURIComponent(jeu || ""));
     lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
     resFic = {fichier:r.nom, date:new Date().toLocaleString("fr-FR",
       {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
-    instantane("Calcul");
+    poserScen(sc ? nomVariante(sc) : "Calcul", sc ? sc.id : null);
     sel = null; selAtt = null; moving = null;
     enCalcul = false; ecranLance = false; sauver(); rend();
   }catch(e){
