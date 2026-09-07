@@ -855,6 +855,15 @@
   .grfam.plie .chev{transform:rotate(-90deg)}
   .grfam.plie .grfamb{display:none}
   .grfamb{padding:0 7px 7px}
+  /* L'intertitre d'un bloc de niveau : un filet et une lettre, pas une
+     deuxieme tuile. Il separe sans peser — dans une famille de seize, sept
+     blocs qui auraient l'air de sept tuiles rendraient la liste illisible. */
+  .grnv{display:flex;align-items:center;gap:7px;margin:10px 5px 3px;
+    font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    color:var(--muted)}
+  .grnv i{flex:1;height:1px;background:var(--line)}
+  .grnv b{font-weight:700;font-variant-numeric:tabular-nums}
+  .grleg + .grnv{margin-top:2px}
   @media(prefers-reduced-motion:reduce){.grfamh .chev{transition:none}}
   /* La tuile de tete : elle ne classe pas un probleme, elle propose une
      decision. Meme gabarit que les autres, cadre plein pour qu'on la lise
@@ -922,6 +931,9 @@
   .grsim .fic{display:block;color:var(--muted);font-size:12px;margin-top:3px}
   .grsim .acts{flex:none;margin-left:auto}
   .grsim .acts button{padding:4px 10px;font-size:12px;white-space:nowrap}
+  .grsim .fic .ouv{color:var(--accent);font-weight:600}
+  .grsimh .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .grsimh .acts button{font-size:12px;padding:4px 10px}
   .grsimt{padding:10px 12px;overflow:auto}
   .grana{width:min(1000px,96vw)}
   .grana h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
@@ -4053,15 +4065,24 @@ const FAUTES_LIB = {
 function rendAnalyse(){
   relirePlafondsProfs();
   const cols = [];
-  if(cours.length) cols.push({lab:"Planning actuel", ici:true, sim:null,
-    m:mesurer(cours, attente, annexes)});
+  const cur = scen.find(e=>e.n === vu);
+  if(cours.length) cols.push({lab: cur ? "Ici · " + cur.nom : "Planning actuel",
+    ici:true, sim:null, m:mesurer(cours, attente, annexes)});
   SIMS.forEach(s=>{
     const d = sims[s.n]; if(!d) return;
+    const e = scenDeSim(s.n);
+    // Celle qu'on regarde est deja la premiere colonne : la remettre ici la
+    // ferait se comparer a elle-meme.
+    if(e && e.n === vu) return;
     const g = [cours, attente, annexes];
     try{
-      lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-      cols.push({lab:s.n + ". " + s.court, sim:s, dep:d, m:mesurer(cours, attente, annexes)});
-    }catch(e){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
+      // Ouverte, c'est SON planning qu'on mesure et plus le classeur depose :
+      // sinon l'analyse compare des simulations que le travail a deja quittees.
+      if(e){ cours = e.cours; attente = e.attente; annexes = e.annexes || g[2]; }
+      else lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
+      cols.push({lab:s.n + ". " + s.court + (e && e.touche ? " ✎" : ""), sim:s, dep:d,
+                 touche: !!(e && e.touche), m:mesurer(cours, attente, annexes)});
+    }catch(err){ /* classeur illisible : la colonne manque, le reste s'affiche */ }
     finally{ cours = g[0]; attente = g[1]; annexes = g[2]; }
   });
   F("grAnaN").textContent = cols.length
@@ -4188,7 +4209,8 @@ function detailScenarios(cols){
     const m = c.m, s = c.sim, r = s ? RECETTES[s.n] : null;
     const fichiers = [], reglages = [];
     if(s){
-      fichiers.push(["Résultat lu", c.dep.fichier + " — déposé " + c.dep.date]);
+      fichiers.push(["Résultat lu", c.dep.fichier + " — déposé " + c.dep.date
+        + (c.touche ? ", puis retouché sur cet écran" : "")]);
       if(r){
         fichiers.push(["Joueurs", r.joueurs]);
         fichiers.push(["Contraintes", "contraintes-tennis.xlsx"]);
@@ -4199,6 +4221,7 @@ function detailScenarios(cols){
       reglages.push(puce("affinités appariables : " + nb(m.dem.avec[1] - m.dem.avec[2]),
                          (m.dem.avec[1] - m.dem.avec[2]) ? "on" : "off"));
       reglages.push(puce("figeages de l'écran", "off"));
+      if(c.touche) reglages.push(puce("retouches faites sur cet écran", "on"));
     } else {
       fichiers.push(["Origine", (resFic ? resFic.fichier + " du " + resFic.date : "calcul inconnu")
         + ", puis corrigé à la main sur cet écran"]);
@@ -4392,33 +4415,49 @@ function resumeSim(syn, wb){
 function rendSims(){
   const w = F("grSims"); if(!w) return;
   const pretes = SIMS.filter(s=>sims[s.n]);
+  const aOuvrir = pretes.filter(s=>!scenDeSim(s.n));
   const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
   w.innerHTML =
     `<div class="grsimh"><b>Cinq simulations à comparer</b>
        <span>Le même calcul quatre fois, avec ou sans l'emploi du temps 2026 reconduit,
        avec ou sans les affinités relevées par Loïc — et une cinquième qui repart de la grille
        de Loïc brute, avant les arbitrages pris à la main. Déposez en face de chacune le classeur
-       que <code>simulations.command</code> a produit ; « Ouvrir » amène celle-là sur l'écran
-       des groupes, sans toucher aux trois autres.</span></div>` +
+       que <code>simulations.command</code> a produit. Les cinq peuvent être ouvertes en même
+       temps : chacune prend sa pastille dans la rangée « Calculs », en haut de l'écran des
+       groupes, et garde pour elle seule les cours qu'on y déplace.</span>
+       <span class="acts">
+         <button class="mini" data-t="lot">Déposer les cinq classeurs…</button>
+         <button class="mini" data-t="tout"${aOuvrir.length ? "" : " disabled"}
+           title="Ouvrir d'un coup les simulations déposées, chacune dans sa pastille"
+           >Tout ouvrir${aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
+       </span></div>` +
     SIMS.map(s=>{
-      const d = sims[s.n];
-      return `<div class="grsim${d && resFic && resFic.fichier === d.fichier ? " on" : ""}" data-n="${s.n}">
+      const d = sims[s.n], e = scenDeSim(s.n);
+      const dit = !d
+        ? "aucun classeur — attendu : " + esc(s.fic)
+        : esc(d.fichier) + " — déposé " + esc(d.date) + (d.resume ? " · " + esc(d.resume) : "")
+          + (e ? `<b class="ouv"> · ouvert dans « ${esc(e.nom)} »${e.touche ? ", retouché" : ""}</b>` : "");
+      return `<div class="grsim${e && e.n === vu ? " on" : ""}" data-n="${s.n}">
         <span class="num">${s.n}</span>
         <span class="tx"><b>${esc(s.titre)}</b>
           <span class="tags">${s.tags.map(tag).join("")}</span>
-          <span class="fic">${d ? esc(d.fichier) + " — déposé " + esc(d.date)
-                                   + (d.resume ? " · " + esc(d.resume) : "")
-                                : "aucun classeur — attendu : " + esc(s.fic)}</span></span>
-        <span class="acts">${d
-          ? `<button class="mini" data-a="ouvrir">Ouvrir</button>
-             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`
-          : `<button class="mini" data-a="deposer">Déposer…</button>`}</span>
+          <span class="fic">${dit}</span></span>
+        <span class="acts">${!d
+          ? `<button class="mini" data-a="deposer">Déposer…</button>`
+          : `<button class="mini" data-a="ouvrir">${e ? (e.n === vu ? "Revenir dessus" : "Reprendre") : "Ouvrir"}</button>
+             ${e ? `<button class="mini" data-a="repartir"
+                title="Oublier les retouches et relire le classeur déposé">↺</button>` : ""}
+             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`}</span>
       </div>`;
     }).join("") + tableauSims(pretes);
   w.querySelectorAll("[data-a]").forEach(b=>{
     const n = +b.closest("[data-n]").dataset.n;
-    b.onclick = ()=> b.dataset.a === "deposer" ? deposerSim(n)
-                   : b.dataset.a === "ouvrir"  ? ouvrirSim(n) : retirerSim(n);
+    b.onclick = ()=> b.dataset.a === "deposer"  ? deposerSim(n)
+                   : b.dataset.a === "ouvrir"   ? ouvrirSim(n)
+                   : b.dataset.a === "repartir" ? repartirSim(n) : retirerSim(n);
+  });
+  w.querySelectorAll("[data-t]").forEach(b=>{
+    b.onclick = ()=> b.dataset.t === "lot" ? deposerLot() : ouvrirTout();
   });
 }
 function tableauSims(pretes){
@@ -4426,61 +4465,168 @@ function tableauSims(pretes){
   // se lirait comme un resultat alors que c'en est un parmi quatre.
   if(pretes.length < 2) return "";
   const val = (s, k) => { const v = (sims[s.n].syn || {})[k]; return (v == null || v === "") ? "—" : esc(v); };
+  // Une colonne retouchee garde les chiffres du calcul : ce sont ceux du
+  // classeur, et l'onglet Synthese ne se recalcule pas. Le crayon le dit,
+  // plutot que de melanger dans une meme colonne des lignes recalculees et
+  // des lignes d'origine — c'est l'Analyse qui mesure le planning d'aujourd'hui.
+  const tete = s => {
+    const e = scenDeSim(s.n);
+    return e && e.touche
+      ? `<th title="Chiffres du calcul. Les retouches faites depuis se lisent dans 🔬 Analyse.">${
+          s.n}. ${esc(s.court)} ✎</th>`
+      : `<th>${s.n}. ${esc(s.court)}</th>`;
+  };
   return `<div class="grsimt"><table class="grtable">
-    <thead><tr><th>Indicateur</th>${pretes.map(s=>`<th>${s.n}. ${esc(s.court)}</th>`).join("")}</tr></thead>
+    <thead><tr><th>Indicateur</th>${pretes.map(tete).join("")}</tr></thead>
     <tbody>${IND_SIM.map(([k, lab])=>
       `<tr><td>${lab}</td>${pretes.map(s=>`<td class="n">${val(s, k)}</td>`).join("")}</tr>`).join("")}</tbody>
     </table></div>`;
 }
 
-function deposerSim(n){
-  const i = document.createElement("input");
-  i.type = "file"; i.accept = ".xlsx,.xls";
-  i.onchange = async ()=>{
-    const f = i.files[0]; if(!f) return;
-    F("grErr").textContent = "";
-    try{
-      const buf = await f.arrayBuffer();
-      const wb = XLSX.read(buf, {type:"array"});
-      if(!aoa(wb, "Cours"))
-        throw new Error("onglet « Cours » introuvable. Est-ce bien un résultat du solveur ?");
-      // On garde le classeur, pas sa lecture : c'est lui qu'on relit a
-      // l'ouverture, et il reste le fichier que Loic peut rouvrir dans Excel.
-      let b = ""; const u = new Uint8Array(buf);
-      for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
-      const syn = lireSynthese(wb);
-      const garde = sims[n];
-      sims[n] = {fichier: f.name, b64: btoa(b), syn, resume: resumeSim(syn, wb),
-        date: new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
-      const err = sauverSims();
-      if(err){ if(garde) sims[n] = garde; else delete sims[n]; F("grErr").textContent = err; }
-      rendSims();
-    }catch(e){ F("grErr").textContent = "Fichier refusé : " + e.message; }
-  };
-  i.click();
+/* -------- deposer les classeurs --------
+   Le meme travail pour un depot a l'unite et pour le lot : c'est ici qu'un
+   classeur qui n'est pas un resultat du solveur est refuse, avant d'occuper
+   une case. On garde le classeur, pas sa lecture : c'est lui qu'on relit a
+   l'ouverture, et il reste le fichier que Loic peut rouvrir dans Excel. */
+async function rangerSim(n, f){
+  const buf = await f.arrayBuffer();
+  const wb = XLSX.read(buf, {type:"array"});
+  if(!aoa(wb, "Cours"))
+    throw new Error("onglet « Cours » introuvable. Est-ce bien un résultat du solveur ?");
+  let b = ""; const u = new Uint8Array(buf);
+  for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
+  const syn = lireSynthese(wb);
+  sims[n] = {fichier: f.name, b64: btoa(b), syn, resume: resumeSim(syn, wb),
+    date: new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
+}
+function choisirFichiers(plusieurs){
+  return new Promise(res=>{
+    const i = document.createElement("input");
+    i.type = "file"; i.accept = ".xlsx,.xls"; i.multiple = !!plusieurs;
+    i.onchange = ()=> res([...i.files]);
+    i.click();
+  });
+}
+async function deposerSim(n){
+  const [f] = await choisirFichiers(false); if(!f) return;
+  F("grErr").textContent = "";
+  const garde = sims[n];
+  try{
+    await rangerSim(n, f);
+    const err = sauverSims();
+    if(err){ if(garde) sims[n] = garde; else delete sims[n]; F("grErr").textContent = err; }
+  }catch(e){ F("grErr").textContent = "Fichier refusé : " + e.message; }
+  rendSims();
+}
+/* Les cinq d'un coup. `simulations.command` les ecrit sous des noms fixes :
+   c'est le nom du fichier qui dit dans quelle case il va. Un classeur renomme
+   n'atterrit pas dans la mauvaise ligne — il est laisse de cote et se depose
+   a l'unite, la ou on voit ce qu'on fait. */
+function caseDe(nom){
+  const b = String(nom).toLowerCase();
+  const s = SIMS.find(x=>x.fic.toLowerCase() === b);
+  if(s) return s.n;
+  const m = b.match(/r[ée]sultat[ _-]*(\d)/);
+  return m && SIMS.some(x=>x.n === +m[1]) ? +m[1] : 0;
+}
+async function deposerLot(){
+  const fs = await choisirFichiers(true); if(!fs.length) return;
+  F("grErr").textContent = "";
+  const garde = Object.assign({}, sims), ko = [];
+  let mis = 0;
+  for(const f of fs){
+    const n = caseDe(f.name);
+    if(!n){ ko.push(f.name + " (nom non reconnu)"); continue; }
+    try{ await rangerSim(n, f); mis++; }
+    catch(e){ ko.push(f.name + " (" + e.message + ")"); }
+  }
+  const err = mis ? sauverSims() : "";
+  if(err){ sims = garde; F("grErr").textContent = err; }
+  else F("grErr").textContent = ko.length
+    ? `${mis} classeur(s) rangé(s). Laissé de côté : ${ko.join(" · ")}`
+    : "";
+  rendSims();
+}
+
+/* -------- une simulation, un planning modifiable --------
+   Ouvrir ne remplace plus l'ecran : la simulation prend sa pastille dans la
+   rangee « Calculs », a cote des autres. Les cinq peuvent donc etre chargees
+   ensemble, chacune garde les cours qu'on y deplace, et passer de l'une a
+   l'autre ne perd rien. La pastille retient le classeur d'ou elle vient —
+   sans lui, le header et cette liste annonceraient le fichier de la
+   simulation d'avant. */
+function scenDeSim(n){ return scen.find(e=>e.sim === n); }
+function litSim(n){
+  const d = sims[n]; if(!d) throw new Error("aucun classeur déposé");
+  lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
+  resFic = {fichier: d.fichier, date: d.date};
+}
+function chargerSim(n){
+  litSim(n);
+  return poserScen(n + ". " + SIMS.find(x=>x.n === n).court, {sim:n});
 }
 function ouvrirSim(n){
-  const d = sims[n]; if(!d) return;
+  if(!sims[n]) return;
   F("grErr").textContent = "";
-  try{
-    lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-    resFic = {fichier: d.fichier, date: d.date};
-    // La barre des calculs repart a une seule pastille, a son nom : sinon les
-    // « Calcul 3 » de la simulation d'avant y resteraient, et un clic ramenerait
-    // un planning qui n'est plus celui qu'on regarde.
-    scen = [{n:1, nom: "Simulation " + n,
-             cours: JSON.parse(JSON.stringify(cours)),
-             attente: JSON.parse(JSON.stringify(attente))}];
-    vu = 1;
-    sel = null; selAtt = null; moving = null; forcing = null;
-    ecranLance = false; sauver(); rend();
-  }catch(e){ F("grErr").textContent = "Simulation illisible : " + e.message; }
+  let e = scenDeSim(n);
+  if(!e){
+    const g = [cours, attente, annexes, resFic];
+    try{ e = chargerSim(n); }
+    catch(err){
+      cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
+      F("grErr").textContent = "Simulation illisible : " + err.message; return;
+    }
+  }
+  ecranLance = false;
+  allerA(e);
+}
+function ouvrirTout(){
+  F("grErr").textContent = "";
+  const a = SIMS.filter(s=>sims[s.n] && !scenDeSim(s.n));
+  if(!a.length) return;
+  const g = [cours, attente, annexes, resFic], ko = [];
+  a.forEach(s=>{ try{ chargerSim(s.n); }catch(err){ ko.push(s.n + " : " + err.message); } });
+  // `chargerSim` laisse les globales sur la derniere lue : on les rend a ce
+  // qui etait affiche, puis `allerA` pose franchement le planning demande.
+  cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
+  if(ko.length) F("grErr").textContent = "Simulation illisible — " + ko.join(" · ");
+  const prem = scenDeSim(a[0].n) || scen.find(e=>e.sim != null);
+  if(!prem){ rend(); return; }
+  ecranLance = false;
+  allerA(prem);
+}
+/* Reprendre le classeur tel qu'il a ete calcule, apres l'avoir retouche : la
+   pastille reste la meme (son nom, sa place dans la rangee), c'est son contenu
+   qui repart de zero. Sans ce geste, il faudrait retirer la simulation et la
+   redeposer pour revenir au point de depart. */
+function repartirSim(n){
+  const e = scenDeSim(n); if(!e) return ouvrirSim(n);
+  if(e.touche && !confirm(`Repartir du classeur déposé pour « ${e.nom} » ?\n\n`
+    + "Les retouches faites sur cette simulation seront perdues. "
+    + "Les autres calculs ne changent pas.")) return;
+  const g = [cours, attente, annexes, resFic];
+  try{ litSim(n); }
+  catch(err){
+    cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
+    F("grErr").textContent = "Simulation illisible : " + err.message; return;
+  }
+  e.cours = clone(cours); e.attente = clone(attente); e.annexes = clone(annexes);
+  e.res = {fichier: resFic.fichier, date: resFic.date}; e.touche = false;
+  ecranLance = false;
+  allerA(e);
 }
 function retirerSim(n){
-  const d = sims[n];
-  if(!d || !confirm(`Retirer « ${d.fichier} » de la simulation ${n} ?\nLe fichier reste sur l'ordinateur.`)) return;
+  const d = sims[n]; if(!d) return;
+  const e = scenDeSim(n);
+  // Le classeur s'en va, le planning reste : c'est du travail, et il ne se
+  // refabrique pas. Sa pastille perd seulement son lien avec la case — sinon
+  // un classeur redepose ici rouvrirait l'ancien planning au lieu du nouveau.
+  if(!confirm(`Retirer « ${d.fichier} » de la simulation ${n} ?\nLe fichier reste sur l'ordinateur.`
+    + (e ? `\n\nLe calcul « ${e.nom} » reste dans la rangée du haut avec ses retouches, `
+         + "mais il ne pourra plus repartir de ce classeur." : ""))) return;
   delete sims[n];
   sauverSims();
+  if(e){ e.sim = null; sauver(); }
   rendSims();
 }
 
@@ -4572,11 +4718,40 @@ function choisir(quoi, surDisque){
 }
 
 /* ---------------- scenarios ---------------- */
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+/* Le numero d'une pastille ne se deduit pas de la longueur de la rangee : en
+   supprimer une du milieu ferait ressortir un numero deja pris, et deux
+   pastilles au meme numero, c'est un clic qui ramene l'autre planning. */
+function nouveauN(){ return scen.reduce((m,e)=>Math.max(m, e.n||0), 0) + 1; }
+/* Une pastille garde tout ce qui fait un planning : les cours, l'attente, les
+   deux annexes et le classeur d'ou il sort. Les annexes ne se retouchent pas,
+   mais elles different d'une simulation a l'autre — sans elles, revenir sur une
+   pastille afficherait les totaux de la precedente. */
+function poserScen(nom, o){
+  const n = nouveauN();
+  const e = Object.assign({n, nom, sim:null, touche:false,
+    cours:clone(cours), attente:clone(attente), annexes:clone(annexes),
+    res: resFic ? {fichier:resFic.fichier, date:resFic.date} : null}, o || {});
+  scen.push(e);
+  vu = n;
+  return e;
+}
 function instantane(nom){
   if(!nom) return;
-  scen.push({n:scen.length+1, nom:nom+" "+(scen.length+1),
-    cours:JSON.parse(JSON.stringify(cours)), attente:JSON.parse(JSON.stringify(attente))});
-  vu = scen.length;
+  poserScen(nom + " " + nouveauN());
+}
+/* Passer d'une pastille a l'autre : tout ce qui decrit le planning affiche
+   change en meme temps, y compris le classeur d'origine — le header et la liste
+   des simulations le lisent. L'historique d'annulation, lui, se vide : il porte
+   les gestes faits sur l'AUTRE planning, et « annuler » y ramenerait des cours
+   qui n'appartiennent pas a celui-ci. */
+function allerA(e){
+  cours = clone(e.cours); attente = clone(e.attente);
+  if(e.annexes) annexes = clone(e.annexes);
+  if(e.res) resFic = {fichier:e.res.fichier, date:e.res.date};
+  vu = e.n; hist = [];
+  sel = null; selAtt = null; moving = null; forcing = null; trouve = null;
+  sauver(); rend();
 }
 function rendPills(){
   const w = F("grPills");
@@ -4593,13 +4768,9 @@ function rendPills(){
     const b = document.createElement("button");
     b.className = "grpill" + (e.n===vu?" on":"");
     b.textContent = e.nom;
-    b.title = "Revenir à « " + e.nom + " » — double-cliquez pour le renommer";
-    b.onclick = ()=>{
-      cours = JSON.parse(JSON.stringify(e.cours));
-      attente = JSON.parse(JSON.stringify(e.attente));
-      vu = e.n; sel = null; selAtt = null; moving = null; trouve = null;
-      sauver(); rend();
-    };
+    b.title = "Revenir à « " + e.nom + " »" + (e.res ? " — " + e.res.fichier : "")
+      + " — double-cliquez pour le renommer";
+    b.onclick = ()=> allerA(e);
     // Renommer se faisait par un crayon pose apres TOUTE la rangee : il ne
     // designait rien, et a cette taille il se lisait comme un trombone. Le
     // geste vit maintenant sur la pastille elle-meme.
@@ -4707,7 +4878,11 @@ function annuler(){
 
 function memoriser(nom){       // apres une retouche : on garde une trace nommee
   const cur = scen.find(e=>e.n===vu);
-  if(cur){ cur.cours = JSON.parse(JSON.stringify(cours)); cur.attente = JSON.parse(JSON.stringify(attente)); }
+  // `touche` separe une simulation telle que le solveur l'a rendue d'une
+  // simulation ou l'on a deplace des cours : la liste des simulations le dit,
+  // et l'analyse mesure alors le planning retouche plutot que le classeur.
+  if(cur){ cur.cours = clone(cours); cur.attente = clone(attente);
+           cur.annexes = clone(annexes); cur.touche = true; }
   sauver();
 }
 
@@ -6069,7 +6244,29 @@ function rendSide(){
          <span class="why"><span class="grjrs" aria-label="jours déclarés">${js}</span>${dit}</span></span>
      </button>`;
   };
-  // dans chaque famille de motif, les anciens d'abord : eux qu'on refuse
+  /* Dans une famille, l'ordre des noms ne dit rien : ce qui decide, c'est le
+     niveau. Deux joueurs du meme niveau se regardent — ils tiennent dans le
+     meme cours, ils comptent ensemble pour en ouvrir un. Deux niveaux
+     differents ne se remplacent jamais, et lus en alternance ils obligent a
+     refaire le tri de tete a chaque ligne. On empile donc des blocs de niveau,
+     du plus faible au plus fort — l'ordre meme des paliers du club, ou AB est
+     « debutantes » et MNOPQ « 4/6 et au-dessus » : les lettres de LETTRES_N
+     montent avec le niveau, ne pas les retourner. Le niveau inconnu ferme la
+     marche, c'est une fiche a completer et pas un groupe a faire. */
+  const parNiveau = gens=>{
+    const bl = [];
+    gens.forEach(x=>{
+      const n = String(x[0].niveau||"").trim().toUpperCase();
+      let b = bl.find(o=>o.n===n);
+      if(!b) bl.push(b = {n, gens:[]});
+      b.gens.push(x);
+    });
+    // 99 pour le niveau absent, 98 pour une lettre hors nomenclature : les deux
+    // ferment la marche, mais « rien d'ecrit » se lit apres « ecrit, pas compris ».
+    const rang = n=>{ if(!n) return 99; const i = LETTRES_N.indexOf(n); return i<0 ? 98 : i; };
+    return bl.sort((a,b)=>rang(a.n)-rang(b.n));
+  };
+  // dans chaque bloc de niveau, les anciens d'abord : eux qu'on refuse
   // pesent plus lourd que les nouveaux, ils ne doivent pas se perdre dans le tas
   // La tuile de tete passe AVANT les familles : elle ne classe pas un probleme,
   // elle propose la decision qui debloque le plus de monde d'un coup.
@@ -6150,7 +6347,10 @@ function rendSide(){
           <p class="grleg"><span class="niv">N</span> son niveau ·
             <span class="grjrs"><i class="y">L</i><i>M</i><i class="y">M</i><i>J</i><i>V</i><i>S</i></span>
             les six jours, en vert ceux qu'il a cochés</p>
-          ${g.gens.map(x=>ligne(x, g.f.cle)).join("")}</div>
+          ${parNiveau(g.gens).map(b=>
+            `<div class="grnv"><span>niveau ${esc(b.n || "inconnu")}</span><i></i>
+               <b>${b.gens.length}</b></div>`
+            + b.gens.map(x=>ligne(x, g.f.cle)).join("")).join("")}</div>
       </div>`).join("")
     || `<p class="grnote">Personne ici.</p>`;
   body.querySelectorAll("[data-f]").forEach(b=>b.onclick = ()=>{
