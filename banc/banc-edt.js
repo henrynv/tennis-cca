@@ -67,6 +67,9 @@ Object.assign(global, {
   DAYS: ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"],
   PROFS: ["Loïc","Seb","Titi","Max","Valentin","Lucas"],
   ALIAS_PROFS: {}, F: () => rien, dl(){}, showScreen(){}, sb: rien,
+  // Le cours de 2026 : le volet d'un joueur l'affiche, l'export ne s'en sert
+  // pas. Des bouchons suffisent — le banc ne juge pas cet ecran-la.
+  cours2026: () => null, c26Ligne: () => "",
 });
 process.on("unhandledRejection", () => {});   // pingAgent() et consorts, sans reseau
 

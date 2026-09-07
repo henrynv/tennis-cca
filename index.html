@@ -196,6 +196,22 @@
   .fcard.papercard .photo-view{flex:1;min-height:0;display:flex;flex-direction:column}
   .fcard.papercard .photo-view img{flex:1;min-height:0;max-height:none;width:100%}
 
+  /* Le cours de l'an dernier, sous la grille des jours. `flex:none` et une
+     hauteur de corps fixe : une fiche sans cours 2026 et une fiche avec trois
+     partenaires occupent la meme place, et la grille au-dessus ne bouge pas. */
+  .c26card{flex:none;padding:8px 12px}
+  .c26card .gridhead{margin-bottom:5px}
+  /* Deux lignes de partenaires reservees : les plus gros groupes de 2026 en
+     comptent six, et sans cette reserve la grille au-dessus changerait de
+     hauteur en passant d'une fiche a l'autre. */
+  #c26Corps{min-height:59px;font-size:13.5px;line-height:1.4}
+  #c26Corps .ou{font-weight:700;color:#2f3b33}
+  #c26Corps .avec{color:#5b665e;margin-top:2px}
+  #c26Corps .avec i{font-style:normal;color:#8a9490}
+  #c26Corps .rien{color:#6b7683;font-style:italic}
+  #c26Corps .apeu,.gr26 .apeu{font-weight:600;font-size:11px;color:#7a5600;background:#fbeccb;
+    padding:1px 5px;border-radius:4px;white-space:nowrap;cursor:help}
+
   /* un champ, un bloc : le marquage « a verifier » se pose SUR le champ et ne
      deplace rien, pour que les positions ne bougent pas d'une fiche a l'autre */
   .f{margin-bottom:3px}
@@ -817,6 +833,11 @@
     max-width:100%;min-width:0;background:#fff}
   .grct a:hover{border-color:var(--accent);color:var(--accent)}
   .grct a span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Le cours de l'an dernier : deux lignes, juste avant la liste des places
+     possibles — c'est souvent lui qui designe laquelle prendre. */
+  .gr26{font-size:12.5px;line-height:1.5;background:#f5f7f9;border-radius:8px;padding:7px 10px}
+  .gr26 b{display:block;color:var(--ink)}
+  .gr26 span{color:var(--muted)}
   .grobs{font-size:12.5px;line-height:1.5;color:var(--ink);margin:0 0 8px;
     background:#fbfcfa;border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
     padding:8px 10px}
@@ -1330,6 +1351,17 @@
         </div>
         <div class="gridwrap"><table class="avail" id="avail"></table></div>
         <p class="hint" id="selsum" hidden></p>
+      </div>
+
+      <!-- Ce qu'il faisait l'an dernier. Sous la grille et jamais ailleurs : on
+           lit ses dispos 2027 juste au-dessus du creneau qu'il avait en 2026,
+           et « comme l'an dernier » dans les observations devient lisible. La
+           carte garde sa hauteur meme vide, sinon la grille des jours change de
+           taille d'une fiche a l'autre. -->
+      <div class="card fcard c26card" id="c26Card">
+        <div class="gridhead"><b>Son cours en 2026</b>
+          <span class="src">grille de l'an dernier</span></div>
+        <div id="c26Corps"></div>
       </div>
     </div>
   </div>
@@ -2333,7 +2365,7 @@ function clearForm(){
   document.getElementById("pv").style.display="none"; document.getElementById("pimg").src="";
   document.getElementById("drop").style.display="block";
   editId=null; F("editmode").textContent=""; F("editmode").style.color="";
-  refreshGrid(); F("nom").focus();
+  refreshGrid(); majCours2026(); F("nom").focus();
 }
 // « Vider » efface une fiche en cours de correction : on demande confirmation.
 F("clear").onclick=()=>{
@@ -2512,6 +2544,7 @@ function edit(id){
   groupeDevine = !!p.groupe_devine;
   F("groupePill").style.display = groupeDevine ? "" : "none";
   autoGrowAll();
+  majCours2026();                // .value pose par programme n'emet pas « input »
   flagDoubtful(p.confiance);
   chargerDemandes(p);            // apres flagDoubtful : il remet le compteur a zero
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
@@ -2600,6 +2633,159 @@ refreshGrid();
 // sans session, les politiques d'acces renvoient de toute facon une liste vide.
 // resynchronise quand on rouvre l'onglet (autre assistante a saisi entre-temps)
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) loadPlayers(); });
+</script>
+
+<script>
+/* =====================================================================
+   Le cours de 2025-2026 : chez qui, quand, avec qui
+
+   La grille coloriee par Loic est finie et ne bougera plus. Elle est donc
+   recopiee ici une fois pour toutes, par solveur/export_cours_2026.py : la
+   page reste un seul fichier et le rappel s'affiche meme sans reseau.
+
+   Deux ecrans s'en servent, pour la meme question — qu'est-ce qu'on reconduit ?
+   La relecture d'une fiche, ou « comme l'an dernier » et « avec les memes » ne
+   veulent rien dire tant qu'on ignore ce qu'etait l'an dernier ; et le volet
+   d'un joueur dans l'emploi du temps, au moment de lui trouver une place.
+
+   Etre dans cette grille, c'est LA preuve d'etre un ancien, et c'est donc elle
+   qui commande l'affichage — pas le drapeau `ancien_adherent` des fiches. Ce
+   drapeau vient d'un rapprochement avec la liste des adherents : la grille
+   retrouve 184 des 295 fiches, dont 30 que le drapeau ne marque pas.
+   ===================================================================== */
+
+// [prof, court, jour, heure, [[nom, prenom, [autres orthographes], deduit], ...]]
+// Le prof est ecrit comme sur la grille 2026 (« Maxence ») ; c'est C26_PROF qui
+// le ramene au nom courant du club (« Max »). Les « autres orthographes » sont
+// les fiches 2027 dont le nom differe (« Klein J.Luc » -> « KLEIN Jean-Luc ») :
+// le rapprochement a ete fait, et relu, a la generation.
+// `deduit` marque les 48 joueurs que les listes d'appel ne nommaient pas : leur
+// heure — donc le groupe ou on les range — vient du voisin le plus proche dans
+// la colonne. C'est une lecture a l'oeil de la grille, et l'ecran le dit.
+// GENERE — ne pas editer a la main, relancer solveur/export_cours_2026.py.
+const C26 = [
+/* @@cours-2026:debut@@ */
+  ["Seb","","Lundi","9h30",[["Houdart","Olivier"],["Marcadet","Yann",0,1],["Couetdic","Florian"],["Garde","Mickael"]]],
+  ["Loic","11","Lundi","11h",[["Mignot","Celine"],["Magois","Pascale"],["Kowalski","Laurence"],["Achour","Sabrina"]]],
+  ["Lucas","","Lundi","12h",[["Razat","Maud"],["Chardeau","Mathilde"],["Gervais","Cécile"]]],
+  ["Seb","","Lundi","12h30",[["Merlin","Iris"],["Descamps","Julie",0,1],["Viguerie","Laure"]]],
+  ["Loic","11","Lundi","13h",[["Millet","Olivier"],["Chenesseau","Augustin"]]],
+  ["Lucas","","Lundi","13h",[["Leveque","Tanneguy"],["Pineau","Quentin",["pinaudquentin"]],["Pompeo de Camargo","Yann"],["Lauwick","Clément"]]],
+  ["Lucas","","Lundi","18h30",[["Gaudin","Philippe"],["Trouvé","Nathanael"],["Grange","Philippe"]]],
+  ["Maxence","12","Lundi","18h30",[["Hubert","Armelle"],["Sigoillot","Elise"],["Lefevre","Magali"],["Sellin","Nathalie",0,1]]],
+  ["Seb","","Lundi","18h30",[["Charrier","christelle"],["Iaquinta","Moira"],["Ballu","Valerie"]]],
+  ["Thierry","13","Lundi","18h30",[["Caron","Mateo"],["Rouif","Pacome"],["Vaudour","Edouard"],["Ame","Maxence"],["Barbier","J. Loup"]]],
+  ["Lucas","","Lundi","19h30",[["Gaurin","Charlotte",["gaurinjoumiercharlotte"]],["Breda","Stephanie"],["Bousso","Awa"]]],
+  ["Seb","","Lundi","19h30",[["Maloingne","Emilie"],["Michenaud","Thibault",0,1],["Dupuy","Charles",0,1],["Vivier","Victor",0,1],["Vayssier","Lucas",["vayssielucas"],1],["Jarlier","Mathieu",["jarliermatthieu"],1]]],
+  ["Thierry","13","Lundi","19h30",[["Niort","Corentin"],["Bouthier","Vincent"]]],
+  ["Valentin","","Lundi","19h30",[["Galerneau","Marion"],["Gosselin","Camille",0,1],["Guerin","Zoé",0,1],["Blaud","Emmanuelle",0,1],["Maumy","Alexandre",0,1],["Grandjean","Antoine"],["Jolliet","Lucas"]]],
+  ["Loic","11","Lundi","20h30",[["Masson","Julien",["massondeblaizejulien"],1],["De Kermabon","Erwan",0,1],["Gentil","Antoine"]]],
+  ["Lucas","","Lundi","20h30",[["Privé","Anais"],["Bugat","Emilie"],["Miossec","Magali",["miossec"]],["Michelon","Marie Eve"]]],
+  ["Maxence","12","Lundi","20h30",[["Champenois","Florence"],["Gambier","Lise"],["Brachet","Lilou"],["Bordelais","Julien"],["Belot","J. Baptiste",["belotjeanbaptiste"]],["Pernel","Guillaume"],["Trugeon","Nicolas"]]],
+  ["Seb","","Lundi","20h30",[["Masurel","Antoine"],["Perey","Baptiste",["perezbaptiste"]]]],
+  ["Lucas","","Mardi","10h",[["Fatin","Thomas"],["Flinois","Emmanuel"],["Froin","Laurent",["frouinlaurent"],1],["Doyen","Christian"]]],
+  ["Loic","11","Mardi","12h",[["Delhummeau","Oscar",["delhumeauoscar"],1],["Bismuth","Yohann",["bismuthyohan"],1],["Demanche","Florent"],["Benadada","Ali"]]],
+  ["Lucas","","Mardi","12h15",[["Jeanroy","Arthur"],["Pontoiseau","Benoit",["pontoizeaubenoit"],1],["Rambeault","Bastien"]]],
+  ["Loic","11","Mardi","13h",[["Laine","Julien"],["Aubriere","Kevin"],["Rideau","Clément"],["Mace","Jean"]]],
+  ["Seb","13","Mardi","17h30",[["Vaillant","Caroline"],["Alix Robert","Estelle"],["Retaillaud","Emeline",["retailleauemeline"]],["Tissandier","Audrey",["tissandieaudrey"]]]],
+  ["Loic","11","Mardi","18h30",[["Faugouin","Mélanie"],["Olivier","Marie",["olliviermarie"]],["Gonzales","Irène",["gonzalezmartinezirene"],1],["Parre","Elodie"],["Privé","Julien",0,1],["Leyre","Stephan",["leyrestephane"],1]]],
+  ["Lucas","","Mardi","18h30",[["Blanc","Laure"],["Paul","Valerie"],["Cognard","Stéphanie",0,1]]],
+  ["Maxence","14","Mardi","18h30",[["Chayne","Claire Marine"],["Jolas","Cécile"],["Herjean","Violaine"],["Belot","A. Isabelle",["belotarchambaultanneisabelle"],1]]],
+  ["Seb","13","Mardi","18h30",[["Tagina","Melanie"],["Blanc","Valerie"]]],
+  ["Loic","11","Mardi","19h30",[["Bodin","Guillaume"],["Piaud","J.Marie"]]],
+  ["Lucas","","Mardi","19h30",[["Allouch","Maxime",["allouchemaxime"],1],["Leduc","Hugo"],["Desormeaux","Gratien",0,1]]],
+  ["Maxence","14","Mardi","19h30",[["Houdusse","Augustin"],["Blume","Serge"],["Pardessus","Théo"],["Rohou","David"]]],
+  ["Seb","13","Mardi","19h30",[["Pirotais","Caroline"],["Ansquin","Diane"],["Salardenne","Aurore",0,1],["Lecrinier","Chloé"],["Pace","Franck",0,1],["Paysan","Paul",0,1]]],
+  ["Loic","11","Mardi","20h30",[["Menard","Corentin"],["Redien","Anthony"],["Fauveaux","Quentin",["feauveauxquentin"],1]]],
+  ["Lucas","","Mardi","20h30",[["Boursault","Agathe"],["Pellet","Roxane",0,1],["Payer","Armelle",["payetarmelle"],1],["Pichard","Marine"]]],
+  ["Lucas","","Mercredi","19h",[["Dibot","Mathis"],["Le Mer","Brieuc"],["Ansquin","Maxime"]]],
+  ["Maxence","10","Mercredi","19h",[["Kuppens","Damien"],["Lemarie","Romain"],["Roulland","P.Alexandre"],["Verrez","Thibaud",["verrezthibault"],1]]],
+  ["Seb","11","Mercredi","19h",[["Chapelain","Emma"],["Houllier","Marie"],["Saint chamand","mathilde"],["Leveque","Marine",0,1]]],
+  ["Lucas","","Mercredi","20h",[["Moreau","Yann"],["Moldovan","Julian",0,1],["Champenois","Mathieu"],["Quemeneur","Arnaud",0,1]]],
+  ["Maxence","10","Mercredi","20h",[["Bugat","Gautier"],["Dupont","Thomas"],["Odant","Cédric"],["Petit","Antoine"],["Esteban","Clément"]]],
+  ["Loic","12","Jeudi","18h15",[["Bossard","Sylvain"],["Prevost","Pierre"],["Moussaid","Medhi",["moussaidmehdi"]]]],
+  ["Maxence","11","Jeudi","18h15",[["Brioude","Romain"],["Saunier","Antoine"],["Potel","Benoit"],["Houys","Sarah",["houissarah"],1]]],
+  ["Seb","10","Jeudi","18h15",[["Pouliquen","Pierre"],["Loizeau","Jeremy",["loizeaujeremie"]],["Klein","J.Luc",["kleinjeanluc"]],["Housseau","J. Marie",["housseaujeanmarie"],1]]],
+  ["Loic","12","Jeudi","19h15",[["Naulleau","Géraldine"],["Michaudel","Pascale",["michaudelparole"]],["Rumen","Aude"],["Viel","M. Laure",["vielmarielaure"]]]],
+  ["Maxence","11","Jeudi","19h15",[["Renevot","Clara"],["Correard","Charlotte"],["Croutchet","Léa",["crouchetrimlingerlea"],1]]],
+  ["Seb","10","Jeudi","19h15",[["Jonniaux","Mélanie",["jonniauxroymelanie"]],["Lampaert","Eugenie"],["Brac","Cécile",["bracdelaperrierececile"]],["Olivier","Romain",["ollivierromain"],1]]],
+  ["Loic","12","Jeudi","20h15",[["Gil","Bertrand"],["Laurent","Pierre"],["Legarrec","Paul"],["Venet","Nicolas"]]],
+  ["Maxence","11","Jeudi","20h15",[["Guillaume","Claire"],["Derouin","Elza"],["Chretien","Pauline"],["Bastos","Lucie"]]],
+  ["Seb","10","Jeudi","20h15",[["Ebrard","Maxime"],["Dupré","Clement"],["Chaumet","Lionel"]]],
+  ["Seb","12 et 11","Vendredi","9h",[["Coue","Agathe"]]],
+  ["Valentin","","Vendredi","9h",[["De Kermabon","Pauline",0,1],["Gratadour","Célia"]]],
+  ["Seb","12 et 11","Vendredi","10h",[["Hervochon","Eglantine"],["Chadenat","Catherine"],["Gaugry","Jacqueline"],["Fievet","Bénédicte"]]],
+  ["Loic","13","Vendredi","12h",[["Paturel","Julie"],["Maniez","Angelique",0,1],["Le Mer","Albane"],["Guittet","Marie",["guitetmarieadriane"],1],["Cheminais","Anais"],["Couetdic","Laurene"]]],
+  ["Seb","12 et 11","Vendredi","12h",[["Teoli","Camille"]]],
+  ["Valentin","","Vendredi","12h",[["Amelineau","Marine"],["Bald","Emmannuelle",0,1]]],
+  ["Loic","13","Vendredi","14h45",[["Bellossi","Frederic"],["Coué","Romain"],["Livoireau","Eric"],["Thibaudeau","Pierre Arthur"]]],
+  ["Loic","14","Vendredi","14h45",[["Hervochon","Remi",0,1],["Ferchaud","Francois",["fenchaudfrancois"]],["Thiberge","Gilles"]]],
+  ["Loic","13","Vendredi","16h45",[["Caramel","Cathy",["caramelcatherine"]],["Noc","Brigitte"],["Fernet","Jessica",["fernetjesica"]]]],
+  ["Valentin","","Vendredi","17h",[["Caillet","Virginie"],["Pouvreau","Amélie"]]],
+  ["Valentin","","Vendredi","18h",[["Hovnhanian","Pierre"],["Triouleyre","Rémi",["triouleyreremy"]],["Schneidermarc","Guillaume"],["Masson","Enzo",0,1]]],
+  ["Seb","12 et 11","Vendredi","18h30",[["Stevenet","Violaine"],["Pfeffer","Emmanuelle"],["Texier","Stephanie"],["De La O","Carmen",["delaomillancarmen"],1],["Hulin","Agnes"],["Barbou","Laurence"],["Elgrishi","Catherine"]]],
+  ["Loic","13","Vendredi","19h",[["Chapelain","Davy"],["Vinatier","Quentin"],["Chevance","Fred",["chevancefrederic"],1]]],
+  ["Loic","14","Vendredi","19h",[["Ehret","Francois"],["Bouillie","Paul"],["Guille","Stefano",0,1]]],
+/* @@cours-2026:fin@@ */
+];
+
+// Nom et prenom colles : l'emploi du temps ne connait souvent qu'un seul champ
+// (« Bossard Sylvain »), la fiche en connait deux, et « BRAC de LA PERRIERE
+// Cécile » ne se recoupe pas autrement. Sans accents ni traits d'union.
+const c26Cle = (...p) => p.join("").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                          .toLowerCase().replace(/[^a-z]/g,"");
+// La grille dit « Maxence », le club dit « Max ». Un prof que le club ne
+// connait plus (Thierry) garde le nom que la grille lui donne : mieux vaut un
+// nom d'hier qu'un rapprochement invente.
+const C26_PROF = p => PROFS.find(q => (ALIAS_PROFS[q]||[]).indexOf(c26Cle(p)) >= 0) || p;
+
+const C26_PAR = new Map();
+C26.forEach(([prof, court, jour, heure, membres]) => {
+  const noms = membres.map(m => m[0] + " " + m[1]);
+  membres.forEach((m, i) => {
+    const c = {prof: C26_PROF(prof), court, jour, heure, nom: noms[i], deduit: !!m[3],
+               // les partenaires, c'est-a-dire le groupe moins lui-meme
+               avec: noms.filter((_, k) => k !== i)};
+    [c26Cle(m[0], m[1])].concat(m[2] || []).forEach(k => C26_PAR.set(k, c));
+  });
+});
+
+// Le cours de quelqu'un en 2026, ou null s'il n'etait pas sur la grille.
+// S'appelle avec deux champs (fiche) ou un seul deja colle (emploi du temps).
+function cours2026(nom, prenom){
+  return C26_PAR.get(c26Cle(nom, prenom || "")) || null;
+}
+// « Loïc · jeudi 18h15 · court 12 »
+function c26Ligne(c){
+  return [c.prof, c.jour.toLowerCase() + " " + c.heure,
+          c.court ? (/ et /.test(c.court) ? "courts " : "court ") + c.court : ""]
+         .filter(Boolean).join(" · ");
+}
+
+// L'heure — et donc le groupe — n'a pas ete lue mais deduite : on le dit, sans
+// prendre une ligne de plus. Une heure fausse envoie chercher les partenaires
+// au mauvais creneau, et rien ne le signalerait.
+const C26_DEDUIT = ` <span class="apeu" title="Les listes d'appel ne nomment pas`
+  + ` cette personne : l'heure vient du voisin le plus proche sur la grille, et`
+  + ` les partenaires avec elle.">à peu près</span>`;
+
+// La carte de l'ecran de saisie. Elle suit les deux champs de nom : la relecture
+// corrige souvent une orthographe, et le cours doit apparaitre au moment ou le
+// nom devient juste — sans quoi il faudrait ressortir de la fiche et y revenir.
+function majCours2026(){
+  const el = document.getElementById("c26Corps");
+  if(!el) return;
+  const c = cours2026(document.getElementById("nom").value,
+                      document.getElementById("prenom").value);
+  if(!c){ el.innerHTML = `<div class="rien">Aucun cours en 2026 sous ce nom.</div>`; return; }
+  el.innerHTML = `<div class="ou">${esc(c26Ligne(c))}${c.deduit ? C26_DEDUIT : ""}</div>`
+    + (c.avec.length
+        ? `<div class="avec">Avec ${c.avec.map(n=>esc(n)).join(" · ")}</div>`
+        : `<div class="avec"><i>seul sur la grille à ce créneau</i></div>`);
+}
+["nom","prenom"].forEach(id=>document.getElementById(id)
+  .addEventListener("input", majCours2026));
+majCours2026();
 </script>
 
 <script>
@@ -3381,7 +3567,20 @@ let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],enP
 let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
 let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
-let scen = [];          // scenarios : {n,nom,cours,attente}
+/* Deux niveaux, depuis qu'un jeu de fichiers d'entree peut varier.
+   Un SCENARIO porte un jeu (joueurs, contraintes, reconduction) et le mode de
+   reconduction qu'on lui applique ; ses VARIANTES sont les plannings qui en
+   sortent — le calcul, puis ce qu'on en fait a la main. Une variante ne se
+   compare a une autre que si elle sort du meme jeu : c'est tout l'interet de
+   les separer, et la rangee du haut ne montre donc que celles du scenario
+   affiche.
+   `jeu` vaut "" pour les fichiers a la racine du solveur, l'id d'un dossier
+   `jeux/<id>/` sinon, et null pour un scenario ne d'un classeur depose a la
+   main — celui-la ne se recalcule pas, faute d'entrees. */
+let scenarios = [];     // {id, nom, jeu:string|null, mode, sim:1..5|null}
+let scSel = null;       // le scenario que la page des scenarios detaille
+let jeuVu = "";         // le jeu dont on regarde les fichiers
+let scen = [];          // variantes : {n, nom, sc, cours, attente, annexes, res, touche}
 // Les inscrits que le solveur n'a pas eus en main. `enPlace` : deja membres d'un
 // groupe competition, donc PLACES. `hors` : rien a decider (niveau manquant,
 // fiche mise de cote). Sans eux le header ne peut pas retomber sur le nombre de
@@ -3529,7 +3728,7 @@ let majEtat = 0;          // date de la derniere ecriture reussie
 let stockKo = false;      // le navigateur a refuse d'ecrire
 let tPousse = 0, aPousser = null;
 
-function paquet(){ return {cours, attente, annexes, ctr, resFic, scen, vu, maj: Date.now()}; }
+function paquet(){ return {cours, attente, annexes, ctr, resFic, scenarios, scen, vu, maj: Date.now()}; }
 function sauver(){
   const o = paquet();
   majEtat = o.maj;
@@ -3619,6 +3818,8 @@ function adopter(o){
   annexes = o.annexes || {enPlace:[], hors:[]};
   annexes.enPlace = annexes.enPlace||[]; annexes.hors = annexes.hors||[];
   resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0; majEtat = o.maj||0;
+  scenarios = o.scenarios || [];
+  migrerScenarios();
   // Un etat sauvegarde par une version anterieure n'a pas forcement tous les
   // champs que le code d'aujourd'hui attend : `terrains` par exemple est arrive
   // apres les premiers enregistrements. On les remet ici, une fois, plutot que
@@ -3629,6 +3830,39 @@ function adopter(o){
            ctr.types = ctr.types||[]; ctr.paliers = ctr.paliers||[]; }
   cours.forEach(c=>{ c.enPlace = c.enPlace||[]; });
 }
+/* Un etat d'avant les jeux de fichiers n'a que des variantes, a plat. Chacune
+   devient son propre scenario : c'est exactement ce qu'elles etaient — un
+   planning independant — et regrouper au hasard aurait invente une parente
+   qu'aucune donnee ne porte. Le jeu se devine : `sim-N` pour les cinq, la
+   racine du solveur pour le reste. */
+function migrerScenarios(){
+  if(scenarios.length || !scen.length) return;
+  scen.forEach(e=>{
+    const id = "s" + e.n;
+    e.sc = id;
+    scenarios.push({id, nom: e.nom, jeu: e.sim ? "sim-" + e.sim : "",
+                    mode: e.sim ? (e.sim === 3 || e.sim === 4 ? "aucune" : "souple") : "souple",
+                    sim: e.sim || null});
+  });
+}
+const scenarioDe = id => scenarios.find(x=>x.id === id) || null;
+const varDe      = n  => scen.find(e=>e.n === n) || null;
+// Le scenario dont le planning est a l'ecran.
+function scAffiche(){ const e = varDe(vu); return e ? scenarioDe(e.sc) : null; }
+// Celui que la page detaille : celui qu'on a clique, sinon celui a l'ecran.
+function scPage(){ return scenarioDe(scSel) || scAffiche() || scenarios[0] || null; }
+const variantesDe = sc => sc ? scen.filter(e=>e.sc === sc.id) : [];
+// Ce que l'agent sait du jeu d'un scenario : dates des classeurs, mode, resultat.
+function infosJeu(jeu){
+  if(!agent || jeu == null) return null;
+  return (agent.jeux || []).find(j=>j.id === jeu) || null;
+}
+function nouvelId(){
+  let k = scenarios.length + 1;
+  while(scenarios.some(s=>s.id === "s" + k)) k++;
+  return "s" + k;
+}
+
 function relire(){
   try{
     const o = JSON.parse(localStorage.getItem(CLE) || "null");
@@ -6597,11 +6831,26 @@ function rendJoueur(head, body, p, src){
       calcul suivant déferait le geste.</p>`;
   const blocContact = `<div class="grh4">Contact</div>${contact}`;
 
+  // Ce qu'il faisait l'an dernier, juste avant la liste des places : c'est
+  // souvent la reponse a « ou le mettre ». On interroge la grille 2026 et pas
+  // le drapeau « ancien » du classeur — la grille rattrape trente anciens que
+  // le drapeau rate, et elle seule dit chez qui et avec qui.
+  const c26 = cours2026(p.nom);
+  const bloc26 = c26
+    ? `<div class="grh4">Son cours en 2026</div>
+       <div class="gr26"><b>${esc(c26Ligne(c26))}${c26.deduit ? C26_DEDUIT : ""}</b>
+         <span>${c26.avec.length
+           ? "Avec " + c26.avec.map(n=>esc(n)).join(" · ")
+           : "Seul sur la grille à ce créneau."}</span></div>`
+    : "";
+
   body.innerHTML =
     (rien ? blocContact : "") +
 
     (src ? "" : `<div class="grh4">Pourquoi le solveur ne l'a pas placé</div>
      <p class="grnote" style="margin-top:0">${esc(p.raison||"aucun motif écrit par le solveur")}</p>`) +
+
+    bloc26 +
 
     blocOu +
 
