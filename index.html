@@ -196,6 +196,22 @@
   .fcard.papercard .photo-view{flex:1;min-height:0;display:flex;flex-direction:column}
   .fcard.papercard .photo-view img{flex:1;min-height:0;max-height:none;width:100%}
 
+  /* Le cours de l'an dernier, sous la grille des jours. `flex:none` et une
+     hauteur de corps fixe : une fiche sans cours 2026 et une fiche avec trois
+     partenaires occupent la meme place, et la grille au-dessus ne bouge pas. */
+  .c26card{flex:none;padding:8px 12px}
+  .c26card .gridhead{margin-bottom:5px}
+  /* Deux lignes de partenaires reservees : les plus gros groupes de 2026 en
+     comptent six, et sans cette reserve la grille au-dessus changerait de
+     hauteur en passant d'une fiche a l'autre. */
+  #c26Corps{min-height:59px;font-size:13.5px;line-height:1.4}
+  #c26Corps .ou{font-weight:700;color:#2f3b33}
+  #c26Corps .avec{color:#5b665e;margin-top:2px}
+  #c26Corps .avec i{font-style:normal;color:#8a9490}
+  #c26Corps .rien{color:#6b7683;font-style:italic}
+  #c26Corps .apeu,.gr26 .apeu{font-weight:600;font-size:11px;color:#7a5600;background:#fbeccb;
+    padding:1px 5px;border-radius:4px;white-space:nowrap;cursor:help}
+
   /* un champ, un bloc : le marquage « a verifier » se pose SUR le champ et ne
      deplace rien, pour que les positions ne bougent pas d'une fiche a l'autre */
   .f{margin-bottom:3px}
@@ -817,6 +833,11 @@
     max-width:100%;min-width:0;background:#fff}
   .grct a:hover{border-color:var(--accent);color:var(--accent)}
   .grct a span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Le cours de l'an dernier : deux lignes, juste avant la liste des places
+     possibles — c'est souvent lui qui designe laquelle prendre. */
+  .gr26{font-size:12.5px;line-height:1.5;background:#f5f7f9;border-radius:8px;padding:7px 10px}
+  .gr26 b{display:block;color:var(--ink)}
+  .gr26 span{color:var(--muted)}
   .grobs{font-size:12.5px;line-height:1.5;color:var(--ink);margin:0 0 8px;
     background:#fbfcfa;border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
     padding:8px 10px}
@@ -1330,6 +1351,17 @@
         </div>
         <div class="gridwrap"><table class="avail" id="avail"></table></div>
         <p class="hint" id="selsum" hidden></p>
+      </div>
+
+      <!-- Ce qu'il faisait l'an dernier. Sous la grille et jamais ailleurs : on
+           lit ses dispos 2027 juste au-dessus du creneau qu'il avait en 2026,
+           et « comme l'an dernier » dans les observations devient lisible. La
+           carte garde sa hauteur meme vide, sinon la grille des jours change de
+           taille d'une fiche a l'autre. -->
+      <div class="card fcard c26card" id="c26Card">
+        <div class="gridhead"><b>Son cours en 2026</b>
+          <span class="src">grille de l'an dernier</span></div>
+        <div id="c26Corps"></div>
       </div>
     </div>
   </div>
@@ -1941,7 +1973,11 @@ const TEXT_IDS = ["nom","prenom","ddn","adresse","code_postal","ville","portable
 // Si Loïc en ajoute un, c'est la seule ligne a changer ici.
 const PROFS = ["Loïc","Seb","Titi","Max","Valentin","Lucas"];
 const ALIAS_PROFS = {
-  "Loïc":["loic"], "Seb":["seb","sebastien"], "Titi":["titi"],
+  // « Thierry » et « Maxence » sont les noms sous lesquels la grille 2026 et
+  // les adherents les designent — « cours avec Thierry le lundi » revient sur
+  // trois fiches. Aucun adherent ne s'appelle Thierry : l'alias ne peut pas
+  // confondre un prof avec un joueur, contrairement a « Lucas ».
+  "Loïc":["loic"], "Seb":["seb","sebastien"], "Titi":["titi","thierry"],
   "Max":["max","maxence"], "Valentin":["valentin"], "Lucas":["lucas"],
 };
 const D_SEUIL = 0.86;          // ressemblance minimale pour rapprocher deux noms
@@ -2333,7 +2369,7 @@ function clearForm(){
   document.getElementById("pv").style.display="none"; document.getElementById("pimg").src="";
   document.getElementById("drop").style.display="block";
   editId=null; F("editmode").textContent=""; F("editmode").style.color="";
-  refreshGrid(); F("nom").focus();
+  refreshGrid(); majCours2026(); F("nom").focus();
 }
 // « Vider » efface une fiche en cours de correction : on demande confirmation.
 F("clear").onclick=()=>{
@@ -2512,6 +2548,7 @@ function edit(id){
   groupeDevine = !!p.groupe_devine;
   F("groupePill").style.display = groupeDevine ? "" : "none";
   autoGrowAll();
+  majCours2026();                // .value pose par programme n'emet pas « input »
   flagDoubtful(p.confiance);
   chargerDemandes(p);            // apres flagDoubtful : il remet le compteur a zero
   sel=(p.avail||DAYS.map(()=>new Array(NSLOT).fill(false))).map(c=>c.slice()); refreshGrid();
@@ -2600,6 +2637,160 @@ refreshGrid();
 // sans session, les politiques d'acces renvoient de toute facon une liste vide.
 // resynchronise quand on rouvre l'onglet (autre assistante a saisi entre-temps)
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) loadPlayers(); });
+</script>
+
+<script>
+/* =====================================================================
+   Le cours de 2025-2026 : chez qui, quand, avec qui
+
+   La grille coloriee par Loic est finie et ne bougera plus. Elle est donc
+   recopiee ici une fois pour toutes, par solveur/export_cours_2026.py : la
+   page reste un seul fichier et le rappel s'affiche meme sans reseau.
+
+   Deux ecrans s'en servent, pour la meme question — qu'est-ce qu'on reconduit ?
+   La relecture d'une fiche, ou « comme l'an dernier » et « avec les memes » ne
+   veulent rien dire tant qu'on ignore ce qu'etait l'an dernier ; et le volet
+   d'un joueur dans l'emploi du temps, au moment de lui trouver une place.
+
+   Etre dans cette grille, c'est LA preuve d'etre un ancien, et c'est donc elle
+   qui commande l'affichage — pas le drapeau `ancien_adherent` des fiches. Ce
+   drapeau vient d'un rapprochement avec la liste des adherents : la grille
+   retrouve 184 des 295 fiches, dont 30 que le drapeau ne marque pas.
+   ===================================================================== */
+
+// [prof, court, jour, heure, [[nom, prenom, [autres orthographes], deduit], ...]]
+// Le prof est ecrit comme sur la grille 2026 (« Maxence ») ; c'est C26_PROF qui
+// le ramene au nom courant du club (« Max »). Les « autres orthographes » sont
+// les fiches 2027 dont le nom differe (« Klein J.Luc » -> « KLEIN Jean-Luc ») :
+// le rapprochement a ete fait, et relu, a la generation.
+// `deduit` marque les 48 joueurs que les listes d'appel ne nommaient pas : leur
+// heure — donc le groupe ou on les range — vient du voisin le plus proche dans
+// la colonne. C'est une lecture a l'oeil de la grille, et l'ecran le dit.
+// GENERE — ne pas editer a la main, relancer solveur/export_cours_2026.py.
+const C26 = [
+/* @@cours-2026:debut@@ */
+  ["Seb","","Lundi","9h30",[["Houdart","Olivier"],["Marcadet","Yann",0,1],["Couetdic","Florian"],["Garde","Mickael"]]],
+  ["Loic","11","Lundi","11h",[["Mignot","Celine"],["Magois","Pascale"],["Kowalski","Laurence"],["Achour","Sabrina"]]],
+  ["Lucas","","Lundi","12h",[["Razat","Maud"],["Chardeau","Mathilde"],["Gervais","Cécile"]]],
+  ["Seb","","Lundi","12h30",[["Merlin","Iris"],["Descamps","Julie",0,1],["Viguerie","Laure"]]],
+  ["Loic","11","Lundi","13h",[["Millet","Olivier"],["Chenesseau","Augustin"]]],
+  ["Lucas","","Lundi","13h",[["Leveque","Tanneguy"],["Pineau","Quentin",["pinaudquentin"]],["Pompeo de Camargo","Yann"],["Lauwick","Clément"]]],
+  ["Lucas","","Lundi","18h30",[["Gaudin","Philippe"],["Trouvé","Nathanael"],["Grange","Philippe"]]],
+  ["Maxence","12","Lundi","18h30",[["Hubert","Armelle"],["Sigoillot","Elise"],["Lefevre","Magali"],["Sellin","Nathalie",0,1]]],
+  ["Seb","","Lundi","18h30",[["Charrier","christelle"],["Iaquinta","Moira"],["Ballu","Valerie"]]],
+  ["Thierry","13","Lundi","18h30",[["Caron","Mateo"],["Rouif","Pacome"],["Vaudour","Edouard"],["Ame","Maxence"],["Barbier","J. Loup"]]],
+  ["Lucas","","Lundi","19h30",[["Gaurin","Charlotte",["gaurinjoumiercharlotte"]],["Breda","Stephanie"],["Bousso","Awa"]]],
+  ["Seb","","Lundi","19h30",[["Maloingne","Emilie"],["Michenaud","Thibault",0,1],["Dupuy","Charles",0,1],["Vivier","Victor",0,1],["Vayssier","Lucas",["vayssielucas"],1],["Jarlier","Mathieu",["jarliermatthieu"],1]]],
+  ["Thierry","13","Lundi","19h30",[["Niort","Corentin"],["Bouthier","Vincent"]]],
+  ["Valentin","","Lundi","19h30",[["Galerneau","Marion"],["Gosselin","Camille",0,1],["Guerin","Zoé",0,1],["Blaud","Emmanuelle",0,1],["Maumy","Alexandre",0,1],["Grandjean","Antoine"],["Jolliet","Lucas"]]],
+  ["Loic","11","Lundi","20h30",[["Masson","Julien",["massondeblaizejulien"],1],["De Kermabon","Erwan",0,1],["Gentil","Antoine"]]],
+  ["Lucas","","Lundi","20h30",[["Privé","Anais"],["Bugat","Emilie"],["Miossec","Magali",["miossec"]],["Michelon","Marie Eve"]]],
+  ["Maxence","12","Lundi","20h30",[["Champenois","Florence"],["Gambier","Lise"],["Brachet","Lilou"],["Bordelais","Julien"],["Belot","J. Baptiste",["belotjeanbaptiste"]],["Pernel","Guillaume"],["Trugeon","Nicolas"]]],
+  ["Seb","","Lundi","20h30",[["Masurel","Antoine"],["Perey","Baptiste",["perezbaptiste"]]]],
+  ["Lucas","","Mardi","10h",[["Fatin","Thomas"],["Flinois","Emmanuel"],["Froin","Laurent",["frouinlaurent"],1],["Doyen","Christian"]]],
+  ["Loic","11","Mardi","12h",[["Delhummeau","Oscar",["delhumeauoscar"],1],["Bismuth","Yohann",["bismuthyohan"],1],["Demanche","Florent"],["Benadada","Ali"]]],
+  ["Lucas","","Mardi","12h15",[["Jeanroy","Arthur"],["Pontoiseau","Benoit",["pontoizeaubenoit"],1],["Rambeault","Bastien"]]],
+  ["Loic","11","Mardi","13h",[["Laine","Julien"],["Aubriere","Kevin"],["Rideau","Clément"],["Mace","Jean"]]],
+  ["Seb","13","Mardi","17h30",[["Vaillant","Caroline"],["Alix Robert","Estelle"],["Retaillaud","Emeline",["retailleauemeline"]],["Tissandier","Audrey",["tissandieaudrey"]]]],
+  ["Loic","11","Mardi","18h30",[["Faugouin","Mélanie"],["Olivier","Marie",["olliviermarie"]],["Gonzales","Irène",["gonzalezmartinezirene"],1],["Parre","Elodie"],["Privé","Julien",0,1],["Leyre","Stephan",["leyrestephane"],1]]],
+  ["Lucas","","Mardi","18h30",[["Blanc","Laure"],["Paul","Valerie"],["Cognard","Stéphanie",0,1]]],
+  ["Maxence","14","Mardi","18h30",[["Chayne","Claire Marine"],["Jolas","Cécile"],["Herjean","Violaine"],["Belot","A. Isabelle",["belotarchambaultanneisabelle"],1]]],
+  ["Seb","13","Mardi","18h30",[["Tagina","Melanie"],["Blanc","Valerie"]]],
+  ["Loic","11","Mardi","19h30",[["Bodin","Guillaume"],["Piaud","J.Marie"]]],
+  ["Lucas","","Mardi","19h30",[["Allouch","Maxime",["allouchemaxime"],1],["Leduc","Hugo"],["Desormeaux","Gratien",0,1]]],
+  ["Maxence","14","Mardi","19h30",[["Houdusse","Augustin"],["Blume","Serge"],["Pardessus","Théo"],["Rohou","David"]]],
+  ["Seb","13","Mardi","19h30",[["Pirotais","Caroline"],["Ansquin","Diane"],["Salardenne","Aurore",0,1],["Lecrinier","Chloé"],["Pace","Franck",0,1],["Paysan","Paul",0,1]]],
+  ["Loic","11","Mardi","20h30",[["Menard","Corentin"],["Redien","Anthony"],["Fauveaux","Quentin",["feauveauxquentin"],1]]],
+  ["Lucas","","Mardi","20h30",[["Boursault","Agathe"],["Pellet","Roxane",0,1],["Payer","Armelle",["payetarmelle"],1],["Pichard","Marine"]]],
+  ["Lucas","","Mercredi","19h",[["Dibot","Mathis"],["Le Mer","Brieuc"],["Ansquin","Maxime"]]],
+  ["Maxence","10","Mercredi","19h",[["Kuppens","Damien"],["Lemarie","Romain"],["Roulland","P.Alexandre"],["Verrez","Thibaud",["verrezthibault"],1]]],
+  ["Seb","11","Mercredi","19h",[["Chapelain","Emma"],["Houllier","Marie"],["Saint chamand","mathilde"],["Leveque","Marine",0,1]]],
+  ["Lucas","","Mercredi","20h",[["Moreau","Yann"],["Moldovan","Julian",0,1],["Champenois","Mathieu"],["Quemeneur","Arnaud",0,1]]],
+  ["Maxence","10","Mercredi","20h",[["Bugat","Gautier"],["Dupont","Thomas"],["Odant","Cédric"],["Petit","Antoine"],["Esteban","Clément"]]],
+  ["Loic","12","Jeudi","18h15",[["Bossard","Sylvain"],["Prevost","Pierre"],["Moussaid","Medhi",["moussaidmehdi"]]]],
+  ["Maxence","11","Jeudi","18h15",[["Brioude","Romain"],["Saunier","Antoine"],["Potel","Benoit"],["Houys","Sarah",["houissarah"],1]]],
+  ["Seb","10","Jeudi","18h15",[["Pouliquen","Pierre"],["Loizeau","Jeremy",["loizeaujeremie"]],["Klein","J.Luc",["kleinjeanluc"]],["Housseau","J. Marie",["housseaujeanmarie"],1]]],
+  ["Loic","12","Jeudi","19h15",[["Naulleau","Géraldine"],["Michaudel","Pascale",["michaudelparole"]],["Rumen","Aude"],["Viel","M. Laure",["vielmarielaure"]]]],
+  ["Maxence","11","Jeudi","19h15",[["Renevot","Clara"],["Correard","Charlotte"],["Croutchet","Léa",["crouchetrimlingerlea"],1]]],
+  ["Seb","10","Jeudi","19h15",[["Jonniaux","Mélanie",["jonniauxroymelanie"]],["Lampaert","Eugenie"],["Brac","Cécile",["bracdelaperrierececile"]],["Olivier","Romain",["ollivierromain"],1]]],
+  ["Loic","12","Jeudi","20h15",[["Gil","Bertrand"],["Laurent","Pierre"],["Legarrec","Paul"],["Venet","Nicolas"]]],
+  ["Maxence","11","Jeudi","20h15",[["Guillaume","Claire"],["Derouin","Elza"],["Chretien","Pauline"],["Bastos","Lucie"]]],
+  ["Seb","10","Jeudi","20h15",[["Ebrard","Maxime"],["Dupré","Clement"],["Chaumet","Lionel"]]],
+  ["Seb","12 et 11","Vendredi","9h",[["Coue","Agathe"]]],
+  ["Valentin","","Vendredi","9h",[["De Kermabon","Pauline",0,1],["Gratadour","Célia"]]],
+  ["Seb","12 et 11","Vendredi","10h",[["Hervochon","Eglantine"],["Chadenat","Catherine"],["Gaugry","Jacqueline"],["Fievet","Bénédicte"]]],
+  ["Loic","13","Vendredi","12h",[["Paturel","Julie"],["Maniez","Angelique",0,1],["Le Mer","Albane"],["Guittet","Marie",["guitetmarieadriane"],1],["Cheminais","Anais"],["Couetdic","Laurene"]]],
+  ["Seb","12 et 11","Vendredi","12h",[["Teoli","Camille"]]],
+  ["Valentin","","Vendredi","12h",[["Amelineau","Marine"],["Bald","Emmannuelle",0,1]]],
+  ["Loic","13","Vendredi","14h45",[["Bellossi","Frederic"],["Coué","Romain"],["Livoireau","Eric"],["Thibaudeau","Pierre Arthur"]]],
+  ["Loic","14","Vendredi","14h45",[["Hervochon","Remi",0,1],["Ferchaud","Francois",["fenchaudfrancois"]],["Thiberge","Gilles"]]],
+  ["Loic","13","Vendredi","16h45",[["Caramel","Cathy",["caramelcatherine"]],["Noc","Brigitte"],["Fernet","Jessica",["fernetjesica"]]]],
+  ["Valentin","","Vendredi","17h",[["Caillet","Virginie"],["Pouvreau","Amélie"]]],
+  ["Valentin","","Vendredi","18h",[["Hovnhanian","Pierre"],["Triouleyre","Rémi",["triouleyreremy"]],["Schneidermarc","Guillaume"],["Masson","Enzo",0,1]]],
+  ["Seb","12 et 11","Vendredi","18h30",[["Stevenet","Violaine"],["Pfeffer","Emmanuelle"],["Texier","Stephanie"],["De La O","Carmen",["delaomillancarmen"],1],["Hulin","Agnes"],["Barbou","Laurence"],["Elgrishi","Catherine"]]],
+  ["Loic","13","Vendredi","19h",[["Chapelain","Davy"],["Vinatier","Quentin"],["Chevance","Fred",["chevancefrederic"],1]]],
+  ["Loic","14","Vendredi","19h",[["Ehret","Francois"],["Bouillie","Paul"],["Guille","Stefano",0,1]]],
+/* @@cours-2026:fin@@ */
+];
+
+// Nom et prenom colles : l'emploi du temps ne connait souvent qu'un seul champ
+// (« Bossard Sylvain »), la fiche en connait deux, et « BRAC de LA PERRIERE
+// Cécile » ne se recoupe pas autrement. Sans accents ni traits d'union.
+const c26Cle = (...p) => p.join("").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                          .toLowerCase().replace(/[^a-z]/g,"");
+// La grille dit « Maxence » et « Thierry », le club dit « Max » et « Titi » :
+// c'est ALIAS_PROFS qui fait le lien, et le meme lien sert a lire les demandes
+// des adherents. Un nom qui n'y figure pas reste tel que la grille l'ecrit —
+// mieux vaut un nom d'hier qu'un rapprochement invente.
+const C26_PROF = p => PROFS.find(q => (ALIAS_PROFS[q]||[]).indexOf(c26Cle(p)) >= 0) || p;
+
+const C26_PAR = new Map();
+C26.forEach(([prof, court, jour, heure, membres]) => {
+  const noms = membres.map(m => m[0] + " " + m[1]);
+  membres.forEach((m, i) => {
+    const c = {prof: C26_PROF(prof), court, jour, heure, nom: noms[i], deduit: !!m[3],
+               // les partenaires, c'est-a-dire le groupe moins lui-meme
+               avec: noms.filter((_, k) => k !== i)};
+    [c26Cle(m[0], m[1])].concat(m[2] || []).forEach(k => C26_PAR.set(k, c));
+  });
+});
+
+// Le cours de quelqu'un en 2026, ou null s'il n'etait pas sur la grille.
+// S'appelle avec deux champs (fiche) ou un seul deja colle (emploi du temps).
+function cours2026(nom, prenom){
+  return C26_PAR.get(c26Cle(nom, prenom || "")) || null;
+}
+// « Loïc · jeudi 18h15 · court 12 »
+function c26Ligne(c){
+  return [c.prof, c.jour.toLowerCase() + " " + c.heure,
+          c.court ? (/ et /.test(c.court) ? "courts " : "court ") + c.court : ""]
+         .filter(Boolean).join(" · ");
+}
+
+// L'heure — et donc le groupe — n'a pas ete lue mais deduite : on le dit, sans
+// prendre une ligne de plus. Une heure fausse envoie chercher les partenaires
+// au mauvais creneau, et rien ne le signalerait.
+const C26_DEDUIT = ` <span class="apeu" title="Les listes d'appel ne nomment pas`
+  + ` cette personne : l'heure vient du voisin le plus proche sur la grille, et`
+  + ` les partenaires avec elle.">à peu près</span>`;
+
+// La carte de l'ecran de saisie. Elle suit les deux champs de nom : la relecture
+// corrige souvent une orthographe, et le cours doit apparaitre au moment ou le
+// nom devient juste — sans quoi il faudrait ressortir de la fiche et y revenir.
+function majCours2026(){
+  const el = document.getElementById("c26Corps");
+  if(!el) return;
+  const c = cours2026(document.getElementById("nom").value,
+                      document.getElementById("prenom").value);
+  if(!c){ el.innerHTML = `<div class="rien">Aucun cours en 2026 sous ce nom.</div>`; return; }
+  el.innerHTML = `<div class="ou">${esc(c26Ligne(c))}${c.deduit ? C26_DEDUIT : ""}</div>`
+    + (c.avec.length
+        ? `<div class="avec">Avec ${c.avec.map(n=>esc(n)).join(" · ")}</div>`
+        : `<div class="avec"><i>seul sur la grille à ce créneau</i></div>`);
+}
+["nom","prenom"].forEach(id=>document.getElementById(id)
+  .addEventListener("input", majCours2026));
+majCours2026();
 </script>
 
 <script>
@@ -3381,7 +3572,20 @@ let cours = [];        // {cle,jour,d,f,prof,type,pal,sexe,min,max,membres[],enP
 let attente = [];       // {nom,sexe,niveau,dispos,raison,manuel}
 let ctr = null;         // {fichier,date,jours,debut,fin,courts,terrains[],budget{}}
 let resFic = null;      // {fichier,date}
-let scen = [];          // scenarios : {n,nom,cours,attente}
+/* Deux niveaux, depuis qu'un jeu de fichiers d'entree peut varier.
+   Un SCENARIO porte un jeu (joueurs, contraintes, reconduction) et le mode de
+   reconduction qu'on lui applique ; ses VARIANTES sont les plannings qui en
+   sortent — le calcul, puis ce qu'on en fait a la main. Une variante ne se
+   compare a une autre que si elle sort du meme jeu : c'est tout l'interet de
+   les separer, et la rangee du haut ne montre donc que celles du scenario
+   affiche.
+   `jeu` vaut "" pour les fichiers a la racine du solveur, l'id d'un dossier
+   `jeux/<id>/` sinon, et null pour un scenario ne d'un classeur depose a la
+   main — celui-la ne se recalcule pas, faute d'entrees. */
+let scenarios = [];     // {id, nom, jeu:string|null, mode, sim:1..5|null}
+let scSel = null;       // le scenario que la page des scenarios detaille
+let jeuVu = "";         // le jeu dont on regarde les fichiers
+let scen = [];          // variantes : {n, nom, sc, cours, attente, annexes, res, touche}
 // Les inscrits que le solveur n'a pas eus en main. `enPlace` : deja membres d'un
 // groupe competition, donc PLACES. `hors` : rien a decider (niveau manquant,
 // fiche mise de cote). Sans eux le header ne peut pas retomber sur le nombre de
@@ -3529,7 +3733,7 @@ let majEtat = 0;          // date de la derniere ecriture reussie
 let stockKo = false;      // le navigateur a refuse d'ecrire
 let tPousse = 0, aPousser = null;
 
-function paquet(){ return {cours, attente, annexes, ctr, resFic, scen, vu, maj: Date.now()}; }
+function paquet(){ return {cours, attente, annexes, ctr, resFic, scenarios, scen, vu, maj: Date.now()}; }
 function sauver(){
   const o = paquet();
   majEtat = o.maj;
@@ -3619,6 +3823,8 @@ function adopter(o){
   annexes = o.annexes || {enPlace:[], hors:[]};
   annexes.enPlace = annexes.enPlace||[]; annexes.hors = annexes.hors||[];
   resFic = o.resFic||null; scen = o.scen||[]; vu = o.vu||0; majEtat = o.maj||0;
+  scenarios = o.scenarios || [];
+  migrerScenarios();
   // Un etat sauvegarde par une version anterieure n'a pas forcement tous les
   // champs que le code d'aujourd'hui attend : `terrains` par exemple est arrive
   // apres les premiers enregistrements. On les remet ici, une fois, plutot que
@@ -3629,6 +3835,39 @@ function adopter(o){
            ctr.types = ctr.types||[]; ctr.paliers = ctr.paliers||[]; }
   cours.forEach(c=>{ c.enPlace = c.enPlace||[]; });
 }
+/* Un etat d'avant les jeux de fichiers n'a que des variantes, a plat. Chacune
+   devient son propre scenario : c'est exactement ce qu'elles etaient — un
+   planning independant — et regrouper au hasard aurait invente une parente
+   qu'aucune donnee ne porte. Le jeu se devine : `sim-N` pour les cinq, la
+   racine du solveur pour le reste. */
+function migrerScenarios(){
+  if(scenarios.length || !scen.length) return;
+  scen.forEach(e=>{
+    const id = "s" + e.n;
+    e.sc = id;
+    scenarios.push({id, nom: e.nom, jeu: e.sim ? "sim-" + e.sim : "",
+                    mode: e.sim ? (e.sim === 3 || e.sim === 4 ? "aucune" : "souple") : "souple",
+                    sim: e.sim || null});
+  });
+}
+const scenarioDe = id => scenarios.find(x=>x.id === id) || null;
+const varDe      = n  => scen.find(e=>e.n === n) || null;
+// Le scenario dont le planning est a l'ecran.
+function scAffiche(){ const e = varDe(vu); return e ? scenarioDe(e.sc) : null; }
+// Celui que la page detaille : celui qu'on a clique, sinon celui a l'ecran.
+function scPage(){ return scenarioDe(scSel) || scAffiche() || scenarios[0] || null; }
+const variantesDe = sc => sc ? scen.filter(e=>e.sc === sc.id) : [];
+// Ce que l'agent sait du jeu d'un scenario : dates des classeurs, mode, resultat.
+function infosJeu(jeu){
+  if(!agent || jeu == null) return null;
+  return (agent.jeux || []).find(j=>j.id === jeu) || null;
+}
+function nouvelId(){
+  let k = scenarios.length + 1;
+  while(scenarios.some(s=>s.id === "s" + k)) k++;
+  return "s" + k;
+}
+
 function relire(){
   try{
     const o = JSON.parse(localStorage.getItem(CLE) || "null");
@@ -3825,16 +4064,23 @@ function lireContraintes(wb){
    se telecharge : sans ca, verifier une valeur oblige a ouvrir Excel. */
 const CACHE = {};                       // nom de fichier -> {b64, wb, etat}
 
-async function classeur(nom){
-  if(CACHE[nom]) return CACHE[nom];
+/* Deux jeux ont chacun leur `joueurs.xlsx`, et ce ne sont pas les memes fiches.
+   La cle du cache porte donc le jeu : sans lui, ouvrir les joueurs d'un scenario
+   puis d'un autre montrait deux fois le premier classeur. */
+const cleFic = (nom, jeu) => (jeu == null ? "" : jeu) + "|" + nom;
+async function classeur(nom, jeu){
+  if(jeu === undefined) jeu = jeuVu;
+  const k = cleFic(nom, jeu);
+  if(CACHE[k]) return CACHE[k];
   if(!agent) throw new Error("fichier non chargé — déposez-le, ou lancez l'agent");
-  const d = await jsonAgent("/fichier?nom=" + encodeURIComponent(nom));
-  CACHE[nom] = {b64:d.contenu, etat:d.etat,
+  const d = await jsonAgent("/fichier?nom=" + encodeURIComponent(nom)
+                            + "&jeu=" + encodeURIComponent(jeu || ""));
+  CACHE[k] = {b64:d.contenu, etat:d.etat,
     wb: XLSX.read(Uint8Array.from(atob(d.contenu), c=>c.charCodeAt(0)), {type:"array"})};
-  return CACHE[nom];
+  return CACHE[k];
 }
 function feuille(nom, onglet){
-  const c = CACHE[nom];
+  const c = CACHE[cleFic(nom, jeuVu)];
   if(!c) return null;
   const vrai = c.wb.SheetNames.find(n=>n.toLowerCase() === onglet.toLowerCase());
   return vrai ? XLSX.utils.sheet_to_json(c.wb.Sheets[vrai], {header:1, blankrows:false}) : null;
@@ -3892,22 +4138,27 @@ function JOURS_CTR(){ return (ctr && ctr.jours && ctr.jours.length) ? ctr.jours 
 /* Un classeur est consultable des qu'on peut mettre la main dessus : deja en
    cache, ou present sur la machine et l'agent capable de le servir. Les deux
    listes s'en servent — celle des fichiers d'entree et celle des scenarios. */
-function surMachineFic(n){
-  return agent && ((n === "joueurs.xlsx" ? agent.joueurs
-    : n === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes) || {}).present;
+// Le nom du classeur -> la case que l'agent renvoie pour lui, jeu par jeu.
+const CASE_FIC = {"joueurs.xlsx":"joueurs", "contraintes-tennis.xlsx":"contraintes",
+                  "reconduction-2027.xlsx":"reconduction", "figeages-cca.xlsx":"figeages",
+                  "resultat-cca.xlsx":"resultat"};
+function etatDeFic(fic, jeu){
+  const j = infosJeu(jeu === undefined ? jeuVu : jeu);
+  return (j && j[CASE_FIC[fic]]) || null;
 }
-function dispoFic(n){ return !!CACHE[n] || !!surMachineFic(n); }
-function etatFic(fic){
-  const c = CACHE[fic];
+function dispoFic(fic, jeu){
+  const e = etatDeFic(fic, jeu);
+  return !!CACHE[cleFic(fic, jeu === undefined ? jeuVu : jeu)] || !!(e && e.present);
+}
+function etatFic(fic, jeu){
+  const e = etatDeFic(fic, jeu);
+  if(e) return `${fic} — ` + (e.present ? `sur la machine, ${e.date}`
+                                        : "absent de ce jeu de fichiers");
+  const c = CACHE[cleFic(fic, jeu === undefined ? jeuVu : jeu)];
   if(c && c.etat && c.etat.present) return `${fic} — sur la machine, ${c.etat.date}`;
-  if(agent){
-    const a = fic === "joueurs.xlsx" ? agent.joueurs
-            : fic === "resultat-cca.xlsx" ? agent.resultat : agent.contraintes;
-    return `${fic} — ` + (a && a.present ? `sur la machine, ${a.date}` : "introuvable à côté du solveur");
-  }
   if(fic === "resultat-cca.xlsx")
     return resFic ? `${resFic.fichier} — déposé ${resFic.date}` : `${fic} — aucun fichier déposé`;
-  return `${fic} — ` + (ctr ? `déposé ${ctr.date}` : "aucun fichier déposé");
+  return `${fic} — ` + (ctr ? `déposé ${ctr.date}` : "sans agent, ce fichier n'est pas lisible d'ici");
 }
 function rendFichiers(){
   F("grFiles").innerHTML = LIGNES.map(f=>
@@ -4062,7 +4313,7 @@ function relirePlafondsProfs(){
   // D'abord l'etat deja lu : le classeur n'est pas toujours en cache, alors que
   // `ctr` survit au rechargement et suit le compte d'un poste a l'autre.
   POSE_CAP = Object.assign({}, (ctr && ctr.plafonds) || {});
-  const c = CACHE["contraintes-tennis.xlsx"];
+  const c = CACHE[cleFic("contraintes-tennis.xlsx", jeuVu)];
   if(!c) return;
   const a = feuille("contraintes-tennis.xlsx", "Profs");
   if(!a) return;
@@ -4408,244 +4659,20 @@ function diagnostic(cols, P, comparatif){
   return out.join("");
 }
 
-/* ---------------- les quatre simulations ----------------
-   Le club veut savoir ce que lui coutent — ou lui rapportent — deux apports de
-   l'annee passee : l'emploi du temps 2026 reconduit, et les affinites que Loic
-   a relevees joueur par joueur. Quatre calculs suffisent a le dire, puisque les
-   deux apports se combinent : avec les deux, avec l'un, avec l'autre, sans
-   rien. `simulations.command`, a cote du solveur, les produit dans cet ordre.
+/* ---------------- les scenarios ----------------
+   Un scenario porte un jeu de fichiers d'entree — joueurs, contraintes,
+   reconduction — et le mode dans lequel le solveur lit cette reconduction. Ses
+   variantes sont les plannings qui en sortent : le calcul, puis ce qu'on en
+   fait a la main. Deux variantes ne se comparent que si elles partent du meme
+   jeu ; c'est pour ca que la rangee du haut ne montre que celles du scenario
+   affiche, et que changer de scenario passe par cette page.
 
-   Ces classeurs restent dans CE navigateur, sous une cle a part. L'etat de
-   travail, lui, part dans la base a chaque geste : y joindre quatre resultats
-   de 80 ko l'aurait fait grossir de quatre fois, a chaque deplacement de
-   joueur, pour une comparaison qui ne regarde qu'une personne a la fois. Ce
-   qu'on retient d'une simulation, on l'ouvre — et c'est ce planning-la, un
-   seul, qui devient l'etat partage. */
-const CLE_SIMS = "cca_simulations_v1";
-/* Chaque simulation porte ses ingredients en clair plutot que deux cases a
-   cocher. Les trois etiquettes sont les trois memes questions posees a chaque
-   ligne — reconduit-on l'emploi du temps, donne-t-on les affinites, garde-t-on
-   les arbitrages pris a la main dessus — et c'est leur alignement qui rend le
-   bloc lisible : deux lignes voisines ne different que par ce qui change.
-   La troisieme manque aux calculs 3 et 4 : sans emploi du temps reconduit, il
-   n'y a rien a arbitrer, et une pastille vide y mentirait. */
-const SIMS = [
-  {n:1, titre:"EDT 2026 + affinités de Loïc", court:"EDT + affinités",
-   fic:"resultat-1-edt-affinites.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", true], ["arbitrages à la main", true]]},
-  {n:2, titre:"EDT 2026 seul", court:"EDT seul",
-   fic:"resultat-2-edt-seul.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", false], ["arbitrages à la main", true]]},
-  {n:3, titre:"Affinités de Loïc seules", court:"Affinités seules",
-   fic:"resultat-3-affinites-seules.xlsx",
-   tags:[["EDT 2026", false], ["affinités Loïc", true]]},
-  {n:4, titre:"Ni l'un ni l'autre", court:"Aucun des deux",
-   fic:"resultat-4-aucun.xlsx",
-   tags:[["EDT 2026", false], ["affinités Loïc", false]]},
-  {n:5, titre:"Groupes 2026 bruts", court:"Groupes bruts",
-   fic:"resultat-5-groupes-bruts.xlsx",
-   tags:[["EDT 2026", true], ["affinités Loïc", true], ["arbitrages à la main", false]]},
-];
-/* Comment chaque simulation a ete calculee. Le classeur produit ne porte pas ses
-   propres entrees : rien dedans ne dit avec quel fichier de joueurs ni avec
-   quels drapeaux il a ete obtenu. Sans cette table, deux colonnes voisines du
-   tableau sont incomparables sans le dire — et c'est exactement ce qui a fait
-   lire un fichier d'affinites inerte comme une reussite. */
-const RECETTES = {
-  1: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:"reconduction-2027.xlsx (souple)",
-      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
-  2: {joueurs:"joueurs.xlsx", reconduction:"reconduction-2027.xlsx (souple)",
-      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
-  3: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:null,
-      drapeaux:["--sans-figeages", "--sans-reconduction", "--temps=1800"]},
-  4: {joueurs:"joueurs.xlsx", reconduction:null,
-      drapeaux:["--sans-figeages", "--sans-reconduction", "--temps=1800"]},
-  5: {joueurs:"joueurs-affinitesloic.xlsx", reconduction:"reconduction-2027-brut.xlsx (souple)",
-      drapeaux:["--sans-figeages", "--reconduction-souple", "--temps=1800"]},
-};
-let sims = {};
-try{ sims = JSON.parse(localStorage.getItem(CLE_SIMS) || "{}") || {}; }catch(e){ sims = {}; }
+   Cote solveur, un jeu est un dossier `jeux/<id>/`. Le jeu "" est la racine du
+   solveur : les fichiers historiques n'ont pas bouge. `jeu` vaut null pour un
+   scenario ne d'un classeur depose a la main — sans entrees, il se relit et se
+   retouche, mais ne se recalcule pas. C'est le seul scenario possible depuis un
+   poste qui n'a pas le solveur. */
 
-function sauverSims(){
-  try{ localStorage.setItem(CLE_SIMS, JSON.stringify(sims)); return ""; }
-  catch(e){ return "Le navigateur a refusé d'enregistrer cette simulation — retirez-en une avant d'en déposer une autre."; }
-}
-function lireSynthese(wb){
-  const a = aoa(wb, "Synthese"), o = {};
-  if(a) a.slice(1).forEach(r=>{ const k = String(r[0]||"").trim().toLowerCase(); if(k) o[k] = r[1]; });
-  return o;
-}
-function resumeSim(syn, wb){
-  const v = k => syn[k];
-  if(v("cours ouverts") != null)
-    return `${v("cours ouverts")} cours · ${v("joueurs places")} placés · ${v("joueurs sans groupe")} sans groupe`;
-  // Classeur sans onglet Synthese : on compte les lignes plutot que de ne rien dire.
-  const co = aoa(wb, "Cours"), np = aoa(wb, "Non places");
-  return `${co ? co.length-1 : "?"} cours` + (np ? ` · ${np.length-1} sans groupe` : "");
-}
-
-/* Ce que pese un scenario, lu dans son instantane et pas dans le classeur dont
-   il sort : deplacer un joueur doit se voir ici aussi, sinon la ligne annonce
-   des chiffres que l'ecran a dementis. */
-function chiffresScen(e){
-  const viv = (e.cours||[]).filter(c=>c.diff !== "supp");
-  // Un instantane d'avant les annexes n'en porte pas : on retombe alors sur
-  // celles de l'ecran, exactement comme le fait `allerA` en y revenant.
-  const pl = viv.reduce((t,c)=>t + (c.membres||[]).length, 0)
-           + (((e.annexes || annexes || {}).enPlace) || []).length;
-  return `${viv.length} cours · ${pl} placés · ${(e.attente||[]).length} sans groupe`;
-}
-/* Le resultat que le solveur vient d'ecrire : il n'est pas un fichier d'entree,
-   il est un scenario de plus. Il a donc quitte la liste des fichiers du calcul
-   pour cette liste-ci, la ou on choisit ce qu'on affiche. */
-const LIGNE_RES = {k:"res", lab:"Dernier résultat du solveur", fic:"resultat-cca.xlsx",
-  onglets:["Cours","Groupes","Non places","Deja en place","Hors calcul","Synthese"]};
-
-function rendScenarios(){
-  const w = F("grSims"); if(!w) return;
-  w.innerHTML = blocCalculs() + blocSims();
-  w.querySelectorAll("[data-b]").forEach(b=>{
-    const e = scen.find(x=>x.n === +b.closest("[data-c]").dataset.c);
-    b.onclick = ()=>{
-      if(!e) return;
-      if(b.dataset.b === "voir")     return allerA(e);
-      if(b.dataset.b === "nom") return renommer(e, b.closest(".grsim").querySelector(".tx"),
-                                                     b.closest(".grsim").querySelector(".tx > b"));
-      supprimerScen(e);
-    };
-  });
-  w.querySelectorAll("[data-r]").forEach(r=>{
-    r.onclick = ()=> r.dataset.r === "prendre" ? reprendreResultat(r)
-                   : r.dataset.r === "voir"    ? voir(LIGNE_RES, 0)
-                                               : telecharger(LIGNE_RES.fic);
-  });
-  w.querySelectorAll("[data-a]").forEach(b=>{
-    const n = +b.closest("[data-n]").dataset.n;
-    b.onclick = ()=> b.dataset.a === "deposer"  ? deposerSim(n)
-                   : b.dataset.a === "ouvrir"   ? ouvrirSim(n)
-                   : b.dataset.a === "repartir" ? repartirSim(n) : retirerSim(n);
-  });
-  w.querySelectorAll("[data-t]").forEach(b=>{
-    b.onclick = ()=> b.dataset.t === "lot" ? deposerLot() : ouvrirTout();
-  });
-}
-/* -------- ce qui vient du calcul du club -------- */
-function blocCalculs(){
-  const autres = scen.filter(e=>e.sim == null);
-  const res = ligneResultat();
-  if(!autres.length && !res) return "";
-  return `<div class="grsims"><div class="grsimh"><b>Le calcul du club</b>
-      <span>Le dernier résultat du solveur, et ce qu'il est devenu à force de retouches.</span></div>`
-    + autres.map(ligneCalcul).join("") + res + `</div>`;
-}
-function ligneCalcul(e){
-  const ici = e.n === vu;
-  return `<div class="grsim${ici ? " on" : ""}" data-c="${e.n}">
-    <span class="num cal">•</span>
-    <span class="tx"><b>${esc(e.nom)}</b>
-      <span class="fic">${e.res ? esc(e.res.fichier) + " · " : ""}${chiffresScen(e)}</span></span>
-    <span class="acts">
-      ${ici ? `<span class="chip ici">à l'écran</span>`
-            : `<button class="mini" data-b="voir">Mettre à l'écran</button>`}
-      <button class="mini" data-b="nom" title="Renommer ce scénario">✎</button>
-      ${scen.length > 1 ? `<button class="mini" data-b="x" title="Supprimer ce scénario">✕</button>` : ""}
-    </span></div>`;
-}
-function ligneResultat(){
-  // Rien a montrer tant qu'aucun resultat n'est a portee : ni en cache, ni a
-  // cote du solveur. La ligne dirait « introuvable » et n'appellerait aucun geste.
-  if(!dispoFic(LIGNE_RES.fic)) return "";
-  return `<div class="grsim">
-    <span class="num cal">↻</span>
-    <span class="tx"><b>${LIGNE_RES.lab}</b>
-      <span class="fic">${esc(etatFic(LIGNE_RES.fic))}</span></span>
-    <span class="acts">
-      <button class="mini" data-r="prendre">Mettre à l'écran</button>
-      <button class="mini" data-r="voir">Voir</button>
-      <button class="mini" data-r="dl">⬇︎</button>
-    </span></div>`;
-}
-function supprimerScen(e){
-  if(scen.length < 2) return;
-  if(!confirm(`Supprimer le scénario « ${e.nom} » ?\n\nCe planning ne sera plus consultable. `
-    + "Les autres scénarios et l'emploi du temps affiché ne changent pas.")) return;
-  const i = scen.findIndex(x=>x.n === e.n);
-  if(i < 0) return;
-  scen.splice(i, 1);
-  if(e.n === vu) return allerA(scen[scen.length-1]);
-  sauver(); rend();
-}
-/* -------- les cinq simulations -------- */
-function blocSims(){
-  const pretes = SIMS.filter(s=>sims[s.n]);
-  const aOuvrir = pretes.filter(s=>!scenDeSim(s.n));
-  const tag = ([txt, on]) => `<span class="grtag${on?" on":""}">${on?"✓":"—"} ${esc(txt)}</span>`;
-  return `<div class="grsims"><div class="grsimh"><b>Les cinq simulations</b>
-       <span>Le même calcul cinq fois : on enlève, puis on remet, ce que l'année passée a
-       laissé. Rien d'autre ne bouge, donc l'écart entre deux lignes est le prix de ce qui
-       les sépare. <code>simulations.command</code> fabrique les quatre premières.</span>
-       <span class="acts">
-         <button class="mini" data-t="lot">Déposer les cinq classeurs…</button>
-         <button class="mini" data-t="tout"${aOuvrir.length ? "" : " disabled"}
-           title="Charger d'un coup les simulations déposées, chacune dans son scénario"
-           >Toutes les charger${
-             aOuvrir.length && aOuvrir.length < pretes.length ? ` (${aOuvrir.length})` : ""}</button>
-       </span>
-       <dl class="grsimd">
-         <div><dt>EDT 2026</dt><dd>les groupes de l'an dernier repris tels quels, là où la
-           couleur de Loïc sur la grille le permet.</dd></div>
-         <div><dt>affinités Loïc</dt><dd>les « avec X », « pas avec Y » et les profs souhaités
-           ou refusés, relevés sur les fiches.</dd></div>
-         <div><dt>arbitrages à la main</dt><dd>les décisions prises ensuite sur cette grille
-           (<code>decisions-2027.xlsx</code>).</dd></div>
-       </dl></div>` +
-    SIMS.map(s=>{
-      const d = sims[s.n], e = scenDeSim(s.n), ici = !!(e && e.n === vu);
-      // Trois etats, un mot chacun : a l'ecran (c'est ce qu'on regarde),
-      // retouchee (ouverte, et on y a touche), ouverte (chargee, intacte).
-      const chip = !d ? ""
-        : ici ? `<span class="chip ici" title="C'est ce planning qui est affiché${
-                   e && e.touche ? ", et il a été retouché" : ""}">à l'écran</span>`
-        : e   ? `<span class="chip ${e.touche ? "ret" : "ouv"}"
-                   title="Ouverte dans le scénario « ${esc(e.nom)} »">${
-                   e.touche ? "retouchée" : "ouverte"}</span>` : "";
-      // Ouverte, la ligne compte ce que le scenario contient AUJOURD'HUI ;
-      // fermee, elle ne peut que citer ce que le classeur annonce.
-      const dit = !d ? "aucun classeur — attendu : " + esc(s.fic)
-        : esc(d.fichier) + " · " + (e ? chiffresScen(e) : esc(d.resume || "déposé " + d.date));
-      const quand = d ? ` title="Déposé le ${esc(d.date)}"` : "";
-      return `<div class="grsim${ici ? " on" : ""}" data-n="${s.n}">
-        <span class="num">${s.n}</span>
-        <span class="tx"><b>${esc(s.titre)}</b>
-          <span class="tags">${s.tags.map(tag).join("")}</span>
-          <span class="fic"${quand}>${dit}</span></span>
-        <span class="acts">${chip}${!d
-          ? `<button class="mini" data-a="deposer">Déposer…</button>`
-          : `${ici ? "" : `<button class="mini" data-a="ouvrir">Mettre à l'écran</button>`}
-             ${e && e.touche ? `<button class="mini" data-a="repartir"
-                title="Oublier les retouches et reprendre ce planning tel que le solveur l'a rendu"
-                >↺ Revenir au calcul</button>` : ""}
-             <button class="mini" data-a="retirer" title="Retirer ce classeur">✕</button>`}</span>
-      </div>`;
-    }).join("") + `</div>`;
-}
-
-/* -------- deposer les classeurs --------
-   Le meme travail pour un depot a l'unite et pour le lot : c'est ici qu'un
-   classeur qui n'est pas un resultat du solveur est refuse, avant d'occuper
-   une case. On garde le classeur, pas sa lecture : c'est lui qu'on relit a
-   l'ouverture, et il reste le fichier que Loic peut rouvrir dans Excel. */
-async function rangerSim(n, f){
-  const buf = await f.arrayBuffer();
-  const wb = XLSX.read(buf, {type:"array"});
-  if(!aoa(wb, "Cours"))
-    throw new Error("onglet « Cours » introuvable. Est-ce bien un résultat du solveur ?");
-  let b = ""; const u = new Uint8Array(buf);
-  for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
-  const syn = lireSynthese(wb);
-  sims[n] = {fichier: f.name, b64: btoa(b), syn, resume: resumeSim(syn, wb),
-    date: new Date().toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})};
-}
 function choisirFichiers(plusieurs){
   return new Promise(res=>{
     const i = document.createElement("input");
@@ -4654,133 +4681,249 @@ function choisirFichiers(plusieurs){
     i.click();
   });
 }
-async function deposerSim(n){
-  const [f] = await choisirFichiers(false); if(!f) return;
-  F("grErr").textContent = "";
-  const garde = sims[n];
-  try{
-    await rangerSim(n, f);
-    const err = sauverSims();
-    if(err){ if(garde) sims[n] = garde; else delete sims[n]; F("grErr").textContent = err; }
-  }catch(e){ F("grErr").textContent = "Fichier refusé : " + e.message; }
-  rendScenarios();
+/* Ce que pese une variante, lu dans son instantane et pas dans le classeur dont
+   elle sort : deplacer un joueur doit se voir ici aussi. */
+function chiffresScen(e){
+  const viv = (e.cours||[]).filter(c=>c.diff !== "supp");
+  const pl = viv.reduce((t,c)=>t + (c.membres||[]).length, 0)
+           + (((e.annexes || annexes || {}).enPlace) || []).length;
+  return `${viv.length} cours · ${pl} placés · ${(e.attente||[]).length} sans groupe`;
 }
-/* Les cinq d'un coup. `simulations.command` les ecrit sous des noms fixes :
-   c'est le nom du fichier qui dit dans quelle case il va. Un classeur renomme
-   n'atterrit pas dans la mauvaise ligne — il est laisse de cote et se depose
-   a l'unite, la ou on voit ce qu'on fait. */
-function caseDe(nom){
-  const b = String(nom).toLowerCase();
-  const s = SIMS.find(x=>x.fic.toLowerCase() === b);
-  if(s) return s.n;
-  const m = b.match(/r[ée]sultat[ _-]*(\d)/);
-  return m && SIMS.some(x=>x.n === +m[1]) ? +m[1] : 0;
-}
-async function deposerLot(){
-  const fs = await choisirFichiers(true); if(!fs.length) return;
-  F("grErr").textContent = "";
-  const garde = Object.assign({}, sims), ko = [];
-  let mis = 0;
-  for(const f of fs){
-    const n = caseDe(f.name);
-    if(!n){ ko.push(f.name + " (nom non reconnu)"); continue; }
-    try{ await rangerSim(n, f); mis++; }
-    catch(e){ ko.push(f.name + " (" + e.message + ")"); }
-  }
-  const err = mis ? sauverSims() : "";
-  if(err){ sims = garde; F("grErr").textContent = err; }
-  else F("grErr").textContent = ko.length
-    ? `${mis} classeur(s) rangé(s). Laissé de côté : ${ko.join(" · ")}`
-    : "";
-  rendScenarios();
+function nomVariante(s){ return "Calcul " + (variantesDe(s).length + 1); }
+function nouveauScenario(nom, jeu, o){
+  const s = Object.assign({id: nouvelId(), nom, jeu: jeu === undefined ? null : jeu,
+                           mode: "souple", sim: null}, o || {});
+  scenarios.push(s);
+  return s;
 }
 
-/* -------- une simulation, un planning modifiable --------
-   Ouvrir ne remplace plus l'ecran : la simulation prend sa pastille dans la
-   rangee « Calculs », a cote des autres. Les cinq peuvent donc etre chargees
-   ensemble, chacune garde les cours qu'on y deplace, et passer de l'une a
-   l'autre ne perd rien. La pastille retient le classeur d'ou elle vient —
-   sans lui, le header et cette liste annonceraient le fichier de la
-   simulation d'avant. */
-function scenDeSim(n){ return scen.find(e=>e.sim === n); }
-function litSim(n){
-  const d = sims[n]; if(!d) throw new Error("aucun classeur déposé");
-  lireResultat(XLSX.read(Uint8Array.from(atob(d.b64), c=>c.charCodeAt(0)), {type:"array"}));
-  resFic = {fichier: d.fichier, date: d.date};
-}
-function chargerSim(n){
-  litSim(n);
-  return poserScen(n + ". " + SIMS.find(x=>x.n === n).court, {sim:n});
-}
-function ouvrirSim(n){
-  if(!sims[n]) return;
+/* Creer un scenario, c'est creer un dossier de travail a cote du solveur : une
+   copie du jeu dont on part, dans lequel on remplace ensuite ce qu'on veut.
+   Copier plutot que partir vide — on change presque toujours UN des trois
+   classeurs, et repartir de rien obligerait a redeposer les autres. */
+async function creerScenario(){
   F("grErr").textContent = "";
-  let e = scenDeSim(n);
-  if(!e){
-    const g = [cours, attente, annexes, resFic];
-    try{ e = chargerSim(n); }
-    catch(err){
-      cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
-      F("grErr").textContent = "Simulation illisible : " + err.message; return;
+  const base = scPage();
+  const nom = "Scénario " + (scenarios.length + 1);
+  let jeu = null;
+  if(agent){
+    try{
+      const d = await jsonAgent("/jeu", {nom, depuis: (base && base.jeu) || ""});
+      jeu = d.id;
+      await pingAgent();
+    }catch(e){ F("grErr").textContent = "Création impossible : " + e.message; return; }
+  }
+  const s = nouveauScenario(nom, jeu, {mode: (base && base.mode) || "souple"});
+  scSel = s.id;
+  sauver(); rend();
+  // Le champ s'ouvre tout de suite : un scenario s'appelle « Sans les affinites »
+  // ou « Loic le mardi », jamais « Scenario 3 », et le nommer plus tard ne se
+  // fait jamais.
+  const b = document.querySelector(`#grSims [data-s="${s.id}"] .tx > b`);
+  if(b) renommer(s, b.parentNode, b);
+}
+
+/* Les cinq simulations deviennent des scenarios comme les autres : l'agent
+   fabrique un dossier par recette (le bon joueurs.xlsx, la bonne reconduction,
+   le bon mode) et y copie le resultat deja calcule. Elles cessent d'etre des
+   classeurs deposes qu'on ne peut que relire. */
+async function creerSimulations(){
+  F("grErr").textContent = "";
+  let d;
+  try{ d = await jsonAgent("/jeux/simulations", {}); }
+  catch(e){ F("grErr").textContent = "Impossible : " + e.message; return; }
+  await pingAgent();
+  for(const j of (d.jeux || [])){
+    let s = scenarios.find(x=>x.jeu === j.id);
+    if(!s) s = nouveauScenario(j.nom, j.id, {mode: j.mode, sim: j.simulation});
+    else { s.mode = j.mode; s.sim = j.simulation; s.nom = s.nom || j.nom; }
+    if(!variantesDe(s).length && j.resultat && j.resultat.present){
+      try{ await chargerResultat(s, false); }
+      catch(e){ F("grErr").textContent = `Résultat de « ${s.nom} » illisible : ` + e.message; }
     }
   }
-  ecranLance = false;
-  allerA(e);
-}
-function ouvrirTout(){
-  F("grErr").textContent = "";
-  const a = SIMS.filter(s=>sims[s.n] && !scenDeSim(s.n));
-  if(!a.length) return;
-  const g = [cours, attente, annexes, resFic], ko = [];
-  a.forEach(s=>{ try{ chargerSim(s.n); }catch(err){ ko.push(s.n + " : " + err.message); } });
-  // `chargerSim` laisse les globales sur la derniere lue : on les rend a ce
-  // qui etait affiche, puis `allerA` pose franchement le planning demande.
-  cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
-  if(ko.length) F("grErr").textContent = "Simulation illisible — " + ko.join(" · ");
-  const prem = scenDeSim(a[0].n) || scen.find(e=>e.sim != null);
-  if(!prem){ rend(); return; }
-  ecranLance = false;
-  allerA(prem);
-}
-/* Reprendre le classeur tel qu'il a ete calcule, apres l'avoir retouche : la
-   pastille reste la meme (son nom, sa place dans la rangee), c'est son contenu
-   qui repart de zero. Sans ce geste, il faudrait retirer la simulation et la
-   redeposer pour revenir au point de depart. */
-function repartirSim(n){
-  const e = scenDeSim(n); if(!e) return ouvrirSim(n);
-  if(e.touche && !confirm(`Repartir du classeur déposé pour « ${e.nom} » ?\n\n`
-    + "Les retouches faites sur cette simulation seront perdues. "
-    + "Les autres calculs ne changent pas.")) return;
-  const g = [cours, attente, annexes, resFic];
-  try{ litSim(n); }
-  catch(err){
-    cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3];
-    F("grErr").textContent = "Simulation illisible : " + err.message; return;
-  }
-  e.cours = clone(cours); e.attente = clone(attente); e.annexes = clone(annexes);
-  e.res = {fichier: resFic.fichier, date: resFic.date}; e.touche = false;
-  ecranLance = false;
-  allerA(e);
-}
-function retirerSim(n){
-  const d = sims[n]; if(!d) return;
-  const e = scenDeSim(n);
-  // Le classeur s'en va, le planning reste : c'est du travail, et il ne se
-  // refabrique pas. Sa pastille perd seulement son lien avec la case — sinon
-  // un classeur redepose ici rouvrirait l'ancien planning au lieu du nouveau.
-  if(!confirm(`Retirer « ${d.fichier} » de la simulation ${n} ?\nLe fichier reste sur l'ordinateur.`
-    + (e ? `\n\nLe calcul « ${e.nom} » reste dans la rangée du haut avec ses retouches, `
-         + "mais il ne pourra plus repartir de ce classeur." : ""))) return;
-  delete sims[n];
-  sauverSims();
-  if(e){ e.sim = null; sauver(); }
-  rendScenarios();
+  if((d.manquants || []).length)
+    F("grErr").textContent = "Classeurs absents à côté du solveur : " + d.manquants.join(" · ");
+  sauver(); rend();
 }
 
+/* Le resultat que le solveur a ecrit dans le dossier du scenario devient une
+   variante de plus. `basculer` dit si on va dessus ou si on le range sans
+   quitter ce qu'on regarde — recreer les cinq d'un coup ne doit pas faire
+   defiler l'ecran cinq fois. */
+async function chargerResultat(s, basculer){
+  const g = [cours, attente, annexes, resFic, vu];
+  const r = await jsonAgent("/resultat?jeu=" + encodeURIComponent(s.jeu || ""));
+  try{
+    lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
+  }catch(e){
+    cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3]; vu = g[4];
+    throw e;
+  }
+  const j = infosJeu(s.jeu);
+  resFic = {fichier: r.nom, date: (j && j.resultat && j.resultat.date) || "lu sur la machine"};
+  const v = poserScen(nomVariante(s), s.id);
+  if(basculer){ ecranLance = false; allerA(v); return v; }
+  cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3]; vu = g[4];
+  return v;
+}
+
+/* Un classeur de resultat depose a la main : le seul scenario qu'on puisse
+   fabriquer depuis un poste sans solveur. Il n'a pas d'entrees, donc pas de
+   bouton « Lancer » — la page le dit sur sa ligne plutot que de griser un
+   bouton sans expliquer. */
+async function deposerResultat(){
+  const [f] = await choisirFichiers(false); if(!f) return;
+  F("grErr").textContent = "";
+  const g = [cours, attente, annexes, resFic, vu];
+  try{
+    const buf = await f.arrayBuffer();
+    const wb = XLSX.read(buf, {type:"array"});
+    if(!aoa(wb, "Cours"))
+      throw new Error("onglet « Cours » introuvable. Est-ce bien un résultat du solveur ?");
+    lireResultat(wb);
+    const quand = new Date().toLocaleString("fr-FR",
+      {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    resFic = {fichier: f.name, date: quand};
+    const s = nouveauScenario(f.name.replace(/\.xlsx?$/i, ""), null);
+    const v = poserScen("Calcul 1", s.id);
+    scSel = s.id;
+    ecranLance = false;
+    allerA(v);
+  }catch(e){
+    cours = g[0]; attente = g[1]; annexes = g[2]; resFic = g[3]; vu = g[4];
+    F("grErr").textContent = "Fichier refusé : " + e.message;
+    rend();
+  }
+}
+
+function allerAScenario(s){
+  const vs = variantesDe(s);
+  scSel = s.id;
+  if(!vs.length){ sauver(); rend(); return; }   // rien a montrer : on reste ici
+  ecranLance = false;
+  allerA(vs[vs.length - 1]);
+}
+async function supprimerScenario(s){
+  const vs = variantesDe(s);
+  if(scenarios.length < 2 && vs.length) return;
+  if(!confirm(`Supprimer le scénario « ${s.nom} » ?\n\n`
+    + (vs.length ? `Ses ${vs.length} planning(s) ne seront plus consultables. ` : "")
+    + (s.jeu ? "Son dossier de fichiers est effacé à côté du solveur. " : "")
+    + "Les autres scénarios ne changent pas.")) return;
+  if(s.jeu && agent){
+    try{ await jsonAgent("/jeu/supprimer", {id: s.jeu}); await pingAgent(); }
+    catch(e){ F("grErr").textContent = "Dossier non effacé : " + e.message; }
+  }
+  vs.forEach(v=>{ const i = scen.indexOf(v); if(i >= 0) scen.splice(i, 1); });
+  scenarios.splice(scenarios.indexOf(s), 1);
+  scSel = null;
+  if(!scen.some(e=>e.n === vu)){
+    if(scen.length) return allerA(scen[scen.length - 1]);
+    cours = []; attente = []; vu = 0;
+  }
+  sauver(); rend();
+}
+/* Une variante de trop : elle part, le reste du scenario ne bouge pas. */
+function supprimerScen(e){
+  const s = scenarioDe(e.sc);
+  if(variantesDe(s).length < 2) return;
+  if(!confirm(`Supprimer « ${e.nom} » ?\n\nCe planning ne sera plus consultable. `
+    + "Les autres variantes de ce scénario et l'emploi du temps affiché ne changent pas.")) return;
+  const i = scen.indexOf(e);
+  if(i < 0) return;
+  scen.splice(i, 1);
+  if(e.n === vu) return allerA(variantesDe(s)[0]);
+  sauver(); rend();
+}
+
+/* -------- la page -------- */
+function rendScenarios(){
+  const w = F("grSims"); if(!w) return;
+  const page = scPage();
+  w.innerHTML =
+    `<div class="grsims"><div class="grsimh"><b>Les scénarios</b>
+       <span>Chacun part de son propre jeu de fichiers, et garde les plannings qui en sortent.
+       Cliquez-en un pour voir ses fichiers, plus bas, et relancer le calcul dessus.</span>
+       <span class="acts">
+         <button class="mini" data-t="neuf"${agent ? "" : " disabled"}
+           title="Un nouveau dossier de fichiers à côté du solveur, copié de celui-ci"
+           >+ Nouveau scénario</button>
+         <button class="mini" data-t="depot"
+           title="Un résultat du solveur déposé à la main : lisible et retouchable, mais pas recalculable"
+           >Déposer un résultat…</button>
+         ${agent ? `<button class="mini" data-t="sims"
+           title="Un scénario par simulation, avec les classeurs de sa recette et son résultat déjà calculé"
+           >Recréer les cinq simulations</button>` : ""}
+       </span></div>`
+    + (scenarios.length
+        ? scenarios.map(s=>ligneScenario(s, page)).join("")
+        : `<div class="grsim"><span class="tx"><b>Aucun scénario</b>
+             <span class="fic">${agent
+               ? "« + Nouveau scénario » part d'une copie des fichiers du solveur."
+               : "Sans agent local, seul « Déposer un résultat… » est possible depuis ce poste."}</span>
+           </span></div>`)
+    + `</div>`;
+  w.querySelectorAll("[data-s]").forEach(d=>{
+    const s = scenarioDe(d.dataset.s);
+    d.onclick = ev=>{ if(ev.target.closest("[data-b]") || ev.target.tagName === "INPUT") return;
+                      scSel = s.id; rend(); };
+    d.querySelectorAll("[data-b]").forEach(b=>{
+      b.onclick = ev=>{
+        ev.stopPropagation();
+        if(b.dataset.b === "voir")   return allerAScenario(s);
+        if(b.dataset.b === "nom")    return renommer(s, d.querySelector(".tx"),
+                                                     d.querySelector(".tx > b"));
+        if(b.dataset.b === "charger")return chargerResultat(s, true)
+          .catch(e=>{ F("grErr").textContent = "Résultat illisible : " + e.message; rend(); });
+        supprimerScenario(s);
+      };
+    });
+  });
+  w.querySelectorAll("[data-t]").forEach(b=>{
+    b.onclick = ()=> b.dataset.t === "neuf" ? creerScenario()
+                   : b.dataset.t === "depot" ? deposerResultat() : creerSimulations();
+  });
+}
+const LIB_MODE = {souple:"reconduction relâchée si besoin", stricte:"reconduction stricte",
+                  aucune:"sans reconduction"};
+function ligneScenario(s, page){
+  const vs = variantesDe(s);
+  const ici = vs.some(e=>e.n === vu);
+  const j = infosJeu(s.jeu);
+  const d = e => (e && e.present) ? e.date : null;
+  // Ce que ce scenario donne au solveur, en une ligne. Sans agent on ne peut
+  // rien en dire : la ligne le dit plutot que d'annoncer des fichiers absents.
+  const entrees = s.jeu == null
+    ? "classeur déposé à la main — pas de fichiers d'entrée, donc pas de calcul possible"
+    : !agent ? "ses fichiers sont sur l'ordinateur du solveur"
+    : !j ? `dossier « ${esc(s.jeu)} » introuvable à côté du solveur`
+    : [d(j.joueurs) ? "joueurs " + d(j.joueurs) : "pas de joueurs.xlsx",
+       d(j.contraintes) ? "contraintes " + d(j.contraintes) : "pas de contraintes",
+       d(j.reconduction) ? "reconduction " + d(j.reconduction) : "sans reconduction",
+      ].join(" · ") + " · " + (LIB_MODE[s.mode] || s.mode);
+  const nb = vs.length
+    ? `${vs.length} planning${vs.length > 1 ? "s" : ""}` +
+      (vs.some(e=>e.touche) ? ", retouché" + (vs.filter(e=>e.touche).length > 1 ? "s" : "") : "")
+    : "aucun calcul pour l'instant";
+  const peutCharger = agent && s.jeu != null && j && j.resultat && j.resultat.present;
+  return `<div class="grsim${ici ? " on" : ""}${page && page.id === s.id ? " sel" : ""}" data-s="${s.id}">
+    <span class="num cal">${s.sim || "•"}</span>
+    <span class="tx"><b>${esc(s.nom)}</b>
+      <span class="fic">${nb} · ${esc(entrees)}</span></span>
+    <span class="acts">
+      ${ici ? `<span class="chip ici">à l'écran</span>`
+            : vs.length ? `<button class="mini" data-b="voir">Mettre à l'écran</button>` : ""}
+      ${!vs.length && peutCharger
+        ? `<button class="mini" data-b="charger">Ouvrir son résultat</button>` : ""}
+      <button class="mini" data-b="nom" title="Renommer ce scénario">✎</button>
+      <button class="mini" data-b="x" title="Supprimer ce scénario">✕</button>
+    </span></div>`;
+}
 async function reprendreResultat(b){
   if(b){ b.disabled = true; b.textContent = "Lecture…"; }
   try{
-    delete CACHE["resultat-cca.xlsx"];
+    delete CACHE[cleFic("resultat-cca.xlsx", jeuVu)];
     const r = await jsonAgent("/resultat");
     lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
     resFic = {fichier:r.nom,
@@ -4794,9 +4937,9 @@ async function reprendreResultat(b){
   }
 }
 
-async function telecharger(nom){
+async function telecharger(nom, jeu){
   try{
-    const c = await classeur(nom);
+    const c = await classeur(nom, jeu === undefined ? jeuVu : jeu);
     dl(new Blob([Uint8Array.from(atob(c.b64), ch=>ch.charCodeAt(0))],
       {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), nom);
   }catch(e){ F("grErr").textContent = "Téléchargement impossible : " + e.message; }
@@ -4804,7 +4947,7 @@ async function telecharger(nom){
 
 /* -------- consultation : le contenu du fichier, a l'ecran -------- */
 async function voir(f, k){
-  try{ await classeur(f.fic); }
+  try{ await classeur(f.fic, f.jeu === undefined ? jeuVu : f.jeu); }
   catch(e){ F("grErr").textContent = "Lecture impossible : " + e.message; return; }
   const dispos = f.onglets.filter(o=>feuille(f.fic, o));
   if(!dispos.length){ F("grErr").textContent = "Aucun onglet lisible dans " + f.fic; return; }
@@ -4843,11 +4986,13 @@ function choisir(quoi, surDisque){
                 : quoi === "res" ? "resultat-cca.xlsx" : "contraintes-tennis.xlsx";
       let b = "", u = new Uint8Array(buf);
       for(let k = 0; k < u.length; k++) b += String.fromCharCode(u[k]);
-      CACHE[nom] = {b64: btoa(b), wb, etat:{present:true, date:quand}};
+      CACHE[cleFic(nom, jeuVu)] = {b64: btoa(b), wb, etat:{present:true, date:quand}};
       // Avec l'agent, deposer un fichier d'entree doit l'ecrire sur la machine :
-      // sinon le prochain calcul relirait l'ancienne version du disque.
+      // sinon le prochain calcul relirait l'ancienne version du disque — et
+      // dans le dossier du jeu qu'on regarde, pas dans celui d'a cote.
       if(surDisque){
-        await jsonAgent("/fichier", {nom, contenu: CACHE[nom].b64});
+        await jsonAgent("/fichier", {nom, jeu: jeuVu,
+                                     contenu: CACHE[cleFic(nom, jeuVu)].b64});
         if(nom === "contraintes-tennis.xlsx"){ lireContraintes(wb); ctr.fichier = nom; ctr.date = quand; }
         await pingAgent();
         sauver(); rend();
@@ -6597,11 +6742,26 @@ function rendJoueur(head, body, p, src){
       calcul suivant déferait le geste.</p>`;
   const blocContact = `<div class="grh4">Contact</div>${contact}`;
 
+  // Ce qu'il faisait l'an dernier, juste avant la liste des places : c'est
+  // souvent la reponse a « ou le mettre ». On interroge la grille 2026 et pas
+  // le drapeau « ancien » du classeur — la grille rattrape trente anciens que
+  // le drapeau rate, et elle seule dit chez qui et avec qui.
+  const c26 = cours2026(p.nom);
+  const bloc26 = c26
+    ? `<div class="grh4">Son cours en 2026</div>
+       <div class="gr26"><b>${esc(c26Ligne(c26))}${c26.deduit ? C26_DEDUIT : ""}</b>
+         <span>${c26.avec.length
+           ? "Avec " + c26.avec.map(n=>esc(n)).join(" · ")
+           : "Seul sur la grille à ce créneau."}</span></div>`
+    : "";
+
   body.innerHTML =
     (rien ? blocContact : "") +
 
     (src ? "" : `<div class="grh4">Pourquoi le solveur ne l'a pas placé</div>
      <p class="grnote" style="margin-top:0">${esc(p.raison||"aucun motif écrit par le solveur")}</p>`) +
+
+    bloc26 +
 
     blocOu +
 
@@ -7956,7 +8116,8 @@ async function terminer(d){
         ctr.fichier = c.nom; ctr.date = "lu sur la machine";
       }
     }
-    delete CACHE["resultat-cca.xlsx"]; delete CACHE["figeages-cca.xlsx"];
+    delete CACHE[cleFic("resultat-cca.xlsx", jeuVu)];
+    delete CACHE[cleFic("figeages-cca.xlsx", jeuVu)];
     const r = await jsonAgent("/resultat");
     lireResultat(XLSX.read(Uint8Array.from(atob(r.contenu), ch=>ch.charCodeAt(0)), {type:"array"}));
     resFic = {fichier:r.nom, date:new Date().toLocaleString("fr-FR",
